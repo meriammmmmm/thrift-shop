@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real AI Setup Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        .warning {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            color: #ef6c00;
+        }
+        .instructions {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1565c0;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #2196f3;
+            background: #f8f9fa;
+        }
+        #imagePreview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Real AI Image Analysis Setup</h1>
+        
+        <div class="status error">
+            <strong>❌ Current Status:</strong> No valid AI API keys configured
+        </div>
+
+        <div class="instructions">
+            <h3>🔧 How to Get Real AI Working (ChatGPT Vision)</h3>
+            <p><strong>You need a real OpenAI API key to use ChatGPT Vision analysis.</strong></p>
+            
+            <h4>Step 1: Get OpenAI API Key</h4>
+            <ol>
+                <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></li>
+                <li>Sign in or create an OpenAI account</li>
+                <li>Click "Create new secret key"</li>
+                <li>Copy the key (starts with "sk-")</li>
+            </ol>
+
+            <h4>Step 2: Add Key to Your Backend</h4>
+            <p>Replace this line in <code>backend/.env</code>:</p>
+            <div class="code">OPENAI_API_KEY=your-real-openai-key-here</div>
+            <p>With your real key:</p>
+            <div class="code">OPENAI_API_KEY=sk-your-actual-key-here</div>
+
+            <h4>Step 3: Restart Backend</h4>
+            <p>Restart your backend server to load the new key.</p>
+        </div>
+
+        <h3>🧪 Test AI Image Analysis</h3>
+        <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+            <p>📸 Click to upload an image for AI analysis</p>
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        </div>
+        <img id="imagePreview" style="display: none;">
+        
+        <button onclick="testAI()" id="testButton" disabled>🤖 Test AI Analysis</button>
+        <button onclick="checkStatus()">🔍 Check API Status</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let selectedImage = null;
+
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedImage = e.target.result;
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = selectedImage;
+                    preview.style.display = 'block';
+                    document.getElementById('testButton').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function checkStatus() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>🔍 Checking API status...</p>';
+
+            try {
+                // Test with a simple request to see what error we get
+                const response = await fetch('http://localhost:5001/api/admin/ai/generate-description', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer demo-token' // This will fail but show us the error
+                    },
+                    body: JSON.stringify({
+                        image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
+                        productName: 'Test Item'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h4>✅ AI is working!</h4>
+                            <p>Your API keys are configured correctly.</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ AI Setup Issue</h4>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            ${data.instructions ? `
+                                <div style="margin-top: 15px;">
+                                    <h5>📋 Instructions:</h5>
+                                    <ul>
+                                        <li><strong>OpenAI:</strong> <a href="${data.instructions.openai}" target="_blank">${data.instructions.openai}</a></li>
+                                        ${data.instructions.gemini ? `<li><strong>Gemini:</strong> <a href="${data.instructions.gemini}" target="_blank">${data.instructions.gemini}</a></li>` : ''}
+                                        ${data.instructions.huggingface ? `<li><strong>Hugging Face:</strong> <a href="${data.instructions.huggingface}" target="_blank">${data.instructions.huggingface}</a></li>` : ''}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ Connection Error</h4>
+                        <p>Could not connect to backend server. Make sure it's running on port 5001.</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testAI() {
+            if (!selectedImage) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>🤖 Analyzing image with AI...</p>';
+
+            try {
+                const response = await fetch('http://localhost:5001/api/admin/ai/generate-description', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer demo-token' // This will fail but show us the error
+                    },
+                    body: JSON.stringify({
+                        image: selectedImage,
+                        productName: 'Fashion Item',
+                        category: 'Clothing'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h4>🎉 AI Analysis Complete!</h4>
+                            <h5>${data.data.title}</h5>
+                            <p>${data.data.description}</p>
+                            <p><strong>Category:</strong> ${data.data.category_suggestion}</p>
+                            <p><strong>Price Range:</strong> $${data.data.suggested_price_min} - $${data.data.suggested_price_max}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ AI Analysis Failed</h4>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            ${data.instructions ? `
+                                <div style="margin-top: 15px;">
+                                    <h5>🔧 Fix Instructions:</h5>
+                                    <p>Get your OpenAI API key from: <a href="${data.instructions.openai}" target="_blank">${data.instructions.openai}</a></p>
+                                    <p>Then add it to your <code>backend/.env</code> file.</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ Request Failed</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>Make sure your backend server is running on port 5001.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Check status on page load
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

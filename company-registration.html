@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Thrift Brand</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            background: white;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .logo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div id="headerIcon" class="inline-flex items-center justify-center w-20 h-20 rounded-full glass-effect mb-4">
+                <i class="fas fa-store text-white text-3xl"></i>
+            </div>
+            <h1 id="headerTitle" class="text-4xl font-bold text-white mb-2">Join Our Marketplace</h1>
+            <p class="text-white/80 text-lg">Register your thrift clothing brand and start selling today!</p>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="max-w-4xl mx-auto glass-effect rounded-2xl p-8">
+            <form id="registrationForm" class="space-y-6">
+                <!-- Company Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-6">
+                        <h2 class="text-2xl font-bold text-white mb-4">
+                            <i class="fas fa-building mr-2"></i>Brand Information
+                        </h2>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-2">Brand Name *</label>
+                            <input type="text" id="name" required class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Your Brand Name">
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Description</label>
+                            <textarea id="description" rows="3" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Brief description of your thrift brand"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Brand Email</label>
+                            <input type="email" id="email" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="brand@example.com">
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Phone Number</label>
+                            <input type="tel" id="phone" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="+1-555-0123">
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <h2 class="text-2xl font-bold text-white mb-4">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Location & Admin
+                        </h2>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-2">Address</label>
+                            <input type="text" id="address" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Street address">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-white font-medium mb-2">City</label>
+                                <input type="text" id="city" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="City">
+                            </div>
+                            <div>
+                                <label class="block text-white font-medium mb-2">Country</label>
+                                <input type="text" id="country" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Country">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Admin Email *</label>
+                            <input type="email" id="admin_email" required class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="admin@yourbrand.com">
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Admin Password *</label>
+                            <input type="password" id="admin_password" required class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Strong password">
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-medium mb-2">Admin Name</label>
+                            <input type="text" id="admin_name" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Full name">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logo Upload -->
+                <div class="border-t border-white/20 pt-6">
+                    <h2 class="text-2xl font-bold text-white mb-4">
+                        <i class="fas fa-image mr-2"></i>Brand Logo *
+                    </h2>
+                    <div class="bg-white/10 rounded-lg p-6">
+                        <div class="flex items-center space-x-6">
+                            <div id="logoPreview" class="hidden">
+                                <img id="logoImage" class="logo-preview border-4 border-white/30" alt="Logo preview">
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" id="logoFile" accept="image/*" class="hidden" required>
+                                <button type="button" onclick="document.getElementById('logoFile').click()" class="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-200 flex items-center">
+                                    <i class="fas fa-upload mr-2"></i>
+                                    <span id="logoButtonText">Upload Logo *</span>
+                                </button>
+                                <p class="text-white/80 text-sm mt-2">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Required: Upload your brand logo (PNG, JPG, or GIF)
+                                </p>
+                                <p class="text-white/60 text-xs mt-1">Recommended: 200x200px or larger, square format</p>
+                            </div>
+                        </div>
+                        <div id="logoWarning" class="mt-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+                                <p class="text-sm text-yellow-100">
+                                    Your brand logo is required and will be displayed in your admin dashboard and storefront.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms and Submit -->
+                <div class="border-t border-white/20 pt-6">
+                    <div class="flex items-center mb-6">
+                        <input type="checkbox" id="terms" required class="w-5 h-5 text-blue-600 rounded">
+                        <label for="terms" class="ml-3 text-white">
+                            I agree to the <a href="#" class="underline hover:text-blue-200">Terms of Service</a> and <a href="#" class="underline hover:text-blue-200">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full py-4 text-white font-bold text-lg rounded-lg flex items-center justify-center">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Register Brand
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div id="successMessage" class="hidden max-w-4xl mx-auto mt-6 glass-effect rounded-lg p-6 text-center">
+            <i class="fas fa-check-circle text-green-400 text-4xl mb-4"></i>
+            <h3 class="text-2xl font-bold text-white mb-2">Registration Submitted!</h3>
+            <p class="text-white/80">Your brand registration has been submitted for review. You'll receive an email once approved.</p>
+            <div class="mt-4">
+                <a href="http://localhost:8080" class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-200">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Go to Admin Panel
+                </a>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="hidden max-w-4xl mx-auto mt-6 bg-red-500/20 border border-red-500/30 rounded-lg p-6 text-center">
+            <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+            <h3 class="text-2xl font-bold text-white mb-2">Registration Failed</h3>
+            <p id="errorText" class="text-white/80"></p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5001/api';
+        let logoBase64 = '';
+
+        // Logo upload handling
+        document.getElementById('logoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    logoBase64 = event.target.result;
+                    document.getElementById('logoImage').src = logoBase64;
+                    document.getElementById('logoPreview').classList.remove('hidden');
+                    document.getElementById('logoButtonText').textContent = 'Change Logo';
+                    document.getElementById('logoWarning').style.display = 'none';
+                    
+                    // Update header with logo
+                    updateHeader();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Update header with logo and brand name
+        function updateHeader() {
+            const brandName = document.getElementById('name').value;
+            const headerIcon = document.getElementById('headerIcon');
+            const headerTitle = document.getElementById('headerTitle');
+            
+            if (logoBase64) {
+                headerIcon.innerHTML = `<img src="${logoBase64}" alt="Brand Logo" class="w-full h-full object-cover rounded-full border-4 border-white/30">`;
+            }
+            
+            if (brandName && logoBase64) {
+                headerTitle.textContent = brandName;
+            } else {
+                headerTitle.textContent = 'Join Our Marketplace';
+            }
+        }
+
+        // Update header when brand name changes
+        document.getElementById('name').addEventListener('input', updateHeader);
+
+        // Form submission
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validate logo is uploaded
+            if (!logoBase64) {
+                document.getElementById('errorText').textContent = 'Brand logo is required. Please upload your brand logo.';
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('logoWarning').style.display = 'block';
+                return;
+            }
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                country: document.getElementById('country').value,
+                admin_email: document.getElementById('admin_email').value,
+                admin_password: document.getElementById('admin_password').value,
+                admin_name: document.getElementById('admin_name').value,
+                logo: logoBase64,
+                commission_rate: 0.05 // Default 5%
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/companies/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('registrationForm').style.display = 'none';
+                    document.getElementById('successMessage').classList.remove('hidden');
+                } else {
+                    document.getElementById('errorText').textContent = result.error || 'Registration failed';
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                document.getElementById('errorText').textContent = 'Network error. Please try again.';
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

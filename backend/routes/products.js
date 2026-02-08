@@ -1,0 +1,514 @@
+const express = require('express');
+const db = require('../database/db');
+const { requireAdmin } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Get all products with filtering
+router.get('/', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      brand,
+      search,
+      sortBy = 'newest',
+      minPrice,
+      maxPrice,
+      companyId
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    let whereClause = 'WHERE p.in_stock = 1';
+    let params = [];
+
+    // Filter by company if specified
+    if (companyId) {
+      whereClause += ' AND p.company_id = ?';
+      params.push(parseInt(companyId));
+    }
+
+    // Build where clause
+    if (category && category !== 'All') {
+      whereClause += ' AND p.category = ?';
+      params.push(category);
+    }
+
+    if (brand && brand !== 'All') {
+      whereClause += ' AND p.brand = ?';
+      params.push(brand);
+    }
+
+    if (search) {
+      whereClause += ' AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (minPrice) {
+      whereClause += ' AND p.price >= ?';
+      params.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      whereClause += ' AND p.price <= ?';
+      params.push(parseFloat(maxPrice));
+    }
+
+    // Build order clause
+    let orderClause = 'ORDER BY p.created_at DESC';
+    switch (sortBy) {
+      case 'price-low':
+        orderClause = 'ORDER BY p.price ASC';
+        break;
+      case 'price-high':
+        orderClause = 'ORDER BY p.price DESC';
+        break;
+      case 'brand':
+        orderClause = 'ORDER BY p.brand ASC';
+        break;
+      case 'popular':
+        orderClause = 'ORDER BY p.likes DESC';
+        break;
+    }
+
+    // Get products with company information
+    const products = await db.all(
+      `SELECT p.*, c.name as company_name, c.description as company_description 
+       FROM products p 
+       LEFT JOIN companies c ON p.company_id = c.id 
+       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+
+    // Get total count
+    const totalResult = await db.get(
+      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+      params
+    );
+
+    // Parse JSON fields and add company info
+    const parsedProducts = products.map(product => ({
+      ...product,
+      images: product.images ? JSON.parse(product.images) : [],
+      measurements: product.measurements ? JSON.parse(product.measurements) : null,
+      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+      tags: product.tags ? JSON.parse(product.tags) : [],
+      company: product.company_name ? {
+        id: product.company_id,
+        name: product.company_name,
+        description: product.company_description
+      } : null
+    }));
+
+    res.json({
+      products: parsedProducts,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Products fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get single product
+router.get('/:id', async (req, res) => {
+  try {
+    const product = await db.get(`
+      SELECT p.*, c.name as company_name, c.description as company_description 
+      FROM products p 
+      LEFT JOIN companies c ON p.company_id = c.id 
+      WHERE p.id = ?
+    `, [req.params.id]);
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Update views
+    await db.run('UPDATE products SET views = views + 1 WHERE id = ?', [req.params.id]);
+
+    // Parse JSON fields and add company info
+    const parsedProduct = {
+      ...product,
+      images: product.images ? JSON.parse(product.images) : [],
+      measurements: product.measurements ? JSON.parse(product.measurements) : null,
+      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+      tags: product.tags ? JSON.parse(product.tags) : [],
+      company: product.company_name ? {
+        id: product.company_id,
+        name: product.company_name,
+        description: product.company_description
+      } : null
+    };
+
+    res.json(parsedProduct);
+  } catch (error) {
+    console.error('Product fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create product (Admin only)
+router.post('/', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const {
+      name, description, price, original_price, images, brand, size,
+      category, condition, color, material, measurements, care_instructions,
+      tags, seller_name, seller_rating, seller_location
+    } = req.body;
+
+    if (!name || !price || !brand || !category) {
+      return res.status(400).json({ error: 'Name, price, brand, and category are required' });
+    }
+
+    const result = await db.run(`
+      INSERT INTO products (
+        name, description, price, original_price, images, brand, size,
+        category, condition, color, material, measurements, care_instructions,
+        tags, seller_name, seller_rating, seller_location, company_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      name, description, price, original_price,
+      JSON.stringify(images || []), brand, size, category, condition, color,
+      material, JSON.stringify(measurements || {}),
+      JSON.stringify(care_instructions || []), JSON.stringify(tags || []),
+      seller_name, seller_rating, seller_location, companyId
+    ]);
+
+    const product = await db.get('SELECT * FROM products WHERE id = ?', [result.id]);
+    res.status(201).json(product);
+  } catch (error) {
+    console.error('Product creation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update product (Admin only)
+router.put('/:id', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Check if product belongs to admin's company
+    const existingProduct = await db.get('SELECT company_id FROM products WHERE id = ?', [id]);
+    if (!existingProduct) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    if (existingProduct.company_id !== companyId) {
+      return res.status(403).json({ error: 'You can only update products from your company' });
+    }
+
+    // Convert arrays/objects to JSON strings
+    if (updates.images) updates.images = JSON.stringify(updates.images);
+    if (updates.measurements) updates.measurements = JSON.stringify(updates.measurements);
+    if (updates.care_instructions) updates.care_instructions = JSON.stringify(updates.care_instructions);
+    if (updates.tags) updates.tags = JSON.stringify(updates.tags);
+
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+
+    await db.run(
+      `UPDATE products SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [...values, id]
+    );
+
+    const product = await db.get('SELECT * FROM products WHERE id = ?', [id]);
+    res.json(product);
+  } catch (error) {
+    console.error('Product update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete product (Admin only)
+router.delete('/:id', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    // Check if product belongs to admin's company
+    const existingProduct = await db.get('SELECT company_id FROM products WHERE id = ?', [req.params.id]);
+    if (!existingProduct) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    if (existingProduct.company_id !== companyId) {
+      return res.status(403).json({ error: 'You can only delete products from your company' });
+    }
+
+    const result = await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Product deletion error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get categories
+router.get('/meta/categories', async (req, res) => {
+  try {
+    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = 1');
+    res.json(categories.map(c => c.category));
+  } catch (error) {
+    console.error('Categories fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get brands
+router.get('/meta/brands', async (req, res) => {
+  try {
+    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = 1');
+    res.json(brands.map(b => b.brand));
+  } catch (error) {
+    console.error('Brands fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get products for admin (company-specific)
+router.get('/admin/products', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      brand,
+      search,
+      sortBy = 'newest'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    let whereClause = 'WHERE company_id = ?';
+    let params = [companyId];
+
+    // Build where clause
+    if (category && category !== 'All') {
+      whereClause += ' AND category = ?';
+      params.push(category);
+    }
+
+    if (brand && brand !== 'All') {
+      whereClause += ' AND brand = ?';
+      params.push(brand);
+    }
+
+    if (search) {
+      whereClause += ' AND (name LIKE ? OR brand LIKE ? OR description LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Build order clause
+    let orderClause = 'ORDER BY created_at DESC';
+    switch (sortBy) {
+      case 'price-low':
+        orderClause = 'ORDER BY price ASC';
+        break;
+      case 'price-high':
+        orderClause = 'ORDER BY price DESC';
+        break;
+      case 'brand':
+        orderClause = 'ORDER BY brand ASC';
+        break;
+      case 'popular':
+        orderClause = 'ORDER BY likes DESC';
+        break;
+    }
+
+    // Get products
+    const products = await db.all(
+      `SELECT * FROM products ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+
+    // Get total count
+    const totalResult = await db.get(
+      `SELECT COUNT(*) as total FROM products ${whereClause}`,
+      params
+    );
+
+    // Parse JSON fields
+    const parsedProducts = products.map(product => ({
+      ...product,
+      images: product.images ? JSON.parse(product.images) : [],
+      measurements: product.measurements ? JSON.parse(product.measurements) : null,
+      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+      tags: product.tags ? JSON.parse(product.tags) : []
+    }));
+
+    res.json({
+      products: parsedProducts,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Admin products fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get products for a specific company storefront
+router.get('/company/:companyId', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      brand,
+      search,
+      sortBy = 'newest',
+      minPrice,
+      maxPrice
+    } = req.query;
+
+    // First, get company information
+    const company = await db.get('SELECT * FROM companies WHERE id = ? AND status = "active"', [companyId]);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found or inactive' });
+    }
+
+    const offset = (page - 1) * limit;
+    let whereClause = 'WHERE p.in_stock = 1 AND p.company_id = ?';
+    let params = [parseInt(companyId)];
+
+    // Build where clause
+    if (category && category !== 'All') {
+      whereClause += ' AND p.category = ?';
+      params.push(category);
+    }
+
+    if (brand && brand !== 'All') {
+      whereClause += ' AND p.brand = ?';
+      params.push(brand);
+    }
+
+    if (search) {
+      whereClause += ' AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (minPrice) {
+      whereClause += ' AND p.price >= ?';
+      params.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      whereClause += ' AND p.price <= ?';
+      params.push(parseFloat(maxPrice));
+    }
+
+    // Build order clause
+    let orderClause = 'ORDER BY p.created_at DESC';
+    switch (sortBy) {
+      case 'price-low':
+        orderClause = 'ORDER BY p.price ASC';
+        break;
+      case 'price-high':
+        orderClause = 'ORDER BY p.price DESC';
+        break;
+      case 'brand':
+        orderClause = 'ORDER BY p.brand ASC';
+        break;
+      case 'popular':
+        orderClause = 'ORDER BY p.likes DESC';
+        break;
+    }
+
+    // Get products with company information
+    const products = await db.all(
+      `SELECT p.*, c.name as company_name, c.description as company_description 
+       FROM products p 
+       LEFT JOIN companies c ON p.company_id = c.id 
+       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+
+    // Get total count
+    const totalResult = await db.get(
+      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+      params
+    );
+
+    // Parse JSON fields and add company info
+    const parsedProducts = products.map(product => ({
+      ...product,
+      images: product.images ? JSON.parse(product.images) : [],
+      measurements: product.measurements ? JSON.parse(product.measurements) : null,
+      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+      tags: product.tags ? JSON.parse(product.tags) : [],
+      company: {
+        id: product.company_id,
+        name: product.company_name,
+        description: product.company_description
+      }
+    }));
+
+    res.json({
+      company: {
+        id: company.id,
+        name: company.name,
+        description: company.description,
+        logo: company.logo,
+        website: company.website,
+        email: company.email,
+        country: company.country,
+        show_testimonials: company.show_testimonials
+      },
+      products: parsedProducts,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Company products fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+module.exports = router;

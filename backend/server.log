@@ -1,0 +1,259 @@
+🚀 Thrift Shop Backend running on port 5001
+📊 Health check: http://localhost:5001/api/health
+🌐 Frontend URL: http://localhost:3000
+📦 Connected to SQLite database
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Two-Tone Shaggy Mongolian Lamb Fur Shoulder Bag with Dark Brown Leather Straps",
+  "description": "This is a distinctive shoulder bag featuring a voluminous, shaggy body crafted from what appears to be genuine Mongolian lamb fur. The fur exhibits a striking two-tone effect, with a base of rich, deep brown and prominent lighter, almost blonde or cream-colored curly strands throughout, creating a textured, ombré-like appearance. The bag is suspended by two sturdy, flat dark brown genuine leather straps. These straps are notable for their decorative punched or stitched detail running along their length, suggesting a handcrafted or artisanal quality. The straps are attached to the bag's fur body with dark metal rings and further secured by wrapped leather accents. A white product tag, indicating the item is new or unused, is visible hanging from one of the strap attachments. The overall silhouette is soft and unstructured, with the fur creating a fluffy, rounded shape.",
+  "features": [
+    "Shaggy, curly Mongolian lamb fur exterior",
+    "Two-tone fur (dark brown base with lighter blonde/cream highlights)",
+    "Dark brown genuine leather shoulder straps",
+    "Punched/stitched detail along leather straps",
+    "Dark metal ring strap attachments",
+    "Wrapped leather accents at strap base",
+    "Soft, unstructured silhouette",
+    "New with tag (NWT)"
+  ],
+  "condition": "New with tag (NWT), excellent condition based on visible appearance with no signs of wear or damage.",
+  "style_notes": "This statement bag is ideal for adding a touch of bohemian luxury, texture, and warmth to any outfit. Its unique shaggy fur makes it a focal point, perfect for elevating autumnal and winter ensembles. Pair it with chunky knit sweaters, tailored wool coats, or even a simple denim and tee combination for a chic, fashion-forward look. The two-tone fur offers versatility, allowing it to complement both warm and cool-toned wardrobes. It can transition from a stylish daytime accessory to an eye-catching evening piece.",
+  "suggested_price_min": 180,
+  "suggested_price_max": 550,
+  "category_suggestion": "Handbags > Shoulder Bags",
+  "brand_suggestion": "Designer / Boutique (e.g., Bottega Veneta, Chloe, Isabel Marant aesthetic)",
+  "size_suggestion": "Medium (appears to be able to comfortably hold daily essentials like a wallet, phone, keys, and a few small extras)",
+  "color": "Two-tone Brown (Dark Brown with Blonde/Cream highlights)",
+  "material": "Mongolian Lamb Fur (likely genuine), Genuine Leather"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Multi-Color Paisley Floral Abstract Print 3/4 Sleeve Boat Neck Shift Dress",
+  "description": "This vibrant knee-length shift dress features a complex, multi-layered print combining paisley, floral, and abstract motifs. The primary colors include a black background, accented with beige/cream, various shades of green (lime, olive), purples (lavender, deep plum), and teal blues. Hints of brown and gold are also present within the intricate patterns. It has a classic boat neckline and 3/4 length sleeves. A distinct border print in teal, blue, and brown geometric patterns adorns the cuffs and the hemline, adding an extra layer of detail. The fabric appears to be a comfortable, stretchy knit, offering a flattering drape. The silhouette is a straight, relaxed fit, falling to approximately knee-length.",
+  "features": [
+    "Boat neck",
+    "3/4 length sleeves",
+    "All-over multi-pattern print (paisley, floral, abstract)",
+    "Border print on cuffs",
+    "Border print on hem",
+    "Knee-length",
+    "Shift silhouette"
+  ],
+  "condition": "Excellent, no visible flaws such as snags, stains, fading, or pilling are apparent from the image.",
+  "style_notes": "This dress is a statement piece perfect for adding a pop of color and intricate pattern to your wardrobe. Its versatile design makes it suitable for various occasions, from casual outings to semi-formal events. Pair it with simple black heels or ankle boots for an evening out, or dress it down with flats or sandals for a chic daytime look. The vibrant print makes it ideal for transitional seasons. Accessorize minimally to let the dress be the focal point, perhaps with delicate gold jewelry or a solid-colored clutch that picks up one of the dress's accent colors like teal or plum.",
+  "suggested_price_min": 25,
+  "suggested_price_max": 65,
+  "category_suggestion": "Dresses",
+  "brand_suggestion": "Contemporary Fashion",
+  "size_suggestion": "Small/Medium",
+  "color": "Multi-color (Black, Beige, Green, Purple, Teal)",
+  "material": "Knit Blend (likely Polyester/Spandex or Rayon Blend)"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Two-Tone Shaggy Mongolian Lamb Fur Shoulder Bag with Dark Brown Leather Straps",
+  "description": "A distinctive shoulder bag featuring a voluminous, shaggy body crafted from what appears to be Mongolian lamb fur or a similar curly shearling. The fur exhibits a striking two-tone effect, with a rich, dark brown base transitioning to lighter, almost blonde or cream-colored curly tips, creating a natural, variegated texture. The bag is suspended by two dark brown leather straps, which are flat and feature a series of small, punched-out oval or rectangular holes along their length, adding a decorative, artisanal detail. These straps are attached to the fur body via dark metal rings and wrapped leather accents. The bag appears to have a soft, unstructured silhouette, allowing the fur to drape naturally. A white product tag is visible, indicating the item is likely new or unused.",
+  "features": [
+    "Shaggy, curly fur body",
+    "Two-tone fur coloration (dark brown to light blonde/cream tips)",
+    "Dark brown leather shoulder straps",
+    "Punched-hole detail on leather straps",
+    "Metal ring and wrapped leather strap attachments",
+    "Soft, unstructured silhouette",
+    "New with tags (visible product tag)"
+  ],
+  "condition": "New with tags",
+  "style_notes": "This statement piece is perfect for adding a touch of bohemian luxury or a cozy, textural element to an outfit. It would pair beautifully with minimalist ensembles to let the bag be the focal point, or complement other natural textures like suede, knitwear, or denim for a more eclectic, earthy look. Ideal for fall and winter seasons, it can elevate both casual jeans-and-sweater outfits and more dressed-up evening wear. Consider pairing with neutral tones like cream, black, or olive green to highlight its unique color variation.",
+  "suggested_price_min": 80,
+  "suggested_price_max": 350,
+  "category_suggestion": "Handbags / Shoulder Bags / Fur Bags",
+  "brand_suggestion": "Contemporary Designer (e.g., UGG, Coach, or a boutique brand specializing in fur/shearling accessories)",
+  "size_suggestion": "Medium (appears to be able to hold essentials plus a bit more, but not an oversized tote)",
+  "color": "Brown (two-tone: dark brown and light blonde/cream)",
+  "material": "Mongolian Lamb Fur (or similar curly shearling), Leather"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Black Faux Leather Slouchy Knee-High Boots with Ornate Buckles",
+  "description": "A pair of black knee-high boots crafted from what appears to be soft, matte faux leather, featuring a distinctive slouchy or ruched shaft that extends up to just below the knee. The material has a subtle texture, giving it a realistic leather-like appearance. The boots boast a sharp, pointed toe design, contributing to a sleek silhouette. Around the ankle area, a decorative strap is secured with a prominent, silver-toned buckle. The buckle has an ornate, possibly antique-inspired, textured finish, adding a touch of unique detail. A full-length zipper is visible on the inner side of the shaft for easy wear. The heel is not clearly visible but is implied to be a medium to high heel given the pointed toe and overall style.",
+  "features": [
+    "Knee-high shaft",
+    "Slouchy/Ruched design",
+    "Pointed toe",
+    "Decorative silver-toned ornate buckle",
+    "Side zipper closure",
+    "Faux leather material"
+  ],
+  "condition": "Good. The boots show natural creasing from the slouchy design but no visible scuffs, tears, or significant wear. The buckles appear intact and free from damage.",
+  "style_notes": "These versatile black slouchy boots are perfect for adding a touch of edgy sophistication to an outfit. Pair them with skinny jeans or leggings tucked in for a casual yet chic look. They would also complement a mini skirt or a short dress, especially in colder weather, creating a stylish silhouette. For a more bohemian or relaxed vibe, wear them with a flowy midi dress. The ornate buckles add a unique detail, making them suitable for both day and evening wear, depending on the styling. Ideal for fall and winter fashion.",
+  "suggested_price_min": 35,
+  "suggested_price_max": 90,
+  "category_suggestion": "Women's Boots > Knee-High Boots",
+  "brand_suggestion": "Fashion Brand",
+  "size_suggestion": "Unable to determine from image",
+  "color": "Black",
+  "material": "Faux Leather (PU Leather)"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Black & Deep Red Mandala Pattern Lace-Up Platform Ankle Boots",
+  "description": "A pair of ankle-height lace-up boots featuring a striking black base with an intricate, symmetrical deep red or burgundy mandala-style pattern printed across the entire visible upper. The boots are designed with a robust, chunky black platform sole that has a visible lug tread, giving them a sturdy, combat-boot aesthetic. They feature black laces threaded through multiple metal eyelets, tied at the top. The material of the upper appears to be a synthetic leather or coated canvas, showing some creasing from wear, particularly on the vamp and around the ankle. The interior lining visible at the top of the shaft is black. The overall design is bold and distinctive, making these boots a statement piece.",
+  "features": [
+    "Lace-up closure with black laces",
+    "Ankle height shaft",
+    "Chunky platform sole",
+    "Lug sole tread for grip",
+    "Intricate mandala/paisley-style pattern in deep red/burgundy",
+    "Metal eyelets for laces"
+  ],
+  "condition": "Used, with visible creasing on the upper, especially on the vamp and around the ankle area. The soles show some dirt and minor scuffing along the edges, consistent with regular wear. The laces are intact. Overall, the boots appear to be in good functional condition, but are clearly pre-owned.",
+  "style_notes": "These statement boots are perfect for adding an edgy, alternative, or bohemian touch to an outfit. They pair well with distressed denim jeans, black skinny jeans, or leggings for a classic grunge or punk-inspired look. For a more eclectic style, combine them with a flowy maxi dress, a simple black skirt, or a band tee. Ideal for casual wear, concerts, festivals, or adding a unique personality to everyday ensembles. The bold pattern makes them a focal point.",
+  "suggested_price_min": 30,
+  "suggested_price_max": 70,
+  "category_suggestion": "Women's Boots > Ankle Boots > Combat & Platform Boots",
+  "brand_suggestion": "Unbranded (or 'Alternative Fashion Brand' if a specific aesthetic is targeted)",
+  "size_suggestion": "Cannot be determined from image",
+  "color": "Black (base), Deep Red/Burgundy (pattern)",
+  "material": "Faux Leather/Coated Canvas (upper), Rubber (sole)"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Silver Metallic Asymmetrical Strap Bodycon Mini Dress",
+  "description": "A striking silver metallic bodycon mini dress designed with an asymmetrical strap configuration. It features one wider shoulder strap on the wearer's right side and a thinner spaghetti strap on the wearer's left side, creating a modern, edgy neckline. The fabric boasts a high-shine, liquid-like metallic silver finish with a slightly crinkled texture, suggesting a stretchy, coated material. The dress is form-fitting, designed to hug the body, and falls to a mini length, typically above the knee. It appears to be new with its original 'ROMWE' brand tag still attached.",
+  "features": [
+    "Metallic silver finish",
+    "Asymmetrical strap design (one wide strap, one spaghetti strap)",
+    "Bodycon (form-fitting) silhouette",
+    "Mini length",
+    "Sleeveless",
+    "Stretch fabric",
+    "Original brand tag attached"
+  ],
+  "condition": "New with tags (NWT). The item appears unworn, though the fabric shows some wrinkles from storage or packaging.",
+  "style_notes": "This bold metallic dress is ideal for a night out, clubbing, parties, or special events where you want to make a statement. Pair it with minimalist accessories like strappy heels or sleek ankle boots and delicate jewelry to let the dress be the focal point. For a layered look, consider adding a black blazer or a leather jacket. Its futuristic aesthetic also makes it suitable for themed parties.",
+  "suggested_price_min": 15,
+  "suggested_price_max": 40,
+  "category_suggestion": "Dresses",
+  "brand_suggestion": "ROMWE",
+  "size_suggestion": "Small/Medium (estimated, based on typical fast fashion sizing and drape)",
+  "color": "Silver Metallic",
+  "material": "Coated Stretch Knit (likely a Polyester/Spandex blend with a metallic finish)"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Black Textured Knit Square Neck Bustier Crop Top",
+  "description": "A solid black, long-sleeve crop top featuring a contemporary square neckline. The front bodice is designed in a prominent bustier or corset-style, with two distinct, rounded, and structured cups that appear to be padded or molded, separated by a central seam. The fabric has a visible textured knit finish, giving it a subtle crinkled or puckered effect rather than a smooth surface. The long sleeves have a slight puff at the shoulders, adding volume before tapering down. The hem of the top is cropped, designed to sit above the waist. The overall aesthetic is trendy and form-fitting.",
+  "features": [
+    "Square neckline",
+    "Long sleeves with slight puff shoulders",
+    "Bustier-style bodice with structured cups",
+    "Cropped length",
+    "Textured knit fabric",
+    "Solid black color"
+  ],
+  "condition": "Excellent (appears new or very lightly worn, with no visible flaws or signs of wear)",
+  "style_notes": "This versatile crop top is perfect for creating chic and edgy outfits. Pair it with high-waisted leather pants or dark wash jeans and heels for a night out. For a more casual yet stylish look, combine it with a denim skirt or cargo pants and sneakers. It can also be layered under an oversized blazer or a utility jacket for added warmth and a sophisticated touch. Accessorize with minimalist gold jewelry to highlight the neckline.",
+  "suggested_price_min": 20,
+  "suggested_price_max": 35,
+  "category_suggestion": "Tops",
+  "brand_suggestion": "SHEIN",
+  "size_suggestion": "Small/Medium (estimated, based on typical Shein sizing and visual fit)",
+  "color": "Black",
+  "material": "Textured Knit (likely a polyester blend)"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Men's Oversized Khaki Beige Fleece Hoodie with Kangaroo Pocket",
+  "description": "This is a men's oversized hoodie in a solid, muted khaki beige color, presenting a relaxed and comfortable fit. The fabric appears to be a thick, soft fleece or heavy cotton blend, suggesting warmth and comfort. It features a substantial hood, which looks to be double-lined with the interior in the same or a very similar tonal shade. The hoodie has classic long sleeves with noticeably dropped shoulders, leading to wide, ribbed cuffs. The hem is also ribbed, contributing to the garment's relaxed silhouette. A large, functional kangaroo pocket is stitched onto the front, with visible topstitching along its edges. There is a very subtle, almost imperceptible tonal graphic or text logo centered on the chest, adding a minimalist branding element without being overtly visible. The overall aesthetic is clean, contemporary, and focused on comfort.",
+  "features": [
+    "Oversized fit",
+    "Dropped shoulders",
+    "Ribbed cuffs",
+    "Ribbed hem",
+    "Kangaroo pocket",
+    "Double-lined hood (appears so)",
+    "Subtle tonal chest graphic/text"
+  ],
+  "condition": "Excellent, appears new with no visible signs of wear or damage.",
+  "style_notes": "This versatile khaki beige hoodie is a staple for a relaxed, casual, or streetwear aesthetic. Its neutral tone makes it incredibly easy to style. Pair it with distressed light-wash denim and chunky sneakers for an urban-inspired look, or layer it over a plain white crew-neck tee with matching joggers for ultimate comfort. For a slightly elevated casual outfit, combine it with dark wash jeans or tailored chinos and a pair of clean white low-top sneakers. It's also perfect for layering under a denim jacket or a puffer vest during cooler weather.",
+  "suggested_price_min": 45,
+  "suggested_price_max": 120,
+  "category_suggestion": "Men's Hoodies & Sweatshirts",
+  "brand_suggestion": "Contemporary Casual / Minimalist Streetwear Brand",
+  "size_suggestion": "Men's Large (based on model's fit and oversized style)",
+  "color": "Khaki Beige",
+  "material": "Cotton Blend Fleece"
+}
+```
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Crimson Halter Neck Deep V Cutout Ruched Maxi Dress",
+  "description": "A stunning, form-fitting maxi dress in a deep, rich crimson red. The dress features a sophisticated halter neckline that fastens at the nape, leading into a daringly deep plunging V-neckline. It is sleeveless, accentuating the shoulders
+🤖 Starting REAL AI vision analysis - using Google Gemini!
+🔍 Using Google Gemini REAL AI Vision - actually looking at your image!
+🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!
+🔍 Sending your image to Google Gemini Vision API...
+🤖 Google Gemini REAL AI Analysis: ```json
+{
+  "title": "Crimson Red Halter Neck Cut-Out Ruched Maxi Dress",
+  "description": "This is a striking, full-length maxi dress in a rich, deep crimson red. It features a sophisticated halter neckline that plunges into a deep V-neck, accentuating the décolletage. The bodice is form-fitting, leading to a dramatic, asymmetrical cut-out on the wearer's left side, revealing the midriff and hip. The right side of the waist and hip area is intricately ruched and draped, creating a flattering, asymmetrical effect that wraps around the front. The skirt flows into a sleek, body-hugging (bodycon) silhouette, extending to the floor, with a high slit on the wearer's left leg for ease of movement and added allure. The fabric appears to be a smooth, stretchy knit, likely a jersey or spandex blend, offering both comfort and a flattering drape.",
+  "features": [
+    "Halter neckline",
+    "Deep V-neckline",
+    "Asymmetrical side cut-out (wearer's left)",
+    "Asymmetrical ruched and draped waist/hip detailing (wearer's right)",
+    "Maxi length",
+    "Bodycon silhouette",
+    "High side slit (wearer's left leg)",
+    "Stretch knit fabric"
+  ],
+  "condition": "Excellent, appears new with no visible signs of wear, tears, or stains.",
+  "style_notes": "This bold red maxi dress is perfect for formal events, evening parties, galas, or special occasions where you want to make a statement. Pair it with minimalist gold or nude strappy heels to let the dress be the focal point. Accessorize with delicate gold jewelry, such as small hoop earrings or a simple bracelet, to complement the rich red hue. A sleek updo or pulled-back hairstyle would highlight the halter neck and deep V-neckline. Consider a clutch bag in a metallic or neutral tone. Due to the prominent cut-out, seamless shapewear might be beneficial if desired, but the ruched detailing offers some forgiveness.",
+  "suggested_price_min": 150,
+  "suggested_price_max": 350,
+  "category_suggestion": "Dresses > Maxi Dresses > Evening & Formal Dresses",
+  "brand_suggestion": "Contemporary Designer / High-End Boutique Brand",
+  "size_suggestion

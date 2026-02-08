@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AI Image Analyzer Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background: #f8f9fa;
+            border-color: #0056b3;
+        }
+        
+        .preview-img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Image Analyzer - Fixed Version</h1>
+        <p>Upload any image and let AI describe what it sees!</p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 3rem;">📸</div>
+            <h3>Click to Upload Image</h3>
+            <p>AI will analyze and describe your image</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div id="preview" class="hidden">
+            <h3>Uploaded Image:</h3>
+            <img id="previewImg" class="preview-img" alt="Preview">
+        </div>
+        
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>🤖 AI is analyzing your image...</p>
+        </div>
+        
+        <div id="result" class="result hidden">
+            <h3>🎯 AI Analysis Result:</h3>
+            <div id="resultContent"></div>
+        </div>
+        
+        <div id="error" class="error hidden">
+            <h3>❌ Error:</h3>
+            <div id="errorContent"></div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="testWithSample('boots')">🥾 Test with Boots</button>
+            <button onclick="testWithSample('dress')">👗 Test with Dress</button>
+            <button onclick="testWithSample('jacket')">🧥 Test with Jacket</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        let authToken = null;
+
+        // Login and get token
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@thriftshop.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.token;
+                    console.log('✅ Logged in successfully');
+                    return true;
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                showError('Failed to connect to backend. Make sure server is running on port 5001.');
+                return false;
+            }
+        }
+
+        // Initialize
+        window.onload = async function() {
+            await login();
+        };
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+
+        function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please upload an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageBase64 = e.target.result;
+                
+                // Show preview
+                document.getElementById('previewImg').src = imageBase64;
+                document.getElementById('preview').classList.remove('hidden');
+                
+                // Analyze image
+                analyzeImage(imageBase64);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeImage(imageBase64) {
+            if (!authToken) {
+                showError('Not authenticated. Please refresh the page.');
+                return;
+            }
+
+            // Show loading
+            hideAll();
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                console.log('🤖 Sending image to AI for analysis...');
+                
+                const response = await fetch(`${API_BASE}/admin/ai/generate-description`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        image: imageBase64,
+                        productName: '',
+                        category: '',
+                        brand: ''
+                    })
+                });
+
+                const result = await response.json();
+                console.log('🤖 AI Response:', result);
+
+                if (result.success && result.data) {
+                    showResult(result.data);
+                } else {
+                    showError(result.error || 'Analysis failed');
+                }
+            } catch (error) {
+                console.error('❌ Analysis error:', error);
+                showError('Network error: ' + error.message);
+            }
+        }
+
+        function showResult(data) {
+            hideAll();
+            
+            const html = `
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0;">
+                    <h4>📝 Product Name:</h4>
+                    <p><strong>${data.title || 'N/A'}</strong></p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0;">
+                    <h4>📖 AI Description:</h4>
+                    <p>${data.description || 'No description available'}</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Category:</strong><br>${data.category_suggestion || 'N/A'}
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Brand:</strong><br>${data.brand_suggestion || 'N/A'}
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Size:</strong><br>${data.size_suggestion || 'N/A'}
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Condition:</strong><br>${data.condition || 'N/A'}
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Color:</strong><br>${data.color || 'N/A'}
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <strong>Material:</strong><br>${data.material || 'N/A'}
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px; border-radius: 8px; text-align: center; margin: 15px 0;">
+                    <strong>💰 Suggested Price: $${data.suggested_price_min || 0} - $${data.suggested_price_max || 0}</strong>
+                </div>
+                
+                ${data.features && data.features.length > 0 ? `
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0;">
+                    <h4>✨ Features:</h4>
+                    <ul>
+                        ${data.features.map(feature => `<li>${feature}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                ${data.style_notes ? `
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 10px 0;">
+                    <h4>👗 Style Notes:</h4>
+                    <p>${data.style_notes}</p>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('resultContent').innerHTML = html;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            hideAll();
+            document.getElementById('errorContent').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        function hideAll() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        async function testWithSample(type) {
+            if (!authToken) {
+                await login();
+            }
+
+            // Generate sample image first
+            try {
+                const prompts = {
+                    boots: 'black leather boots',
+                    dress: 'vintage floral dress',
+                    jacket: 'denim jacket'
+                };
+
+                console.log(`🎨 Generating ${type} image...`);
+                
+                const generateResponse = await fetch(`${API_BASE}/ai/generate-product-mockup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        productName: prompts[type],
+                        category: type,
+                        style: 'realistic'
+                    })
+                });
+
+                const generateResult = await generateResponse.json();
+
+                if (generateResult.success && generateResult.imageUrl) {
+                    // Show generated image
+                    document.getElementById('previewImg').src = generateResult.imageUrl;
+                    document.getElementById('preview').classList.remove('hidden');
+                    
+                    // Analyze it
+                    analyzeImage(generateResult.imageUrl);
+                } else {
+                    showError('Failed to generate sample image');
+                }
+            } catch (error) {
+                showError('Error generating sample: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

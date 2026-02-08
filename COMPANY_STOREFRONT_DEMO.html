@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Storefronts Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .demo-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .company-card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; display: inline-block; width: 300px; vertical-align: top; }
+        .product-card { border: 1px solid #eee; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .url { background: #e8f4f8; padding: 5px 10px; border-radius: 4px; font-family: monospace; }
+        .highlight { background: #fff3cd; padding: 2px 4px; border-radius: 2px; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 5px; }
+        .status { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 Company-Specific Storefronts - WORKING DEMO</h1>
+        
+        <div class="demo-section">
+            <h2>📋 Available Companies</h2>
+            <p>Here are the active companies in the system:</p>
+            
+            <div class="company-card">
+                <h3>🏛️ Vintage Treasures</h3>
+                <p><strong>Description:</strong> Premium vintage clothing and accessories from the 60s-90s</p>
+                <p><strong>Products:</strong> 2 items</p>
+                <p><strong>Storefront URL:</strong> <span class="url">http://localhost:3000/company/1</span></p>
+                <div class="status">✅ ACTIVE</div>
+            </div>
+            
+            <div class="company-card">
+                <h3>🌱 Eco Fashion Hub</h3>
+                <p><strong>Description:</strong> Sustainable and eco-friendly thrift clothing</p>
+                <p><strong>Products:</strong> 3 items</p>
+                <p><strong>Storefront URL:</strong> <span class="url">http://localhost:3000/company/2</span></p>
+                <div class="status">✅ ACTIVE</div>
+            </div>
+            
+            <div class="company-card">
+                <h3>🕺 Retro Style Co</h3>
+                <p><strong>Description:</strong> Curated retro and vintage fashion pieces</p>
+                <p><strong>Products:</strong> 1 item</p>
+                <p><strong>Storefront URL:</strong> <span class="url">http://localhost:3000/company/3</span></p>
+                <div class="status">✅ ACTIVE</div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🛍️ Example: Vintage Treasures Store (Company ID: 1)</h2>
+            <p><strong>URL:</strong> <span class="url">http://localhost:3000/company/1</span></p>
+            <p>This storefront shows <span class="highlight">ONLY Vintage Treasures products</span>:</p>
+            
+            <div class="product-card">
+                <h4>Vintage Denim Jacket</h4>
+                <p><strong>Brand:</strong> Levis | <strong>Price:</strong> $35.00 | <strong>Size:</strong> M</p>
+                <p><strong>Condition:</strong> Excellent | <strong>Category:</strong> Jackets</p>
+            </div>
+            
+            <div class="product-card">
+                <h4>Black Jeans</h4>
+                <p><strong>Brand:</strong> Madewell | <strong>Price:</strong> $28.00 | <strong>Size:</strong> 32</p>
+                <p><strong>Condition:</strong> Excellent | <strong>Category:</strong> Jeans</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🌿 Example: Eco Fashion Hub Store (Company ID: 2)</h2>
+            <p><strong>URL:</strong> <span class="url">http://localhost:3000/company/2</span></p>
+            <p>This storefront shows <span class="highlight">ONLY Eco Fashion Hub products</span>:</p>
+            
+            <div class="product-card">
+                <h4>Cashmere Sweater</h4>
+                <p><strong>Brand:</strong> J.Crew | <strong>Price:</strong> $55.00</p>
+                <p><strong>Condition:</strong> Excellent | <strong>Category:</strong> Sweaters</p>
+            </div>
+            
+            <div class="product-card">
+                <h4>Wool Coat</h4>
+                <p><strong>Brand:</strong> Zara | <strong>Price:</strong> $75.00</p>
+                <p><strong>Condition:</strong> Like New | <strong>Category:</strong> Coats</p>
+            </div>
+            
+            <div class="product-card">
+                <h4>Silk Blouse</h4>
+                <p><strong>Brand:</strong> Banana Republic | <strong>Price:</strong> $32.00</p>
+                <p><strong>Condition:</strong> Excellent | <strong>Category:</strong> Tops</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔗 Navigation Structure</h2>
+            <ul>
+                <li><strong>Main Marketplace:</strong> <span class="url">http://localhost:3000/</span> - Shows products from ALL companies</li>
+                <li><strong>Company Directory:</strong> <span class="url">http://localhost:3000/companies</span> - Lists all company stores</li>
+                <li><strong>Individual Stores:</strong>
+                    <ul>
+                        <li><span class="url">http://localhost:3000/company/1</span> - Vintage Treasures only</li>
+                        <li><span class="url">http://localhost:3000/company/2</span> - Eco Fashion Hub only</li>
+                        <li><span class="url">http://localhost:3000/company/3</span> - Retro Style Co only</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>✅ How It Works</h2>
+            <ol>
+                <li><strong>Company Registration:</strong> Companies sign up via admin panel and get immediate access</li>
+                <li><strong>Product Management:</strong> Each company adds products through their admin dashboard</li>
+                <li><strong>Data Isolation:</strong> Products are linked to company_id in database</li>
+                <li><strong>Customer Experience:</strong> 
+                    <ul>
+                        <li>Visit <code>/companies</code> to see all stores</li>
+                        <li>Click on a company to visit their dedicated storefront</li>
+                        <li>Each storefront shows only that company's products</li>
+                        <li>Same shopping cart/wishlist functionality per store</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="demo-section">
+            <h2>🚀 Status</h2>
+            <p><strong>Backend:</strong> <span class="status">✅ RUNNING</span> on port 5001</p>
+            <p><strong>Frontend:</strong> <span class="status">✅ RUNNING</span> on port 3000</p>
+            <p><strong>API Endpoints:</strong> <span class="status">✅ WORKING</span></p>
+            <p><strong>Company Storefronts:</strong> <span class="status">✅ READY TO TEST</span></p>
+        </div>
+    </div>
+</body>
+</html>

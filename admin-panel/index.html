@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thrift Shop Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Dynamic Theme CSS Variables */
+        :root {
+            --color-primary: #0d9488;
+            --color-primary-hover: #0f766e;
+            --color-primary-light: #5eead4;
+            --color-primary-rgb: 13, 148, 136;
+            --color-secondary: #64748b;
+            --color-accent: #f59e0b;
+            --color-background: #ffffff;
+            --color-text: #1f2937;
+            --color-text-light: #6b7280;
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+        }
+
+        /* Force white background everywhere */
+        * {
+            transition: all 0.2s ease-in-out;
+        }
+
+        body, html, main, .flex {
+            background-color: #ffffff !important;
+        }
+
+        .bg-gray-100 {
+            background-color: #ffffff !important;
+        }
+
+        /* Ensure theme colors are preserved */
+        .bg-teal-600, .theme-bg-primary {
+            background-color: var(--color-primary) !important;
+        }
+
+        .bg-teal-700, .theme-bg-primary-hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+
+        .text-teal-600, .theme-text-primary {
+            color: var(--color-primary) !important;
+        }
+
+        .border-teal-500, .theme-border-primary {
+            border-color: var(--color-primary) !important;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Enhanced body styling */
+        body {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+
+        html {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            overflow-x: hidden;
+        }
+
+        /* Modern card styling */
+        .modern-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .modern-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Enhanced navigation */
+        .nav-link {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
+        }
+
+        .nav-link.active span {
+            color: white !important;
+        }
+
+        .nav-link:hover {
+            background: rgba(var(--color-primary-rgb), 0.1) !important;
+            color: var(--color-primary) !important;
+        }
+
+        /* Enhanced buttons */
+        .btn-modern {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 148, 136, 0.4);
+            background: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary)) !important;
+        }
+
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+
+        /* Enhanced stats cards */
+        .stats-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stats-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Enhanced table styling */
+        .modern-table {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .modern-table thead {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+            color: white !important;
+        }
+
+        .modern-table thead th {
+            color: white !important;
+        }
+
+        .modern-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .modern-table tbody tr:hover {
+            background: rgba(13, 148, 136, 0.05);
+            transform: scale(1.01);
+        }
+
+        /* Enhanced modals */
+        .modern-modal {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modern-modal-content {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Enhanced form inputs */
+        .modern-input {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px 18px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Enhanced sidebar */
+        .modern-sidebar {
+            background: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            display: block; /* Ensure sidebar is visible by default */
+        }
+
+        /* Enhanced header */
+        .modern-header {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            height: 80px;
+        }
+
+        /* Main content area */
+        .main-content {
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        /* Loading animations */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(13, 148, 136, 0.1);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced badges */
+        .modern-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .modern-badge.bg-gradient-to-r {
+            color: white !important;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn-view {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+            color: white !important;
+        }
+
+        .action-btn-edit {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: white !important;
+        }
+
+        .action-btn-delete {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: white !important;
+        }
+
+        /* Floating action button */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+            color: white !important;
+            border: none;
+            box-shadow: 0 8px 25px rgba(13, 148, 136, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(13, 148, 136, 0.4);
+        }
+
+        /* Enhanced scrollbar - theme-aware */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            opacity: 0.3;
+            border-radius: 3px;
+            transition: opacity 0.2s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            opacity: 0.5;
+        }
+
+        /* Hide scrollbar for main content when not needed */
+        .main-content::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* Responsive improvements */
+        @media (max-width:1020px) {
+            .modern-sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 1000;
+                height: 100vh;
+                width: 280px;
+                transition: transform 0.3s ease;
+            }
+
+            .modern-sidebar.open {
+                transform: translateX(0);
+            }
+
+            /* When logged in, show sidebar on mobile */
+            .modern-sidebar.open {
+                transform: translateX(0) !important;
+                display: block !important;
+            }
+
+            /* Ensure mobile menu button is visible when logged in */
+            #mobile-menu-btn {
+                display: block !important;
+            }
+
+            .stats-card {
+                margin-bottom: 16px;
+            }
+
+            .main-content {
+                padding: 1rem;
+                height: calc(100vh - 80px);
+            }
+
+            /* Adjust main content when sidebar is open */
+            .main-content {
+                transition: margin-left 0.3s ease;
+            }
+
+            /* Mobile sidebar backdrop */
+            .sidebar-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+
+            .sidebar-backdrop.show {
+                display: block;
+            }
+        }
+
+        /* Ensure sidebar is visible on desktop when logged in */
+        @media (min-width: 1020px) {
+            .modern-sidebar {
+                display: block !important;
+                position: relative;
+                transform: translateX(0);
+            }
+        }
+
+        /* Prevent horizontal overflow */
+        .overflow-x-auto {
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        /* Compact spacing for better fit */
+        .compact-spacing {
+            margin-bottom: 1.5rem;
+        }
+
+        .compact-spacing:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Dark mode support - DISABLED */
+        /* @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                color: #e2e8f0;
+            }
+
+            .modern-card {
+                background: rgba(30, 41, 59, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .modern-input {
+                background: rgba(30, 41, 59, 0.8);
+                color: #e2e8f0;
+                border-color: rgba(13, 148, 136, 0.2);
+            }
+        } */
+
+        /* Theme-aware utility classes */
+        .theme-primary {
+            color: var(--color-primary) !important;
+        }
+        .theme-bg-primary {
+            background-color: var(--color-primary) !important;
+        }
+        .theme-bg-primary-hover:hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .theme-bg-primary-light {
+            background-color: var(--color-primary-light) !important;
+        }
+        .theme-border-primary {
+            border-color: var(--color-primary) !important;
+        }
+        .theme-text-primary {
+            color: var(--color-primary) !important;
+        }
+        .theme-btn-primary {
+            background-color: var(--color-primary) !important;
+            color: white !important;
+            transition: background-color 0.2s ease;
+        }
+        .theme-btn-primary:hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .theme-ring-primary {
+            --tw-ring-color: var(--color-primary) !important;
+        }
+        
+        /* Override Tailwind teal classes with theme colors */
+        .bg-teal-600 {
+            background-color: var(--color-primary) !important;
+        }
+        .bg-teal-700 {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .bg-teal-50 {
+            background-color: var(--color-primary-light) !important;
+        }
+        .text-teal-600 {
+            color: var(--color-primary) !important;
+        }
+        .text-teal-700 {
+            color: var(--color-primary-hover) !important;
+        }
+        .hover\\:bg-teal-600:hover {
+            background-color: var(--color-primary) !important;
+        }
+        .hover\\:bg-teal-700:hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .hover\\:text-teal-600:hover {
+            color: var(--color-primary) !important;
+        }
+        .hover\\:text-teal-700:hover {
+            color: var(--color-primary-hover) !important;
+        }
+        .border-teal-500 {
+            border-color: var(--color-primary) !important;
+        }
+        .focus\\:border-teal-500:focus {
+            border-color: var(--color-primary) !important;
+        }
+        .focus\\:ring-teal-500:focus {
+            --tw-ring-color: var(--color-primary) !important;
+        }
+    </style>
+</head>
+<body class="bg-white" style="background: #ffffff !important; background-color: #ffffff !important;">
+    <!-- Navigation -->
+    <nav class="modern-header bg-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-btn" class="custom-mobile-only p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-tshirt text-white"></i>
+                        </div>
+                        <span class="bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
+                            Thrift Shop Admin
+                        </span>
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="custom-desktop-only flex items-center space-x-3 bg-gray-50 rounded-full px-4 py-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <span id="adminName" class="text-gray-700 font-medium"></span>
+                    </div>
+                    <button onclick="logout()" class="btn-modern bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full hover:from-red-600 hover:to-red-700 transition-all duration-200">
+                        <i class="fas fa-sign-out-alt mr-2"></i> 
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="flex">
+        <!-- Mobile backdrop -->
+        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+        
+        <aside id="sidebar" class="modern-sidebar w-64 bg-white shadow-lg min-h-screen">
+            <nav class="mt-8 px-4">
+                <div class="space-y-2">
+                    <a href="#dashboard" onclick="showSection('dashboard')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-bar text-blue-600"></i>
+                        </div>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+                    <a href="#users" onclick="showSection('users')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-users text-purple-600"></i>
+                        </div>
+                        <span class="font-medium">User Management</span>
+                    </a>
+                    <a href="#add-product" onclick="showSection('add-product')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-plus-circle text-green-600"></i>
+                        </div>
+                        <span class="font-medium">Add Products</span>
+                    </a>
+                    <a href="#products" onclick="showSection('products')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-box text-orange-600"></i>
+                        </div>
+                        <span class="font-medium">Manage Products</span>
+                    </a>
+                    <a href="#orders" onclick="showSection('orders')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-shopping-cart text-indigo-600"></i>
+                        </div>
+                        <span class="font-medium">Orders</span>
+                    </a>
+                    <a href="#transactions" onclick="showSection('transactions')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-credit-card text-yellow-600"></i>
+                        </div>
+                        <span class="font-medium">Transactions</span>
+                    </a>
+                    <a href="#theme" onclick="showSection('theme')" class="nav-link flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)] rounded-xl transition-all duration-200">
+                        <div class="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-palette text-pink-600"></i>
+                        </div>
+                        <span class="font-medium">Theme Settings</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content flex-1" style="background: #ffffff !important; background-color: #ffffff !important;">
+            <!-- Login Section -->
+            <div id="login-section" class="max-w-md mx-auto mt-20">
+                <div class="modern-card p-8">
+                    <div class="text-center mb-8">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-shield-alt text-white text-2xl"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">Admin Portal</h2>
+                        <p class="text-gray-600 mt-2">Secure access to your dashboard</p>
+                    </div>
+                    <form onsubmit="login(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-3">Email Address</label>
+                            <input type="email" id="email" required class="modern-input w-full" placeholder="admin@thriftshop.com">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-3">Password</label>
+                            <input type="password" id="password" required class="modern-input w-full" placeholder="Enter your password">
+                        </div>
+                        <button type="submit" class="btn-modern w-full py-4 text-lg font-semibold">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Sign In
+                        </button>
+                    </form>
+                    <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            <span class="font-semibold text-blue-700">Demo Credentials</span>
+                        </div>
+                        <div class="text-sm text-blue-600 space-y-1">
+                            <p><strong>Email:</strong> admin@thriftshop.com</p>
+                            <p><strong>Password:</strong> admin123</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="hidden">
+                <div class="compact-spacing">
+                    <h2 class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent mb-2">Dashboard Overview</h2>
+                    <p class="text-gray-600">Welcome back! Here's what's happening with your store.</p>
+                </div>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 compact-spacing">
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 mb-1">Total Users</p>
+                                <p id="total-users" class="text-3xl font-bold text-gray-900">0</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    +12% from last month
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                                <i class="fas fa-users text-white text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 mb-1">Total Products</p>
+                                <p id="total-products" class="text-3xl font-bold text-gray-900">0</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    +8% from last month
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
+                                <i class="fas fa-box text-white text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
+                                <p id="total-orders" class="text-3xl font-bold text-gray-900">0</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    +23% from last month
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 flex items-center justify-center">
+                                <i class="fas fa-shopping-cart text-white text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
+                                <p id="total-revenue" class="text-3xl font-bold text-gray-900">$0</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    +18% from last month
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-white text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 compact-spacing">
+                    <div class="modern-card p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-900">Sales Overview</h3>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-teal-500"></div>
+                                <span class="text-sm text-gray-600">Revenue</span>
+                            </div>
+                        </div>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <div class="modern-card p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-900">Top Categories</h3>
+                            <button class="text-sm text-teal-600 hover:text-teal-700 font-medium">View All</button>
+                        </div>
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users & Purchases Section -->
+            <div id="users-section" class="hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center compact-spacing space-y-4 sm:space-y-0">
+                    <div>
+                        <h2 class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent mb-2">User Management</h2>
+                        <p class="text-gray-600">Manage users, view profiles, and track user activity</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <a href="create-user.html" class="btn-modern bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 flex items-center">
+                            <i class="fas fa-plus mr-2"></i>Create User
+                        </a>
+                        <button onclick="refreshUsers()" class="btn-modern bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-xl hover:from-teal-600 hover:to-teal-700 flex items-center">
+                            <i class="fas fa-refresh mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="modern-table overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Orders</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Total Spent</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Joined</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Add Product Section -->
+            <div id="add-product-section" class="hidden">
+                <h2 class="text-3xl font-bold mb-8">Add New Article</h2>
+                
+                <div class="bg-white rounded-lg shadow p-8">
+                    <form onsubmit="addProduct(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                                <input type="text" id="product-name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Brand *</label>
+                                <input type="text" id="product-brand" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Price *</label>
+                                <input type="number" step="0.01" id="product-price" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Original Price</label>
+                                <input type="number" step="0.01" id="product-original-price" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                                <select id="product-category" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                                    <option value="">Select Category</option>
+                                    <option value="Jackets">Jackets</option>
+                                    <option value="Dresses">Dresses</option>
+                                    <option value="Shoes">Shoes</option>
+                                    <option value="Accessories">Accessories</option>
+                                    <option value="Jeans">Jeans</option>
+                                    <option value="Sweaters">Sweaters</option>
+                                    <option value="Tops">Tops</option>
+                                    <option value="Skirts">Skirts</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Size *</label>
+                                <select id="product-size" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                                    <option value="">Select Size</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option>
+                                    <option value="One Size">One Size</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Condition *</label>
+                                <select id="product-condition" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                                    <option value="">Select Condition</option>
+                                    <option value="Like New">Like New</option>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                                <input type="text" id="product-color" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                            <textarea id="product-description" required rows="4" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Image URLs (one per line)</label>
+                            <textarea id="product-images" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                                <input type="text" id="product-material" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Seller Name</label>
+                                <input type="text" id="product-seller" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-teal-500">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Clear Form
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                                <i class="fas fa-plus mr-2"></i>Add Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Products Management Section -->
+            <div id="products-section" class="hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold">Manage Products</h2>
+                    <button onclick="refreshProducts()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">
+                        <i class="fas fa-refresh mr-2"></i>Refresh
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table-body" class="divide-y divide-gray-200">
+                            <!-- Products will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div id="orders-section" class="hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold">Orders Management</h2>
+                    <button onclick="refreshOrders()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">
+                        <i class="fas fa-refresh mr-2"></i>Refresh
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body" class="divide-y divide-gray-200">
+                            <!-- Orders will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions-section" class="hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold">Transactions Management</h2>
+                    <div class="flex space-x-4">
+                        <select id="transaction-type-filter" class="border border-gray-300 rounded px-3 py-2">
+                            <option value="">All Types</option>
+                            <option value="purchase">Purchase</option>
+                            <option value="refund">Refund</option>
+                            <option value="payment">Payment</option>
+                            <option value="commission">Commission</option>
+                        </select>
+                        <select id="transaction-status-filter" class="border border-gray-300 rounded px-3 py-2">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                        <button onclick="refreshTransactions()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">
+                            <i class="fas fa-refresh mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Analytics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full flex items-center justify-center" style="background-color: var(--color-success); opacity: 0.1;">
+                                <i class="fas fa-dollar-sign text-xl" style="color: var(--color-success);"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Total Revenue</p>
+                                <p id="total-revenue" class="text-2xl font-bold">$0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full flex items-center justify-center" style="background-color: var(--color-info); opacity: 0.1;">
+                                <i class="fas fa-credit-card text-xl" style="color: var(--color-info);"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Total Transactions</p>
+                                <p id="total-transactions" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full flex items-center justify-center" style="background-color: var(--color-warning); opacity: 0.1;">
+                                <i class="fas fa-clock text-xl" style="color: var(--color-warning);"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Pending</p>
+                                <p id="pending-transactions" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-red-100 text-red-600">
+                                <i class="fas fa-exclamation-triangle text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Failed</p>
+                                <p id="failed-transactions" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body" class="divide-y divide-gray-200">
+                            <!-- Transactions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Transaction Details Modal -->
+                <div id="transaction-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+                    <div class="flex items-center justify-center min-h-screen">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium">Transaction Details</h3>
+                                <button onclick="closeTransactionModal()" class="float-right text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="transaction-details" class="px-6 py-4">
+                                <!-- Transaction details will be loaded here -->
+                            </div>
+                            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                                <button onclick="closeTransactionModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                                    Close
+                                </button>
+                                <select id="transaction-status-update" class="border border-gray-300 rounded px-3 py-2">
+                                    <option value="">Update Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="refunded">Refunded</option>
+                                </select>
+                                <button onclick="updateTransactionStatus()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">
+                                    Update
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme Settings Section -->
+            <div id="theme-section" class="hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold">Theme Settings</h2>
+                    <button onclick="resetTheme()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                        <i class="fas fa-undo mr-2"></i>Reset to Default
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Preset Themes -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Quick Preset Themes</h3>
+                        
+                        <div class="space-y-3">
+                            <!-- Teal Theme (Default) -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('teal')" data-theme="teal">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Teal (Current)</h4>
+                                    <div class="w-8 h-8 rounded-full bg-teal-600"></div>
+                                </div>
+                            </div>
+
+                            <!-- Blue Theme -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('blue')" data-theme="blue">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Ocean Blue</h4>
+                                    <div class="w-8 h-8 rounded-full bg-blue-600"></div>
+                                </div>
+                            </div>
+
+                            <!-- Purple Theme -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('purple')" data-theme="purple">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Royal Purple</h4>
+                                    <div class="w-8 h-8 rounded-full bg-purple-600"></div>
+                                </div>
+                            </div>
+
+                            <!-- Green Theme -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('green')" data-theme="green">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Forest Green</h4>
+                                    <div class="w-8 h-8 rounded-full bg-green-600"></div>
+                                </div>
+                            </div>
+
+                            <!-- Orange Theme -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('orange')" data-theme="orange">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Sunset Orange</h4>
+                                    <div class="w-8 h-8 rounded-full bg-orange-600"></div>
+                                </div>
+                            </div>
+
+                            <!-- Pink Theme -->
+                            <div class="theme-option p-3 border-2 rounded-lg cursor-pointer hover:border-gray-400" onclick="selectTheme('pink')" data-theme="pink">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">Rose Pink</h4>
+                                    <div class="w-8 h-8 rounded-full bg-pink-600"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <button onclick="applyTheme()" class="w-full bg-teal-600 text-white py-3 px-4 rounded-lg hover:bg-teal-700 font-medium">
+                                <i class="fas fa-paint-brush mr-2"></i>Apply Selected Theme
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Color Palette -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Create Custom Theme</h3>
+                        
+                        <!-- Primary Color Selection -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Choose Primary Color</label>
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div id="selected-primary-color" class="w-12 h-12 rounded-full border-2 border-gray-300" style="background-color: #0d9488;"></div>
+                                <div>
+                                    <p class="font-medium" id="primary-color-name">Teal</p>
+                                    <p class="text-sm text-gray-500">Primary Color</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Color Palette Grid -->
+                            <div class="grid grid-cols-6 gap-2">
+                                <div class="w-10 h-10 rounded-full bg-teal-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#0d9488', 'Teal')" title="Teal"></div>
+                                <div class="w-10 h-10 rounded-full bg-blue-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#2563eb', 'Blue')" title="Blue"></div>
+                                <div class="w-10 h-10 rounded-full bg-purple-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#7c3aed', 'Purple')" title="Purple"></div>
+                                <div class="w-10 h-10 rounded-full bg-green-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#16a34a', 'Green')" title="Green"></div>
+                                <div class="w-10 h-10 rounded-full bg-orange-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#ea580c', 'Orange')" title="Orange"></div>
+                                <div class="w-10 h-10 rounded-full bg-pink-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#db2777', 'Pink')" title="Pink"></div>
+                                <div class="w-10 h-10 rounded-full bg-red-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#dc2626', 'Red')" title="Red"></div>
+                                <div class="w-10 h-10 rounded-full bg-indigo-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#4f46e5', 'Indigo')" title="Indigo"></div>
+                                <div class="w-10 h-10 rounded-full bg-emerald-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#059669', 'Emerald')" title="Emerald"></div>
+                                <div class="w-10 h-10 rounded-full bg-rose-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#e11d48', 'Rose')" title="Rose"></div>
+                                <div class="w-10 h-10 rounded-full bg-slate-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#475569', 'Slate')" title="Slate"></div>
+                                <div class="w-10 h-10 rounded-full bg-amber-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#d97706', 'Amber')" title="Amber"></div>
+                                <div class="w-10 h-10 rounded-full bg-cyan-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#0891b2', 'Cyan')" title="Cyan"></div>
+                                <div class="w-10 h-10 rounded-full bg-lime-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#65a30d', 'Lime')" title="Lime"></div>
+                                <div class="w-10 h-10 rounded-full bg-violet-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#8b5cf6', 'Violet')" title="Violet"></div>
+                                <div class="w-10 h-10 rounded-full bg-fuchsia-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#c026d3', 'Fuchsia')" title="Fuchsia"></div>
+                                <div class="w-10 h-10 rounded-full bg-sky-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#0284c7', 'Sky')" title="Sky"></div>
+                                <div class="w-10 h-10 rounded-full bg-yellow-600 cursor-pointer hover:scale-110 transition-transform border-2 border-transparent hover:border-gray-400" onclick="selectColor('#eab308', 'Yellow')" title="Yellow"></div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Theme Preview -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Preview</label>
+                            <div id="custom-theme-preview">
+                                <div class="flex items-center space-x-4 p-4 rounded-lg border" style="border-color: #0d9488">
+                                    <div class="w-12 h-12 rounded-full" style="background-color: #0d9488"></div>
+                                    <div>
+                                        <h4 class="font-medium" style="color: #0d9488">Custom Theme</h4>
+                                        <p class="text-sm text-gray-600">Primary: #0d9488</p>
+                                    </div>
+                                    <button class="px-4 py-2 rounded text-white text-sm" style="background-color: #0d9488">
+                                        Preview Button
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Apply Custom Theme -->
+                        <div class="space-y-3">
+                            <button onclick="applyCustomTheme()" class="w-full btn-modern text-white py-3 px-4 rounded-lg font-medium">
+                                <i class="fas fa-magic mr-2"></i>Apply Custom Theme
+                            </button>
+                            <button onclick="updateCustomThemePreview()" class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 font-medium text-sm">
+                                <i class="fas fa-eye mr-2"></i>Preview Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                            <button onclick="previewWebsite()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium">
+                                <i class="fas fa-external-link-alt mr-2"></i>Preview Website Theme
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Theme Preview</h3>
+                        
+                        <div id="theme-preview" class="space-y-4">
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium mb-2">Website Preview</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div id="preview-primary" class="w-8 h-8 rounded bg-teal-600"></div>
+                                        <span class="text-sm">Primary Color (Buttons, Links)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <div id="preview-primary-hover" class="w-8 h-8 rounded bg-teal-700"></div>
+                                        <span class="text-sm">Primary Hover Color</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <div id="preview-primary-light" class="w-8 h-8 rounded bg-teal-300"></div>
+                                        <span class="text-sm">Accent Color</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium mb-2">Sample Elements</h4>
+                                <div class="space-y-2">
+                                    <button id="preview-button" class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm">
+                                        Sample Button
+                                    </button>
+                                    <div class="flex space-x-2">
+                                        <span id="preview-link" class="text-teal-600 hover:text-teal-700 text-sm cursor-pointer">Sample Link</span>
+                                        <span class="text-gray-500 text-sm">|</span>
+                                        <span class="text-gray-700 text-sm">Regular Text</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Website Preview Button -->
+                            <div class="p-4 bg-blue-50 rounded-lg">
+                                <h4 class="font-medium mb-2">Website Preview</h4>
+                                <p class="text-sm text-gray-600 mb-3">See how the website will look with the current theme</p>
+                                <button onclick="previewWebsite()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm font-medium">
+                                    <i class="fas fa-external-link-alt mr-2"></i>Preview Website Theme
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Action Button -->
+    <a href="create-user.html" id="fab" class="fab hidden" title="Quick Add User">
+        <i class="fas fa-plus text-xl"></i>
+    </a>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Show FAB only on users section
+        function updateFAB() {
+            const fab = document.getElementById('fab');
+            const usersSection = document.getElementById('users-section');
+            
+            if (fab && usersSection) {
+                if (!usersSection.classList.contains('hidden')) {
+                    fab.classList.remove('hidden');
+                } else {
+                    fab.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Wait for admin.js to load, then override showSection to update FAB
+        document.addEventListener('DOMContentLoaded', function() {
+            const originalShowSection = window.showSection;
+            if (originalShowSection) {
+                window.showSection = function(sectionName) {
+                    originalShowSection(sectionName);
+                    updateFAB();
+                };
+            }
+        });
+    </script>
+</body>
+</html>

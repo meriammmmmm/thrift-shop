@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Admin Panel Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Direct Admin Panel Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Test Admin Panel Access</h3>
+        <button onclick="testAdminPanel()">Test Admin Panel</button>
+        <div id="admin-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Test Backend API</h3>
+        <button onclick="testBackend()">Test Backend</button>
+        <div id="backend-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test Login & Testimonials</h3>
+        <button onclick="testFullFlow()">Test Full Flow</button>
+        <div id="full-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Direct Admin Panel Link</h3>
+        <a href="http://localhost:3005" target="_blank" style="display: inline-block; padding: 10px 20px; background: #0d9488; color: white; text-decoration: none; border-radius: 5px;">
+            Open Admin Panel in New Tab
+        </a>
+        <p><strong>Login with:</strong><br>
+        Email: admin@thriftshop.com<br>
+        Password: admin123</p>
+    </div>
+
+    <script>
+        async function testAdminPanel() {
+            const result = document.getElementById('admin-test-result');
+            result.innerHTML = '<div class="info">Testing admin panel...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3005');
+                if (response.ok) {
+                    result.innerHTML = '<div class="success">✅ Admin panel is accessible at http://localhost:3005</div>';
+                } else {
+                    result.innerHTML = '<div class="error">❌ Admin panel returned status: ' + response.status + '</div>';
+                }
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Cannot reach admin panel: ' + error.message + '</div>';
+            }
+        }
+
+        async function testBackend() {
+            const result = document.getElementById('backend-test-result');
+            result.innerHTML = '<div class="info">Testing backend...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = '<div class="success">✅ Backend is running: ' + data.message + '</div>';
+                } else {
+                    result.innerHTML = '<div class="error">❌ Backend returned status: ' + response.status + '</div>';
+                }
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Cannot reach backend: ' + error.message + '</div>';
+            }
+        }
+
+        async function testFullFlow() {
+            const result = document.getElementById('full-test-result');
+            result.innerHTML = '<div class="info">Testing full flow...</div>';
+            
+            try {
+                // Step 1: Login
+                const loginResponse = await fetch('http://localhost:5001/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@thriftshop.com',
+                        password: 'admin123'
+                    })
+                });
+
+                if (!loginResponse.ok) {
+                    throw new Error('Login failed');
+                }
+
+                const loginData = await loginResponse.json();
+                const token = loginData.token;
+
+                // Step 2: Get testimonials
+                const testimonialsResponse = await fetch('http://localhost:5001/api/testimonials', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!testimonialsResponse.ok) {
+                    throw new Error('Failed to get testimonials');
+                }
+
+                const testimonialsData = await testimonialsResponse.json();
+                
+                result.innerHTML = `
+                    <div class="success">✅ Full flow working!</div>
+                    <div>• Login successful</div>
+                    <div>• Found ${testimonialsData.testimonials.length} testimonials</div>
+                    <div>• Token: ${token.substring(0, 20)}...</div>
+                `;
+
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Full flow failed: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

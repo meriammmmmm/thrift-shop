@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Toggle</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .testimonial { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .toggle { margin: 10px 0; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .active { background-color: #10b981; color: white; }
+        .inactive { background-color: #ef4444; color: white; }
+        .status { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Admin Toggle Test</h1>
+    <div id="login-section">
+        <h3>1. Login as Admin</h3>
+        <input type="email" id="email" placeholder="admin@thriftshop.com" value="admin@thriftshop.com">
+        <input type="password" id="password" placeholder="admin123" value="admin123">
+        <button onclick="login()">Login</button>
+        <div id="login-status"></div>
+    </div>
+
+    <div id="testimonials-section" style="display: none;">
+        <h3>2. Testimonials Management</h3>
+        <button onclick="loadTestimonials()">Load Testimonials</button>
+        <div id="testimonials-list"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    document.getElementById('login-status').innerHTML = `
+                        <div style="color: green;">✅ Logged in as: ${data.user.name} (${data.user.role})</div>
+                        <div>Token: ${authToken.substring(0, 20)}...</div>
+                    `;
+                    document.getElementById('testimonials-section').style.display = 'block';
+                } else {
+                    document.getElementById('login-status').innerHTML = `<div style="color: red;">❌ Login failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('login-status').innerHTML = `<div style="color: red;">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadTestimonials() {
+            try {
+                const response = await fetch('http://localhost:5001/api/testimonials?companyId=1', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.testimonials) {
+                    let html = '<h4>Testimonials:</h4>';
+                    data.testimonials.forEach(testimonial => {
+                        const isActive = testimonial.is_active === 1;
+                        html += `
+                            <div class="testimonial">
+                                <h5>${testimonial.title}</h5>
+                                <p>${testimonial.description}</p>
+                                <div class="toggle">
+                                    <span class="status ${isActive ? 'active' : 'inactive'}">
+                                        Status: ${isActive ? 'Active' : 'Inactive'} (DB: ${testimonial.is_active})
+                                    </span>
+                                    <button onclick="toggleTestimonial(${testimonial.id}, ${isActive})">
+                                        ${isActive ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('testimonials-list').innerHTML = html;
+                } else {
+                    document.getElementById('testimonials-list').innerHTML = `<div style="color: red;">❌ Failed to load testimonials</div>`;
+                }
+            } catch (error) {
+                document.getElementById('testimonials-list').innerHTML = `<div style="color: red;">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function toggleTestimonial(id, currentStatus) {
+            try {
+                console.log(`Toggling testimonial ${id}, current status: ${currentStatus}`);
+                
+                const response = await fetch(`http://localhost:5001/api/testimonials/${id}/toggle`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Toggle response:', data);
+                    alert(`✅ Toggle successful! New status: ${data.testimonial.is_active === 1 ? 'Active' : 'Inactive'}`);
+                    loadTestimonials(); // Reload to show updated status
+                } else {
+                    alert(`❌ Toggle failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

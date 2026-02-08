@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Theme Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Dynamic Theme CSS Variables */
+        :root {
+            --color-primary: #0d9488;
+            --color-primary-hover: #0f766e;
+            --color-primary-light: #5eead4;
+        }
+
+        /* Theme-aware utility classes */
+        .theme-bg-primary {
+            background-color: var(--color-primary) !important;
+        }
+        .theme-bg-primary-hover:hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .theme-text-primary {
+            color: var(--color-primary) !important;
+        }
+        
+        /* Override Tailwind teal classes with theme colors */
+        .bg-teal-600 {
+            background-color: var(--color-primary) !important;
+        }
+        .bg-teal-700 {
+            background-color: var(--color-primary-hover) !important;
+        }
+        .text-teal-600 {
+            color: var(--color-primary) !important;
+        }
+        .hover\\:bg-teal-700:hover {
+            background-color: var(--color-primary-hover) !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Admin Panel Theme Test</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Current Admin Theme Status</h2>
+            <div id="themeStatus" class="p-4 rounded bg-gray-100">
+                Loading admin theme...
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Admin Panel UI Elements</h2>
+            <div class="space-y-4">
+                <!-- Navigation Link (like admin sidebar) -->
+                <div class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Dashboard (Should change color)
+                </div>
+                
+                <!-- Button -->
+                <button class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded">
+                    Admin Button (Should change color)
+                </button>
+                
+                <!-- Text -->
+                <p class="text-teal-600 font-semibold">
+                    Primary colored text (Should change color)
+                </p>
+                
+                <!-- Input with focus -->
+                <input type="text" placeholder="Focus me to see border color" 
+                       class="w-full px-3 py-2 border rounded focus:border-teal-500 focus:outline-none">
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Test Theme Changes</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <button onclick="setTheme('teal')" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">Teal</button>
+                <button onclick="setTheme('blue')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Blue</button>
+                <button onclick="setTheme('purple')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Purple</button>
+                <button onclick="setTheme('green')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Green</button>
+                <button onclick="setTheme('orange')" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Orange</button>
+                <button onclick="setTheme('pink')" class="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700">Pink</button>
+            </div>
+            <p class="text-sm text-gray-600 mt-4">
+                Click any color above to change the admin panel theme. The elements above should change color immediately.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5001/api';
+        let adminToken = null;
+
+        const themeColors = {
+            teal: {
+                primary: '#0d9488',
+                primaryHover: '#0f766e',
+                primaryLight: '#5eead4'
+            },
+            blue: {
+                primary: '#2563eb',
+                primaryHover: '#1d4ed8',
+                primaryLight: '#93c5fd'
+            },
+            purple: {
+                primary: '#7c3aed',
+                primaryHover: '#6d28d9',
+                primaryLight: '#c4b5fd'
+            },
+            green: {
+                primary: '#16a34a',
+                primaryHover: '#15803d',
+                primaryLight: '#86efac'
+            },
+            orange: {
+                primary: '#ea580c',
+                primaryHover: '#c2410c',
+                primaryLight: '#fed7aa'
+            },
+            pink: {
+                primary: '#db2777',
+                primaryHover: '#be185d',
+                primaryLight: '#f9a8d4'
+            }
+        };
+
+        async function loginAdmin() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@thriftshop.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    adminToken = data.token;
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Login failed:', error);
+                return false;
+            }
+        }
+
+        async function loadCurrentTheme() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/settings/theme`);
+                const data = await response.json();
+                
+                if (data.theme) {
+                    applyThemeToAdminPanel(data.theme);
+                    updateStatus(`Admin theme loaded: ${data.theme.primary}`, false);
+                } else {
+                    updateStatus('No theme found, using default', true);
+                }
+            } catch (error) {
+                console.error('Failed to load theme:', error);
+                updateStatus('Failed to load admin theme: ' + error.message, true);
+            }
+        }
+
+        function applyThemeToAdminPanel(theme) {
+            const root = document.documentElement;
+            root.style.setProperty('--color-primary', theme.primary);
+            root.style.setProperty('--color-primary-hover', theme.primaryHover);
+            root.style.setProperty('--color-primary-light', theme.primaryLight);
+        }
+
+        async function setTheme(themeName) {
+            if (!adminToken) {
+                const loginSuccess = await loginAdmin();
+                if (!loginSuccess) {
+                    updateStatus('Failed to login as admin', true);
+                    return;
+                }
+            }
+
+            try {
+                const themeData = {
+                    ...themeColors[themeName],
+                    secondary: '#64748b',
+                    accent: '#f59e0b',
+                    background: '#ffffff',
+                    text: '#1f2937',
+                    textLight: '#6b7280',
+                    success: '#10b981',
+                    error: '#ef4444',
+                    warning: '#f59e0b',
+                    info: '#3b82f6'
+                };
+
+                const response = await fetch(`${API_BASE_URL}/settings/theme`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ value: themeData })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    applyThemeToAdminPanel(themeData);
+                    updateStatus(`Admin theme changed to ${themeName} (${themeData.primary})`, false);
+                } else {
+                    updateStatus('Failed to update admin theme: ' + data.error, true);
+                }
+            } catch (error) {
+                console.error('Failed to set theme:', error);
+                updateStatus('Failed to set admin theme: ' + error.message, true);
+            }
+        }
+
+        function updateStatus(message, isError) {
+            const status = document.getElementById('themeStatus');
+            status.textContent = message;
+            status.className = isError ? 'p-4 rounded bg-red-100 text-red-800' : 'p-4 rounded bg-green-100 text-green-800';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentTheme();
+        });
+    </script>
+</body>
+</html>

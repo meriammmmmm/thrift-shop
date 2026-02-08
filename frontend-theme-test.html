@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Theme Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CSS Custom Properties for Theme */
+        :root {
+            --color-primary: #0d9488;
+            --color-primary-hover: #0f766e;
+            --color-primary-light: #5eead4;
+            --color-secondary: #64748b;
+            --color-accent: #f59e0b;
+            --color-background: #ffffff;
+            --color-text: #1f2937;
+            --color-text-light: #6b7280;
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+        }
+
+        /* Theme utility classes */
+        .theme-primary {
+            color: var(--color-primary);
+        }
+        .theme-bg-primary {
+            background-color: var(--color-primary);
+        }
+        .theme-bg-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+        .theme-border-primary {
+            border-color: var(--color-primary);
+        }
+        .theme-btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        .theme-btn-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Frontend Theme System Test</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Current Theme Status</h2>
+            <div id="themeStatus" class="p-4 rounded bg-gray-100">
+                Loading theme...
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Theme Colors Preview</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="colorPreview">
+                <!-- Colors will be loaded here -->
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Sample UI Elements</h2>
+            <div class="space-y-4">
+                <!-- Buttons -->
+                <div>
+                    <h3 class="font-medium mb-2">Buttons</h3>
+                    <div class="space-x-4">
+                        <button id="primaryBtn" class="theme-btn-primary px-4 py-2 rounded">Primary Button</button>
+                        <button id="outlineBtn" class="border-2 theme-border-primary theme-primary px-4 py-2 rounded hover:theme-bg-primary hover:text-white transition-all">Outline Button</button>
+                    </div>
+                </div>
+
+                <!-- Text Elements -->
+                <div>
+                    <h3 class="font-medium mb-2">Text Elements</h3>
+                    <p class="theme-primary font-semibold">Primary colored text</p>
+                    <a href="#" class="theme-primary hover:underline">Primary colored link</a>
+                </div>
+
+                <!-- Cards -->
+                <div>
+                    <h3 class="font-medium mb-2">Sample Product Card</h3>
+                    <div class="border rounded-lg p-4 max-w-sm">
+                        <div class="w-full h-32 bg-gray-200 rounded mb-4"></div>
+                        <h4 class="font-semibold mb-1">Sample Product</h4>
+                        <p class="theme-primary font-medium text-sm mb-2">Brand Name</p>
+                        <p class="text-gray-600 text-sm mb-3">Excellent condition</p>
+                        <button class="theme-btn-primary w-full py-2 rounded text-sm">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Theme Controls</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <button onclick="setTheme('teal')" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">Teal</button>
+                <button onclick="setTheme('blue')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Blue</button>
+                <button onclick="setTheme('purple')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Purple</button>
+                <button onclick="setTheme('green')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Green</button>
+                <button onclick="setTheme('orange')" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Orange</button>
+                <button onclick="setTheme('pink')" class="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700">Pink</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5001/api';
+        let adminToken = null;
+        let currentTheme = null;
+
+        const themeColors = {
+            teal: {
+                primary: '#0d9488',
+                primaryHover: '#0f766e',
+                primaryLight: '#5eead4',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            blue: {
+                primary: '#2563eb',
+                primaryHover: '#1d4ed8',
+                primaryLight: '#93c5fd',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            purple: {
+                primary: '#7c3aed',
+                primaryHover: '#6d28d9',
+                primaryLight: '#c4b5fd',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            green: {
+                primary: '#16a34a',
+                primaryHover: '#15803d',
+                primaryLight: '#86efac',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            orange: {
+                primary: '#ea580c',
+                primaryHover: '#c2410c',
+                primaryLight: '#fed7aa',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            pink: {
+                primary: '#db2777',
+                primaryHover: '#be185d',
+                primaryLight: '#f9a8d4',
+                secondary: '#64748b',
+                accent: '#f59e0b',
+                background: '#ffffff',
+                text: '#1f2937',
+                textLight: '#6b7280',
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            }
+        };
+
+        async function loginAdmin() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@thriftshop.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    adminToken = data.token;
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Login failed:', error);
+                return false;
+            }
+        }
+
+        async function loadCurrentTheme() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/settings/theme`);
+                const data = await response.json();
+                
+                if (data.theme) {
+                    currentTheme = data.theme;
+                    applyTheme(data.theme);
+                    updateStatus(`Theme loaded: Primary color ${data.theme.primary}`, false);
+                } else {
+                    updateStatus('No theme found, using default', true);
+                    applyTheme(themeColors.teal);
+                }
+            } catch (error) {
+                console.error('Failed to load theme:', error);
+                updateStatus('Failed to load theme: ' + error.message, true);
+                applyTheme(themeColors.teal);
+            }
+        }
+
+        function applyTheme(theme) {
+            // Update CSS custom properties
+            const root = document.documentElement;
+            root.style.setProperty('--color-primary', theme.primary);
+            root.style.setProperty('--color-primary-hover', theme.primaryHover);
+            root.style.setProperty('--color-primary-light', theme.primaryLight);
+            root.style.setProperty('--color-secondary', theme.secondary);
+            root.style.setProperty('--color-accent', theme.accent);
+            root.style.setProperty('--color-background', theme.background);
+            root.style.setProperty('--color-text', theme.text);
+            root.style.setProperty('--color-text-light', theme.textLight);
+            root.style.setProperty('--color-success', theme.success);
+            root.style.setProperty('--color-error', theme.error);
+            root.style.setProperty('--color-warning', theme.warning);
+            root.style.setProperty('--color-info', theme.info);
+
+            // Update color preview
+            updateColorPreview(theme);
+        }
+
+        function updateColorPreview(theme) {
+            const preview = document.getElementById('colorPreview');
+            preview.innerHTML = `
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-2" style="background-color: ${theme.primary}"></div>
+                    <p class="text-sm font-medium">Primary</p>
+                    <p class="text-xs text-gray-500">${theme.primary}</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-2" style="background-color: ${theme.primaryHover}"></div>
+                    <p class="text-sm font-medium">Hover</p>
+                    <p class="text-xs text-gray-500">${theme.primaryHover}</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-2" style="background-color: ${theme.primaryLight}"></div>
+                    <p class="text-sm font-medium">Light</p>
+                    <p class="text-xs text-gray-500">${theme.primaryLight}</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-2" style="background-color: ${theme.accent}"></div>
+                    <p class="text-sm font-medium">Accent</p>
+                    <p class="text-xs text-gray-500">${theme.accent}</p>
+                </div>
+            `;
+        }
+
+        async function setTheme(themeName) {
+            if (!adminToken) {
+                const loginSuccess = await loginAdmin();
+                if (!loginSuccess) {
+                    updateStatus('Failed to login as admin', true);
+                    return;
+                }
+            }
+
+            try {
+                const themeData = themeColors[themeName];
+                const response = await fetch(`${API_BASE_URL}/settings/theme`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ value: themeData })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentTheme = themeData;
+                    applyTheme(themeData);
+                    updateStatus(`Theme changed to ${themeName} (${themeData.primary})`, false);
+                } else {
+                    updateStatus('Failed to update theme: ' + data.error, true);
+                }
+            } catch (error) {
+                console.error('Failed to set theme:', error);
+                updateStatus('Failed to set theme: ' + error.message, true);
+            }
+        }
+
+        function updateStatus(message, isError) {
+            const status = document.getElementById('themeStatus');
+            status.textContent = message;
+            status.className = isError ? 'p-4 rounded bg-red-100 text-red-800' : 'p-4 rounded bg-green-100 text-green-800';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentTheme();
+        });
+    </script>
+</body>
+</html>

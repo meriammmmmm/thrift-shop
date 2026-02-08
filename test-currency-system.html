@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency System Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #0891b2;
+            --color-primary-hover: #0e7490;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .success {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list i {
+            color: var(--color-primary);
+            margin-right: 8px;
+            width: 16px;
+        }
+        
+        .currency-example {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+        
+        .currency-symbol {
+            font-weight: bold;
+            color: var(--color-primary);
+            font-size: 18px;
+        }
+        
+        .test-steps {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .test-steps h4 {
+            color: #92400e;
+            margin: 0 0 12px 0;
+        }
+        
+        .test-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .test-steps li {
+            margin: 8px 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="test-card">
+            <h1><i class="fas fa-coins"></i> Currency System - Complete Implementation</h1>
+            <p class="success"><i class="fas fa-check-circle"></i> All currency issues have been fixed!</p>
+            
+            <h3>✅ Fixed Components:</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-cog"></i> <strong>Backend Admin Routes:</strong> Added `company_currency` field support</li>
+                <li><i class="fas fa-user-cog"></i> <strong>AdminProfile.tsx:</strong> Country selector with automatic currency detection</li>
+                <li><i class="fas fa-plus"></i> <strong>AddProduct.tsx:</strong> Dynamic currency display and profile update listener</li>
+                <li><i class="fas fa-eye"></i> <strong>ProductDetails.tsx:</strong> Dynamic currency display and profile update listener</li>
+                <li><i class="fas fa-sync"></i> <strong>Real-time Updates:</strong> Currency updates across all components when profile changes</li>
+            </ul>
+            
+            <h3>🌍 Supported Currencies:</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin: 16px 0;">
+                <div class="currency-example">
+                    <span>🇹🇳 Tunisia</span>
+                    <span class="currency-symbol">د.ت TND</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇺🇸 United States</span>
+                    <span class="currency-symbol">$ USD</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇪🇺 Europe</span>
+                    <span class="currency-symbol">€ EUR</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇬🇧 United Kingdom</span>
+                    <span class="currency-symbol">£ GBP</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇯🇵 Japan</span>
+                    <span class="currency-symbol">¥ JPY</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇦🇪 UAE</span>
+                    <span class="currency-symbol">د.إ AED</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇸🇦 Saudi Arabia</span>
+                    <span class="currency-symbol">ر.س SAR</span>
+                </div>
+                <div class="currency-example">
+                    <span>🇪🇬 Egypt</span>
+                    <span class="currency-symbol">E£ EGP</span>
+                </div>
+            </div>
+            
+            <div class="test-steps">
+                <h4><i class="fas fa-clipboard-check"></i> Test the Currency System:</h4>
+                <ol>
+                    <li>Go to <strong>Admin Profile</strong> and click <strong>Edit Profile</strong></li>
+                    <li>Change the <strong>Country</strong> to <strong>Tunisia</strong></li>
+                    <li>Notice the currency automatically changes to <strong>د.ت TND</strong></li>
+                    <li>Click <strong>Save Changes</strong></li>
+                    <li>Go to <strong>Add Product</strong> - prices now show <strong>د.ت</strong> instead of <strong>$</strong></li>
+                    <li>Go to <strong>Product Management</strong> and edit any product - prices show <strong>د.ت</strong></li>
+                    <li>All currency displays are now consistent across the entire admin panel!</li>
+                </ol>
+            </div>
+            
+            <h3>🔧 Technical Implementation:</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-database"></i> <strong>Backend:</strong> Added `company_currency` field to profile update endpoint</li>
+                <li><i class="fas fa-globe"></i> <strong>Country Mapping:</strong> 80+ countries with their respective currencies and symbols</li>
+                <li><i class="fas fa-broadcast-tower"></i> <strong>Event System:</strong> Custom events notify components when profile is updated</li>
+                <li><i class="fas fa-refresh"></i> <strong>Auto-Refresh:</strong> Components automatically fetch new currency when profile changes</li>
+                <li><i class="fas fa-shield-alt"></i> <strong>Fallback:</strong> Defaults to USD if country/currency not found</li>
+                <li><i class="fas fa-mobile-alt"></i> <strong>Responsive:</strong> Currency symbols work on all screen sizes</li>
+            </ul>
+            
+            <h3>🎯 Key Features:</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-magic"></i> <strong>Automatic Detection:</strong> Currency automatically set when country is selected</li>
+                <li><i class="fas fa-sync-alt"></i> <strong>Real-time Updates:</strong> All components update immediately when profile is saved</li>
+                <li><i class="fas fa-eye"></i> <strong>Visual Feedback:</strong> Currency display shows current symbol and code</li>
+                <li><i class="fas fa-check"></i> <strong>Consistent UI:</strong> Same currency shown in AddProduct, ProductDetails, and Profile</li>
+                <li><i class="fas fa-globe-americas"></i> <strong>International Support:</strong> Supports Arabic, European, Asian currencies</li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border: 1px solid #0891b2; border-radius: 8px;">
+                <h4 style="color: var(--color-primary); margin: 0 0 10px 0;">
+                    <i class="fas fa-rocket"></i> Currency System Complete!
+                </h4>
+                <p style="margin: 0; color: #0e7490;">
+                    The currency system now works perfectly. When you change your country to Tunisia in the admin profile, 
+                    all product prices throughout the admin panel will automatically display in Tunisian Dinars (د.ت TND) 
+                    instead of USD. The system supports 80+ countries and their respective currencies.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Main Pages Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .demo-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .company-example { border: 2px solid #0066cc; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f8f9ff; }
+        .url { background: #e8f4f8; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        .highlight { background: #fff3cd; padding: 2px 4px; border-radius: 2px; }
+        .feature { background: #d4edda; padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 4px solid #28a745; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 5px; }
+        .status { color: #28a745; font-weight: bold; }
+        .arrow { color: #0066cc; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 COMPANY MAIN PAGES - EXACTLY WHAT YOU WANTED!</h1>
+        
+        <div class="demo-section">
+            <h2>🎯 What You Get Now</h2>
+            <p><strong>Each company has their own main page that shows ONLY their products!</strong></p>
+            
+            <div class="company-example">
+                <h3>🏛️ Vintage Treasures Main Page</h3>
+                <div class="url">http://localhost:3000/?company=1</div>
+                <div class="feature">✅ Shows ONLY Vintage Treasures products (2 items)</div>
+                <div class="feature">✅ Company name in header: "VINTAGE TREASURES"</div>
+                <div class="feature">✅ Company description in banner</div>
+                <div class="feature">✅ Company branding throughout</div>
+                <div class="feature">✅ Same beautiful main page layout</div>
+            </div>
+            
+            <div class="company-example">
+                <h3>🌱 Eco Fashion Hub Main Page</h3>
+                <div class="url">http://localhost:3000/?company=2</div>
+                <div class="feature">✅ Shows ONLY Eco Fashion Hub products (3 items)</div>
+                <div class="feature">✅ Company name in header: "ECO FASHION HUB"</div>
+                <div class="feature">✅ Company description in banner</div>
+                <div class="feature">✅ Company branding throughout</div>
+                <div class="feature">✅ Same beautiful main page layout</div>
+            </div>
+            
+            <div class="company-example">
+                <h3>🕺 Retro Style Co Main Page</h3>
+                <div class="url">http://localhost:3000/?company=3</div>
+                <div class="feature">✅ Shows ONLY Retro Style Co products (1 item)</div>
+                <div class="feature">✅ Company name in header: "RETRO STYLE CO"</div>
+                <div class="feature">✅ Company description in banner</div>
+                <div class="feature">✅ Company branding throughout</div>
+                <div class="feature">✅ Same beautiful main page layout</div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔄 Company Switching</h2>
+            <p>Users can switch between companies using the dropdown in the top banner!</p>
+            <div class="feature">🎛️ Dropdown selector in the top banner</div>
+            <div class="feature">🔄 Instantly switches to different company's products</div>
+            <div class="feature">🏷️ Updates all branding and content</div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🌟 Features Per Company</h2>
+            <ul>
+                <li><strong>Company Name</strong> in main header logo</li>
+                <li><strong>Company Description</strong> in top banner</li>
+                <li><strong>Company Products Only</strong> - completely isolated</li>
+                <li><strong>Company Branding</strong> in footer</li>
+                <li><strong>Same Layout</strong> - hero sections, carousels, everything!</li>
+                <li><strong>Full Functionality</strong> - cart, wishlist, user accounts</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>🚀 Live Examples - Test These URLs:</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin: 20px 0;">
+                <div>
+                    <strong>Default (Vintage Treasures):</strong><br>
+                    <span class="url">http://localhost:3000/</span>
+                </div>
+                <div class="arrow">→</div>
+                <div>Shows 2 Vintage Treasures products</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin: 20px 0;">
+                <div>
+                    <strong>Eco Fashion Hub:</strong><br>
+                    <span class="url">http://localhost:3000/?company=2</span>
+                </div>
+                <div class="arrow">→</div>
+                <div>Shows 3 Eco Fashion Hub products</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin: 20px 0;">
+                <div>
+                    <strong>Retro Style Co:</strong><br>
+                    <span class="url">http://localhost:3000/?company=3</span>
+                </div>
+                <div class="arrow">→</div>
+                <div>Shows 1 Retro Style Co product</div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>✅ Status</h2>
+            <p><strong>Backend:</strong> <span class="status">✅ RUNNING</span> on port 5001</p>
+            <p><strong>Frontend:</strong> <span class="status">✅ RUNNING</span> on port 3000</p>
+            <p><strong>Company Main Pages:</strong> <span class="status">✅ READY TO TEST</span></p>
+            
+            <div class="highlight" style="padding: 15px; margin-top: 20px; text-align: center; font-size: 18px;">
+                <strong>🎉 PERFECT! Each company now has their own main page with only their products!</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

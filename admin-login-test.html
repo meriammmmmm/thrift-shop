@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-center mb-6">Admin Login Test</h2>
+                
+                <div id="status" class="mb-4 p-4 rounded bg-gray-100">
+                    Ready to test login...
+                </div>
+                
+                <form onsubmit="testLogin(event)">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                        <input type="email" id="email" value="admin@thriftshop.com" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input type="password" id="password" value="admin123" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                        Test Login
+                    </button>
+                </form>
+                
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-2">Debug Info:</h3>
+                    <div id="debug" class="text-xs bg-gray-50 p-3 rounded">
+                        <div>API URL: <span id="api-url"></span></div>
+                        <div>Backend Status: <span id="backend-status">Checking...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5001/api';
+        
+        // Update debug info
+        document.getElementById('api-url').textContent = API_BASE_URL;
+        
+        // Test backend connection
+        async function testBackend() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                document.getElementById('backend-status').textContent = 'Connected ✅';
+                document.getElementById('backend-status').className = 'text-green-600 font-semibold';
+            } catch (error) {
+                document.getElementById('backend-status').textContent = 'Failed ❌';
+                document.getElementById('backend-status').className = 'text-red-600 font-semibold';
+                console.error('Backend test failed:', error);
+            }
+        }
+        
+        async function testLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            updateStatus('Attempting login...', 'info');
+            
+            try {
+                console.log('Login attempt:', { email, password });
+                console.log('API URL:', `${API_BASE_URL}/auth/login`);
+                
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok) {
+                    if (data.user && data.user.role === 'ADMIN') {
+                        updateStatus(`✅ Login successful! Welcome ${data.user.name || data.user.email}`, 'success');
+                        console.log('Admin token:', data.token);
+                    } else {
+                        updateStatus('❌ Login failed: User is not an admin', 'error');
+                    }
+                } else {
+                    updateStatus(`❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                updateStatus(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            
+            switch(type) {
+                case 'success':
+                    status.className = 'mb-4 p-4 rounded bg-green-100 text-green-800';
+                    break;
+                case 'error':
+                    status.className = 'mb-4 p-4 rounded bg-red-100 text-red-800';
+                    break;
+                case 'info':
+                    status.className = 'mb-4 p-4 rounded bg-blue-100 text-blue-800';
+                    break;
+                default:
+                    status.className = 'mb-4 p-4 rounded bg-gray-100';
+            }
+        }
+        
+        // Test backend on load
+        testBackend();
+    </script>
+</body>
+</html>

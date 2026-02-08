@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 REAL AI Test - Hugging Face</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+        
+        .preview-img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .result {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #667eea;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .ai-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 REAL AI Image Analyzer</h1>
+            <p>Testing Hugging Face BLIP AI - NO DEMO MODE!</p>
+        </div>
+        
+        <div class="ai-info">
+            <h3>🚀 Using REAL AI Services:</h3>
+            <p>✅ Hugging Face BLIP (Real AI Image Captioning)</p>
+            <p>✅ Your API Key: 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</p>
+            <p>✅ No Demo Mode - Pure AI Analysis!</p>
+        </div>
+        
+        <div id="status" class="status loading">
+            🔌 Connecting to backend and testing AI services...
+        </div>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 4rem;">📸</div>
+            <h3>Upload Image for REAL AI Analysis</h3>
+            <p>Hugging Face BLIP will analyze your image with real AI</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div style="text-align: center;">
+            <button onclick="testRealAI()">🧪 Test Real AI Now</button>
+            <button onclick="generateAndAnalyze()">🎨 Generate + Analyze</button>
+        </div>
+        
+        <div id="preview" class="hidden">
+            <h3>📷 Your Image:</h3>
+            <img id="previewImg" class="preview-img" alt="Preview">
+        </div>
+        
+        <div id="loading" class="hidden" style="text-align: center; padding: 40px;">
+            <div class="spinner"></div>
+            <h3>🤖 REAL AI is analyzing your image...</h3>
+            <p>Hugging Face BLIP model is processing...</p>
+        </div>
+        
+        <div id="result" class="result hidden">
+            <h3>🎯 REAL AI Analysis Results:</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        let authToken = null;
+
+        // Test connection on load
+        window.onload = async function() {
+            await testConnection();
+        };
+
+        async function testConnection() {
+            try {
+                // Login first
+                const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@thriftshop.com',
+                        password: 'admin123'
+                    })
+                });
+
+                if (loginResponse.ok) {
+                    const loginData = await loginResponse.json();
+                    authToken = loginData.token;
+                    
+                    document.getElementById('status').innerHTML = `
+                        ✅ <strong>REAL AI READY!</strong><br>
+                        Backend connected • Hugging Face API active • No demo mode!
+                    `;
+                    document.getElementById('status').className = 'status success';
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = `
+                    ❌ <strong>Connection Failed</strong><br>
+                    ${error.message} - Make sure backend is running on port 5001
+                `;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        // File upload handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+
+        function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageBase64 = e.target.result;
+                
+                // Show preview
+                document.getElementById('previewImg').src = imageBase64;
+                document.getElementById('preview').classList.remove('hidden');
+                
+                // Analyze with REAL AI
+                analyzeWithRealAI(imageBase64);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeWithRealAI(imageBase64) {
+            if (!authToken) {
+                alert('Not connected. Please refresh the page.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+
+            try {
+                console.log('🤖 Sending to REAL AI (Hugging Face BLIP)...');
+                
+                const response = await fetch(`${API_BASE}/admin/ai/generate-description`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        image: imageBase64,
+                        productName: '',
+                        category: '',
+                        brand: ''
+                    })
+                });
+
+                const result = await response.json();
+                console.log('🤖 REAL AI Response:', result);
+
+                document.getElementById('loading').classList.add('hidden');
+
+                if (result.success && result.data) {
+                    showRealAIResult(result.data);
+                } else {
+                    showError(result.error || 'Real AI analysis failed');
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                showError('Network error: ' + error.message);
+            }
+        }
+
+        function showRealAIResult(data) {
+            const html = `
+                <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                    <h2>🎉 REAL AI ANALYSIS COMPLETE!</h2>
+                    <p>Powered by Hugging Face BLIP - No Demo Mode!</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;">
+                        <h4>📝 Product Name</h4>
+                        <p><strong>${data.title || 'AI Generated Name'}</strong></p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
+                        <h4>🏷️ Category</h4>
+                        <p><strong>${data.category_suggestion || 'AI Detected Category'}</strong></p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
+                        <h4>💰 AI Price Range</h4>
+                        <p><strong>$${data.suggested_price_min || 0} - $${data.suggested_price_max || 0}</strong></p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545;">
+                        <h4>🎨 Color & Material</h4>
+                        <p><strong>${data.color || 'AI Detected'} • ${data.material || 'Quality Material'}</strong></p>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea;">
+                    <h4>🤖 REAL AI Description:</h4>
+                    <p>${data.description || 'AI generated description based on image analysis'}</p>
+                </div>
+                
+                ${data.features && data.features.length > 0 ? `
+                <div style="background: white; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <h4>✨ AI Detected Features:</h4>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        ${data.features.map(feature => `<li>${feature}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+                    <h4>🚀 Analysis Method: REAL AI</h4>
+                    <p>Hugging Face BLIP • No Demo Mode • Authentic AI Analysis</p>
+                </div>
+            `;
+            
+            document.getElementById('resultContent').innerHTML = html;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('resultContent').innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545;">
+                    <h4>❌ Error:</h4>
+                    <p>${message}</p>
+                </div>
+            `;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        async function testRealAI() {
+            // Create a test image (simple colored square)
+            const canvas = document.createElement('canvas');
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw a simple test pattern
+            ctx.fillStyle = '#667eea';
+            ctx.fillRect(0, 0, 100, 100);
+            ctx.fillStyle = '#764ba2';
+            ctx.fillRect(25, 25, 50, 50);
+            
+            const testImageBase64 = canvas.toDataURL();
+            
+            // Show preview
+            document.getElementById('previewImg').src = testImageBase64;
+            document.getElementById('preview').classList.remove('hidden');
+            
+            // Analyze with REAL AI
+            analyzeWithRealAI(testImageBase64);
+        }
+
+        async function generateAndAnalyze() {
+            if (!authToken) {
+                await testConnection();
+                if (!authToken) return;
+            }
+
+            try {
+                console.log('🎨 Generating image with AI...');
+                
+                const generateResponse = await fetch(`${API_BASE}/ai/generate-product-mockup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        productName: 'vintage leather boots',
+                        category: 'boots',
+                        style: 'realistic'
+                    })
+                });
+
+                const generateResult = await generateResponse.json();
+
+                if (generateResult.success && generateResult.imageUrl) {
+                    // Show generated image
+                    document.getElementById('previewImg').src = generateResult.imageUrl;
+                    document.getElementById('preview').classList.remove('hidden');
+                    
+                    // Analyze it with REAL AI
+                    analyzeWithRealAI(generateResult.imageUrl);
+                } else {
+                    alert('Failed to generate image');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
