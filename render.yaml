@@ -1,0 +1,44 @@
+services:
+  # Backend API
+  - type: web
+    name: thrift-shop-backend
+    runtime: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_PATH
+        value: ./database/thrift_shop.db
+
+  # Admin Panel
+  - type: web
+    name: thrift-shop-admin
+    runtime: node
+    buildCommand: cd admin-panel && npm install && npm run build
+    startCommand: cd admin-panel && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3005
+      - key: REACT_APP_API_URL
+        value: https://thrift-shop-backend.onrender.com/api
+
+  # Company 1 Website
+  - type: web
+    name: company1-vintage-treasures
+    runtime: node
+    buildCommand: cd thrift-shop && npm install && npm run build
+    startCommand: cd thrift-shop && npm start
+    envVars:
+      - key: NEXT_PUBLIC_COMPANY_ID
+        value: 1
+      - key: NEXT_PUBLIC_COMPANY_NAME
+        value: Vintage Treasures
+      - key: NEXT_PUBLIC_API_URL
+        value: https://thrift-shop-backend.onrender.com/api

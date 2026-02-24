@@ -3,16 +3,112 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+const { generateVerificationCode, sendVerificationEmail } = require('../services/emailService');
 
 const router = express.Router();
+
+// Send verification code
+router.post('/send-verification-code', async (req, res) => {
+  try {
+    const { email, type = 'registration' } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Only check if user exists for registration type
+    if (type === 'registration') {
+      const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already registered' });
+      }
+    }
+
+    // Generate verification code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save code to database
+    await db.run(
+      'INSERT INTO verification_codes (email, code, type, expires_at) VALUES (?, ?, ?, ?)',
+      [email, code, type, expiresAt.toISOString()]
+    );
+
+    // Send email
+    const emailResult = await sendVerificationEmail(email, code);
+    
+    if (!emailResult.success) {
+      return res.status(500).json({ error: 'Failed to send verification email' });
+    }
+
+    res.json({ message: 'Verification code sent to your email' });
+  } catch (error) {
+    console.error('Send verification code error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify code
+router.post('/verify-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' });
+    }
+
+    // Find verification code
+    const verification = await db.get(
+      'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1',
+      [email, code, 'registration']
+    );
+
+    if (!verification) {
+      return res.status(400).json({ error: 'Invalid verification code' });
+    }
+
+    // Check if expired
+    if (new Date(verification.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Verification code has expired' });
+    }
+
+    // Mark as verified
+    await db.run(
+      'UPDATE verification_codes SET verified = 1 WHERE id = ?',
+      [verification.id]
+    );
+
+    res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    console.error('Verify code error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name, companyId, userInfo } = req.body;
+    const { email, password, name, companyId, userInfo, verificationCode } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Verify the code first
+    if (verificationCode) {
+      const verification = await db.get(
+        'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 1 ORDER BY created_at DESC LIMIT 1',
+        [email, verificationCode, 'registration']
+      );
+
+      if (!verification) {
+        return res.status(400).json({ error: 'Please verify your email first' });
+      }
+
+      // Check if expired
+      if (new Date(verification.expires_at) < new Date()) {
+        return res.status(400).json({ error: 'Verification code has expired' });
+      }
     }
 
     // Check if user exists

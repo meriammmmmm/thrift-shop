@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Mery Rose Logo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F4D7E0 0%, #FFFFFF 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(139, 21, 56, 0.2);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #8B1538;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #A8395F;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .logo-preview {
+            background: #F4D7E0;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            text-align: center;
+            border: 3px dashed #8B1538;
+        }
+        
+        .logo-preview img {
+            max-width: 100%;
+            height: auto;
+            max-height: 300px;
+            filter: drop-shadow(0 4px 8px rgba(139, 21, 56, 0.3));
+        }
+        
+        .instructions {
+            background: #FFF9F0;
+            border-left: 4px solid #FFD700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .instructions h2 {
+            color: #8B1538;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .step::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #8B1538;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .code-block {
+            background: #2D2D2D;
+            color: #00FF00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .upload-area {
+            border: 3px dashed #8B1538;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background: #F4D7E0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background: #E8B4B8;
+            border-color: #6B0F2A;
+            transform: scale(1.02);
+        }
+        
+        .upload-area input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #8B1538 0%, #A8395F 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 21, 56, 0.3);
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 21, 56, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .success-message {
+            background: #D4EDDA;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #C3E6CB;
+            display: none;
+        }
+        
+        .path-display {
+            background: #E8F4F8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            color: #0066CC;
+            font-weight: bold;
+        }
+        
+        .warning {
+            background: #FFF3CD;
+            border-left: 4px solid #FFC107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌹 Mery Rose Logo Setup</h1>
+        <p class="subtitle">Let's add your beautiful logo to the website!</p>
+        
+        <div class="logo-preview">
+            <div class="upload-icon">📸</div>
+            <h3 style="color: #8B1538; margin-bottom: 20px;">Your Logo Will Appear Here</h3>
+            <img id="logoPreview" style="display: none;" alt="Mery Rose Logo">
+        </div>
+        
+        <div class="upload-area" onclick="document.getElementById('logoInput').click()">
+            <input type="file" id="logoInput" accept="image/*">
+            <div class="upload-icon">⬆️</div>
+            <h3 style="color: #8B1538;">Click to Upload Your Logo</h3>
+            <p style="color: #A8395F; margin-top: 10px;">PNG, JPG, or WEBP format</p>
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            ✅ Logo preview loaded! Now follow the steps below to save it.
+        </div>
+        
+        <div class="instructions">
+            <h2>📋 How to Add Your Logo</h2>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Right-click on your logo image (the pink one with the woman and "Mery Rose" text)
+            </div>
+            
+            <div class="step">
+                <strong>Step 2:</strong> Select "Save Image As..." or "Download Image"
+            </div>
+            
+            <div class="step">
+                <strong>Step 3:</strong> Save it with this exact name:
+                <div class="code-block">mery-rose-logo.png</div>
+            </div>
+            
+            <div class="step">
+                <strong>Step 4:</strong> Move the file to this location:
+                <div class="path-display">thrift-shop/public/images/mery-rose-logo.png</div>
+            </div>
+            
+            <div class="step">
+                <strong>Step 5:</strong> That's it! The logo will automatically appear on your website! 🎉
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Make sure the file is named exactly <code>mery-rose-logo.png</code> and placed in the <code>thrift-shop/public/images/</code> folder.
+        </div>
+        
+        <div class="instructions">
+            <h2>🚀 Alternative Method (Drag & Drop)</h2>
+            
+            <div class="step">
+                <strong>Option 1:</strong> Open your file explorer/finder
+            </div>
+            
+            <div class="step">
+                <strong>Option 2:</strong> Navigate to:
+                <div class="code-block">thrift-shop/public/images/</div>
+            </div>
+            
+            <div class="step">
+                <strong>Option 3:</strong> Drag your logo image directly into that folder
+            </div>
+            
+            <div class="step">
+                <strong>Option 4:</strong> Rename it to: <code>mery-rose-logo.png</code>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn" onclick="window.open('thrift-shop/public/images', '_blank')">
+                📁 Open Images Folder
+            </button>
+            <button class="btn" onclick="testLogo()">
+                🔍 Test Logo Path
+            </button>
+        </div>
+        
+        <div class="instructions" style="margin-top: 30px; background: #E8F5E9;">
+            <h2 style="color: #2E7D32;">✨ What Happens Next?</h2>
+            <p style="margin: 10px 0;">Once you add the logo:</p>
+            <ul style="margin-left: 20px; color: #2E7D32;">
+                <li>It will appear in the center of the navigation bar</li>
+                <li>It will have a beautiful floating animation</li>
+                <li>It will glow on hover</li>
+                <li>It will be responsive on all devices</li>
+                <li>If it fails to load, it will show "MERY ROSE" text instead</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = document.getElementById('logoPreview');
+                    img.src = event.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = event.target.result;
+                    link.download = 'mery-rose-logo.png';
+                    link.textContent = '💾 Download as mery-rose-logo.png';
+                    link.className = 'btn';
+                    link.style.display = 'block';
+                    link.style.margin = '20px auto';
+                    link.style.width = 'fit-content';
+                    
+                    const container = document.querySelector('.container');
+                    const existingLink = document.getElementById('downloadLink');
+                    if (existingLink) {
+                        existingLink.remove();
+                    }
+                    link.id = 'downloadLink';
+                    container.appendChild(link);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function testLogo() {
+            const img = new Image();
+            img.onload = function() {
+                alert('✅ Logo found! Your logo is properly installed and ready to use!');
+            };
+            img.onerror = function() {
+                alert('❌ Logo not found. Please make sure the file is saved as:\nthrift-shop/public/images/mery-rose-logo.png');
+            };
+            img.src = '/images/mery-rose-logo.png';
+        }
+    </script>
+</body>
+</html>

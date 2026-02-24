@@ -175,6 +175,20 @@ router.post('/', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Name, price, brand, and category are required' });
     }
 
+    // Validate images array size (allow base64 for AI-generated images)
+    if (images && Array.isArray(images)) {
+      // Check if images field is too large (increased limit for base64 images)
+      const imagesStr = JSON.stringify(images);
+      const sizeInKB = (imagesStr.length / 1024).toFixed(2);
+      console.log(`📦 Images data size: ${sizeInKB} KB (${images.length} images)`);
+      
+      if (imagesStr.length > 5000000) { // 5MB limit for base64 images (allows ~10-12 compressed images)
+        return res.status(400).json({ 
+          error: `Images data too large (${sizeInKB} KB). Maximum 5MB allowed.` 
+        });
+      }
+    }
+
     const result = await db.run(`
       INSERT INTO products (
         name, description, price, original_price, images, brand, size,
@@ -210,6 +224,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Log the update request for debugging
+    console.log(`PUT /api/products/${id} - Update request from company ${companyId}`);
+    console.log('Update fields:', Object.keys(updates));
+
     // Check if product belongs to admin's company
     const existingProduct = await db.get('SELECT company_id FROM products WHERE id = ?', [id]);
     if (!existingProduct) {
@@ -219,11 +237,41 @@ router.put('/:id', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'You can only update products from your company' });
     }
 
+    // Validate images array size (allow base64 for AI-generated images)
+    if (updates.images) {
+      if (Array.isArray(updates.images)) {
+        // Check if images field is too large (increased limit for base64 images)
+        const imagesStr = JSON.stringify(updates.images);
+        const sizeInKB = (imagesStr.length / 1024).toFixed(2);
+        console.log(`📦 Images data size: ${sizeInKB} KB (${updates.images.length} images)`);
+        
+        if (imagesStr.length > 5000000) { // 5MB limit for base64 images (allows ~10-12 compressed images)
+          console.error(`Images field too large: ${sizeInKB} KB`);
+          return res.status(400).json({ 
+            error: `Images data too large (${sizeInKB} KB). Maximum 5MB allowed.` 
+          });
+        }
+      }
+      updates.images = JSON.stringify(updates.images);
+    }
+
     // Convert arrays/objects to JSON strings
-    if (updates.images) updates.images = JSON.stringify(updates.images);
     if (updates.measurements) updates.measurements = JSON.stringify(updates.measurements);
     if (updates.care_instructions) updates.care_instructions = JSON.stringify(updates.care_instructions);
     if (updates.tags) updates.tags = JSON.stringify(updates.tags);
+
+    // Remove any fields that shouldn't be updated or don't exist in products table
+    delete updates.id;
+    delete updates.created_at;
+    delete updates.updated_at;
+    delete updates.company_id;
+    delete updates.company_name;
+    delete updates.company_description;
+    delete updates.company;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
 
     const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
     const values = Object.values(updates);
@@ -237,7 +285,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
     res.json(product);
   } catch (error) {
     console.error('Product update error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

@@ -1,0 +1,132 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║        🎯 GET YOUR WEBSITE: yourcompany.com                  ║
+║                                                              ║
+║              SUPER SIMPLE - 1 HOUR TOTAL                     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────┐
+│  STEP 1: GET DOMAIN NAME (10 minutes)                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Option A: FREE Domain                                       │
+│  ├─ Go to: https://freenom.com                               │
+│  ├─ Search: yourcompany                                      │
+│  ├─ Choose: yourcompany.tk (FREE)                            │
+│  └─ Register (no credit card)                                │
+│                                                              │
+│  Option B: Professional Domain ($10/year)                    │
+│  ├─ Go to: https://namecheap.com                             │
+│  ├─ Search: yourcompany                                      │
+│  ├─ Buy: yourcompany.com                                     │
+│  └─ Pay with card                                            │
+│                                                              │
+│  ✅ Write down your domain: ___________________              │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│  STEP 2: DEPLOY WEBSITE (30 minutes)                         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  A. Sign Up Render.com (2 min)                               │
+│  ├─ Go to: https://render.com                                │
+│  ├─ Click "Get Started"                                      │
+│  ├─ Sign up with GitHub                                      │
+│  └─ NO credit card needed! ✅                                │
+│                                                              │
+│  B. Deploy Backend (5 min)                                   │
+│  ├─ Click "New +" → "Web Service"                            │
+│  ├─ Connect GitHub → Your repo                               │
+│  ├─ Name: yourcompany-backend                                │
+│  ├─ Root: backend                                            │
+│  ├─ Type: FREE ⭐                                             │
+│  ├─ Add environment variables                                │
+│  └─ Copy URL: https://yourcompany-backend.onrender.com       │
+│                                                              │
+│  C. Deploy Website (5 min)                                   │
+│  ├─ Click "New +" → "Web Service"                            │
+│  ├─ Name: yourcompany                                        │
+│  ├─ Root: thrift-shop                                        │
+│  ├─ Type: FREE ⭐                                             │
+│  ├─ Add environment variables (use backend URL!)             │
+│  └─ Copy URL: https://yourcompany.onrender.com               │
+│                                                              │
+│  D. Deploy Admin (5 min)                                     │
+│  ├─ Click "New +" → "Web Service"                            │
+│  ├─ Name: yourcompany-admin                                  │
+│  ├─ Root: admin-panel                                        │
+│  ├─ Type: FREE ⭐                                             │
+│  └─ Add environment variables                                │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│  STEP 3: CONNECT DOMAIN (20 minutes)                         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  On Render:                                                  │
+│  ├─ Go to your website service                               │
+│  ├─ Settings → Custom Domain                                 │
+│  ├─ Add: yourcompany.com (or .tk)                            │
+│  └─ Copy DNS records shown                                   │
+│                                                              │
+│  On Freenom/Namecheap:                                       │
+│  ├─ Log in to domain provider                                │
+│  ├─ Go to DNS Settings                                       │
+│  ├─ Add CNAME: www → yourcompany.onrender.com                │
+│  ├─ Add A Record: @ → (IP from Render)                       │
+│  ├─ Save                                                     │
+│  └─ Wait 10-30 minutes                                       │
+│                                                              │
+│  Test:                                                       │
+│  └─ Go to: yourcompany.com ✅                                │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║                    ✅ YOU'RE DONE!                           ║
+║                                                              ║
+║  Your website: yourcompany.com                               ║
+║  Admin panel:  yourcompany-admin.onrender.com                ║
+║  SSL:          Automatic (https://)                          ║
+║                                                              ║
+║  Cost: $0/month (free domain)                                ║
+║     or $0.83/month ($10/year for .com)                       ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────┐
+│  📚 YOUR GUIDES                                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ⭐ SIMPLE_ONE_WEBSITE_DEPLOYMENT.md                         │
+│     └─ Complete guide for one website                        │
+│                                                              │
+│  ⭐ GET_YOUR_DOMAIN_NOW.md                                   │
+│     └─ Step-by-step with examples                            │
+│                                                              │
+│  ⭐ TUNISIA_FREE_DEPLOYMENT.md                               │
+│     └─ Options that work in Tunisia                          │
+│                                                              │
+│  ⭐ DEPLOY_FREE_NOW.md                                       │
+│     └─ Detailed Render.com guide                             │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              🚀 START NOW!                                   ║
+║                                                              ║
+║  1. Choose domain name                                       ║
+║  2. Register at Freenom (free) or Namecheap ($10)            ║
+║  3. Deploy on Render.com (free)                              ║
+║  4. Connect domain                                           ║
+║  5. Done!                                                    ║
+║                                                              ║
+║  Total time: 1 hour                                          ║
+║  Total cost: $0 or $10/year                                  ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝

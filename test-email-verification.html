@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .step h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .code-input {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 10px;
+            font-weight: bold;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message.show {
+            display: block;
+        }
+        .resend-link {
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .resend-link:hover {
+            text-decoration: underline;
+        }
+        .timer {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Email Verification</h1>
+        <p class="subtitle">Test the email verification system</p>
+
+        <!-- Step 1: Enter Email -->
+        <div class="step active" id="step1">
+            <h2>Step 1: Enter Your Email</h2>
+            <div id="message1" class="message"></div>
+            <form id="emailForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="your@email.com" required>
+                </div>
+                <button type="submit" id="sendCodeBtn">Send Verification Code</button>
+            </form>
+        </div>
+
+        <!-- Step 2: Enter Code -->
+        <div class="step" id="step2">
+            <h2>Step 2: Enter Verification Code</h2>
+            <div id="message2" class="message"></div>
+            <p style="margin-bottom: 20px; color: #666;">We sent a 6-digit code to <strong id="emailDisplay"></strong></p>
+            <form id="codeForm">
+                <div class="form-group">
+                    <label for="code">Verification Code</label>
+                    <input type="text" id="code" class="code-input" placeholder="000000" maxlength="6" required>
+                </div>
+                <div class="timer" id="timer">Code expires in: <strong>10:00</strong></div>
+                <button type="submit" id="verifyCodeBtn">Verify Code</button>
+            </form>
+            <div class="resend-link" id="resendLink">Didn't receive code? Resend</div>
+        </div>
+
+        <!-- Step 3: Complete Registration -->
+        <div class="step" id="step3">
+            <h2>Step 3: Complete Registration</h2>
+            <div id="message3" class="message"></div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="registerBtn">Complete Registration</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001/api/auth';
+        let userEmail = '';
+        let verificationCode = '';
+        let timerInterval;
+
+        // Show message
+        function showMessage(stepId, type, text) {
+            const messageEl = document.getElementById(`message${stepId}`);
+            messageEl.className = `message ${type} show`;
+            messageEl.textContent = text;
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 5000);
+        }
+
+        // Go to step
+        function goToStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+        }
+
+        // Start timer
+        function startTimer() {
+            let timeLeft = 600; // 10 minutes in seconds
+            const timerEl = document.getElementById('timer');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerEl.innerHTML = `Code expires in: <strong>${minutes}:${seconds.toString().padStart(2, '0')}</strong>`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerEl.innerHTML = '<strong style="color: #dc3545;">Code expired!</strong>';
+                }
+            }, 1000);
+        }
+
+        // Step 1: Send verification code
+        document.getElementById('emailForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const btn = document.getElementById('sendCodeBtn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch(`${API_URL}/send-verification-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    userEmail = email;
+                    document.getElementById('emailDisplay').textContent = email;
+                    showMessage(1, 'success', data.message);
+                    setTimeout(() => {
+                        goToStep(2);
+                        startTimer();
+                    }, 1000);
+                } else {
+                    showMessage(1, 'error', data.error);
+                }
+            } catch (error) {
+                showMessage(1, 'error', 'Failed to send code. Make sure the backend is running.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Verification Code';
+            }
+        });
+
+        // Step 2: Verify code
+        document.getElementById('codeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('code').value;
+            const btn = document.getElementById('verifyCodeBtn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            
+            try {
+                const response = await fetch(`${API_URL}/verify-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userEmail, code })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    verificationCode = code;
+                    clearInterval(timerInterval);
+                    showMessage(2, 'success', data.message);
+                    setTimeout(() => goToStep(3), 1000);
+                } else {
+                    showMessage(2, 'error', data.error);
+                }
+            } catch (error) {
+                showMessage(2, 'error', 'Verification failed. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verify Code';
+            }
+        });
+
+        // Resend code
+        document.getElementById('resendLink').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_URL}/send-verification-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userEmail })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(2, 'success', 'New code sent!');
+                    clearInterval(timerInterval);
+                    startTimer();
+                } else {
+                    showMessage(2, 'error', data.error);
+                }
+            } catch (error) {
+                showMessage(2, 'error', 'Failed to resend code.');
+            }
+        });
+
+        // Step 3: Complete registration
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('registerBtn');
+            
+            if (password !== confirmPassword) {
+                showMessage(3, 'error', 'Passwords do not match');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Creating Account...';
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        password,
+                        name,
+                        verificationCode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(3, 'success', '✅ Registration successful!');
+                    setTimeout(() => {
+                        alert('Account created successfully! Token: ' + data.token);
+                    }, 1000);
+                } else {
+                    showMessage(3, 'error', data.error);
+                }
+            } catch (error) {
+                showMessage(3, 'error', 'Registration failed. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Complete Registration';
+            }
+        });
+    </script>
+</body>
+</html>

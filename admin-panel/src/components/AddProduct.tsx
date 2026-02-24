@@ -256,34 +256,105 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedImages(prev => [...prev, ...files]);
-    
-    // Create previews and trigger AI generation for the first image
-    files.forEach((file, index) => {
+  // Compress image to reduce size while maintaining quality
+  const compressImage = (file: File, maxSizeKB: number = 800): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const result = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions (max 1920px on longest side for better quality)
+          const maxDimension = 1920;
+          if (width > height && width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          // Enable image smoothing for better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Start with higher quality and reduce if needed
+          let quality = 0.92;
+          let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // Reduce quality until size is acceptable, but don't go below 0.6 (60%)
+          while (compressedDataUrl.length > maxSizeKB * 1024 && quality > 0.6) {
+            quality -= 0.05;
+            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          
+          const sizeKB = (compressedDataUrl.length / 1024).toFixed(2);
+          console.log(`🖼️ Compressed image: ${sizeKB} KB (quality: ${(quality * 100).toFixed(0)}%)`);
+          
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const currentPreviewCount = imagePreviews.length;
+    
+    if (files.length === 0) return;
+    
+    // Show loading state
+    showSuccess('Processing', `Compressing ${files.length} image(s)...`);
+    
+    setSelectedImages(prev => [...prev, ...files]);
+    
+    // Process each file with compression
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      try {
+        const compressedImage = await compressImage(file, 800); // Max 800KB per image for better quality
+        
         setImagePreviews(prev => {
           // Avoid adding duplicate images
-          if (prev.includes(result)) {
+          if (prev.includes(compressedImage)) {
             return prev;
           }
-          const newPreviews = [...prev, result];
+          const newPreviews = [...prev, compressedImage];
           
-          // Trigger AI generation automatically for the first uploaded image
-          if (prev.length === 0 && index === 0) {
+          // Trigger AI generation automatically for the VERY FIRST uploaded image only
+          if (currentPreviewCount === 0 && index === 0) {
             setTimeout(() => {
-              generateAIDescriptionFromImage(result);
-            }, 500); // Small delay to ensure state is updated
+              generateAIDescriptionFromImage(compressedImage);
+            }, 500);
           }
           
           return newPreviews;
         });
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (error) {
+        console.error('Image compression error:', error);
+        showError('Error', `Failed to compress image: ${file.name}`);
+      }
+    }
+    
+    // Reset the input so the same file can be selected again if needed
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -513,31 +584,27 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     setLoading(true);
 
     try {
-      // Process URL-based images
+      // Process URL-based images from textarea
       const imageUrls = formData.images
         .split('\n')
         .map(url => url.trim())
         .filter(url => url.length > 0);
 
-      // Process uploaded files (convert to base64)
-      const uploadedImages: string[] = [];
-      for (const file of selectedImages) {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-        uploadedImages.push(base64);
-      }
-
-      // Add AI-generated images (only URLs, not data:image which are uploaded files)
-      const aiGeneratedImages = imagePreviews.filter(preview => 
-        preview.startsWith('http') && !preview.startsWith('data:image')
-      );
+      // Get all uploaded/generated images from previews (includes base64 and URLs)
+      const uploadedImages = imagePreviews.filter(preview => {
+        // Include all previews (both http:// URLs and data:image base64)
+        return preview.startsWith('http') || preview.startsWith('data:image');
+      });
 
       // Combine all images and remove duplicates
-      const allImagesWithDuplicates = [...imageUrls, ...uploadedImages, ...aiGeneratedImages];
+      const allImagesWithDuplicates = [...imageUrls, ...uploadedImages];
       const allImages = Array.from(new Set(allImagesWithDuplicates)); // Remove duplicates
+
+      if (allImages.length === 0) {
+        showError('Error', 'Please add at least one image (upload, URL, or AI-generated)');
+        setLoading(false);
+        return;
+      }
 
       const productData = {
         name: formData.name,
@@ -615,7 +682,7 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
               </button>
             </div>
             
-            {/* File Upload */}
+            {/* File Upload - Multiple Images Supported */}
             <div className="mb-4">
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -635,16 +702,16 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
                     <>
                       <i className="fas fa-cloud-upload-alt text-gray-400 text-2xl mb-2"></i>
                       <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> product images
+                        <span className="font-semibold">Click to upload product images</span> (multiple supported)
                       </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF - Auto-compressed to ~800KB each (high quality)</p>
                       <p className="text-xs text-purple-600 mt-1">
                         <i className="fas fa-magic mr-1"></i>
-                        AI will automatically analyze your photo!
+                        First image: AI will analyze and auto-fill details!
                       </p>
-                      <p className="text-xs text-pink-600 mt-1">
-                        <i className="fas fa-magic mr-1"></i>
-                        Or use "AI: Generate + Analyze" to create and auto-fill everything!
+                      <p className="text-xs text-blue-600 mt-1">
+                        <i className="fas fa-images mr-1"></i>
+                        Additional images: Will be added to product gallery
                       </p>
                     </>
                   )}
@@ -662,50 +729,78 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
 
             {/* Image Previews */}
             {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 transition-all duration-200"
-                    />
-                    {/* Red overlay when hovering to delete */}
-                    <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 pointer-events-none"></div>
-                    
-                    {/* Always visible delete button */}
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 w-8 h-8 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
-                      title="Delete this image"
-                    >
-                      <i className="fas fa-trash text-xs text-red-500"></i>
-                    </button>
-                    
-                    {/* Image number */}
-                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
-                      {index + 1}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-sm font-medium text-gray-700">
+                    <i className="fas fa-images mr-2 text-blue-500"></i>
+                    Uploaded Images ({imagePreviews.length})
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagePreviews([]);
+                      setSelectedImages([]);
+                    }}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    <i className="fas fa-trash mr-1"></i>Clear All
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 transition-all duration-200"
+                      />
+                      {/* Red overlay when hovering to delete */}
+                      <div className="absolute inset-0 bg-red-500 bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 pointer-events-none"></div>
+                      
+                      {/* Always visible delete button */}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
+                        title="Delete this image"
+                      >
+                        <i className="fas fa-times text-sm"></i>
+                      </button>
+                      
+                      {/* Image number and AI badge */}
+                      <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10 flex items-center gap-1">
+                        #{index + 1}
+                        {index === 0 && (
+                          <i className="fas fa-magic text-purple-400" title="AI analyzed this image"></i>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  <i className="fas fa-info-circle mr-1"></i>
+                  Click the upload area again to add more images. First image was analyzed by AI.
+                </p>
               </div>
             )}
 
             {/* URL Input (Alternative) */}
             <div className="border-t pt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Or add image URLs (one per line)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <i className="fas fa-link mr-1"></i>
+                Or add image URLs (one per line)
+              </label>
               <textarea
                 name="images"
                 value={formData.images}
                 onChange={handleInputChange}
                 rows={3}
                 className="modern-input w-full"
-                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/image3.jpg"
               />
               <p className="text-xs text-gray-500 mt-2">
                 <i className="fas fa-lightbulb text-yellow-500 mr-1"></i>
-                <strong>AI Magic:</strong> Enter a product name/category above, then click "AI: Generate + Analyze" to create a photo AND automatically fill all product details!
+                <strong>Pro Tips:</strong> You can mix uploaded images, URLs, and AI-generated images! All will be saved together.
               </p>
             </div>
           </div>

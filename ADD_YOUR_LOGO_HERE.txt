@@ -1,0 +1,62 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              🌹 MERY ROSE LOGO SETUP 🌹                      ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📍 YOUR LOGO GOES HERE:
+   thrift-shop/public/images/mery-rose-logo.png
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUICK STEPS:
+
+1. Find your Mery Rose logo image (the pink one with the woman)
+   
+2. Right-click on it → "Save Image As..."
+   
+3. Save it as: mery-rose-logo.png
+   
+4. Replace the empty file at:
+   thrift-shop/public/images/mery-rose-logo.png
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ WHAT HAPPENS NEXT:
+
+Your logo will automatically appear:
+  ✓ In the center of the navigation bar
+  ✓ With elegant floating animation
+  ✓ With glow effect on hover
+  ✓ Responsive on all devices
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 TO SEE IT LIVE:
+
+cd thrift-shop
+npm run dev
+
+Then open: http://localhost:3000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 FILE REQUIREMENTS:
+
+✓ Name: mery-rose-logo.png (exactly this)
+✓ Format: PNG (best), JPG, or WEBP
+✓ Size: Any size (will auto-resize)
+✓ Location: thrift-shop/public/images/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ NEED HELP?
+
+Open these files for detailed instructions:
+  → LOGO_SETUP_GUIDE.md (detailed guide)
+  → save-mery-rose-logo.html (interactive helper)
+  → MERY_ROSE_UPDATES.md (all changes made)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+That's it! Your trendy Mery Rose boutique is ready! 🌹✨
