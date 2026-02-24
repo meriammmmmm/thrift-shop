@@ -3,7 +3,7 @@ const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-const PORT = 3005;
+const PORT = process.env.PORT || 3005;
 
 // Enable JSON parsing (50mb limit for base64 images in Image Chat / AI routes)
 app.use(express.json({ limit: '50mb' }));
@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // Proxy API requests to backend
 app.use('/api', createProxyMiddleware({
-  target: 'http://localhost:5001',
+  target: process.env.BACKEND_URL || 'http://localhost:5001',
   changeOrigin: true,
   timeout: 60000, // 60 seconds timeout for large image uploads
   proxyTimeout: 60000,
