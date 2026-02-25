@@ -3,18 +3,25 @@ module.exports = async function seedDatabase(db) {
   try {
     console.log('🌱 Seeding database with initial data...');
 
-    // Check if data already exists
+    // Check if company exists
     const existingCompany = await db.get('SELECT id FROM companies WHERE id = 1');
-    if (existingCompany) {
-      console.log('✅ Database already seeded');
+    if (!existingCompany) {
+      console.log('📝 Creating default company...');
+      // Create default company with logo
+      await db.run(`
+        INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country, website)
+        VALUES (1, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', 1, 'US', 'https://meryrose.com')
+      `);
+    }
+
+    // Check if products exist
+    const existingProducts = await db.get('SELECT id FROM products LIMIT 1');
+    if (existingProducts) {
+      console.log('✅ Products already exist, skipping product seed');
       return;
     }
 
-    // Create default company with logo
-    await db.run(`
-      INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country, website)
-      VALUES (1, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', 1, 'US', 'https://meryrose.com')
-    `);
+    console.log('📦 Adding sample products...');
 
     // Create some sample products
     const sampleProducts = [

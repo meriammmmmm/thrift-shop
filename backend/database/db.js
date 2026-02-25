@@ -56,6 +56,12 @@ class DatabaseWrapper {
         await seedDatabase(this);
       } else {
         console.log('✅ Database already has data, skipping seed');
+        // Check if products exist, if not seed them
+        const products = await this.get('SELECT id FROM products LIMIT 1');
+        if (!products) {
+          console.log('🌱 No products found, seeding products...');
+          await seedDatabase(this);
+        }
       }
     } catch (err) {
       console.error('Error checking database:', err.message);
