@@ -6,7 +6,7 @@ interface CreateUserProps {
   onBack: () => void;
 }
 
-const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const CreateUser: React.FC<CreateUserProps> = ({ authToken, onBack }) => {
   const [formData, setFormData] = useState({

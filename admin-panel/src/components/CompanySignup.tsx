@@ -123,7 +123,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackToLogin }) => {
   const [loading, setLoading] = useState(false);

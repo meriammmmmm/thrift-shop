@@ -5,7 +5,7 @@ interface ThemeSettingsProps {
   authToken: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const presetThemes = [
   { id: 'mery-rose', name: '💋 Mery Rose', primary: '#8B1538', description: 'Bold Burgundy - Your Brand!' },

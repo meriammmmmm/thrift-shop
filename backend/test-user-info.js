@@ -1,7 +1,7 @@
 // Simple test script for user information endpoints
 const axios = require('axios');
 
-const API_BASE = 'https://thrift-shop-production.up.railway.app/api';
+const API_BASE = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 // Test data
 const testUser = {

@@ -23,7 +23,7 @@ interface User {
   country?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const UserManagement: React.FC<UserManagementProps> = ({ authToken }) => {
   const [users, setUsers] = useState<User[]>([]);

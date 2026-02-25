@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 console.log('🧪 Testing Complete Testimonials System...\n');
 
 async function testTestimonialsSystem() {
-  const baseUrl = 'https://thrift-shop-production.up.railway.app/api';
+  const baseUrl = 'https://thrift-shop-backend-production.up.railway.app/api';
   
   try {
     // Test 1: Get active testimonials (public endpoint)
