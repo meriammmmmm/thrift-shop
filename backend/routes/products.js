@@ -556,8 +556,14 @@ router.get('/company/:companyId', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Company products fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Company products fetch error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Company ID:', req.params.companyId);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
