@@ -18,7 +18,7 @@ interface Product {
   images?: string[];
 }
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
 
 const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [products, setProducts] = useState<Product[]>([]);

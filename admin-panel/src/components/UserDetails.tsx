@@ -28,7 +28,7 @@ interface UserDetails {
   country?: string;
 }
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://thrift-shop-production.up.railway.app/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);
