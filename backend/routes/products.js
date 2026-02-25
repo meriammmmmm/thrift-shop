@@ -567,10 +567,27 @@ router.get('/company/:companyId', async (req, res) => {
     console.error('❌ Company products fetch error:', error);
     console.error('Error stack:', error.stack);
     console.error('Company ID:', req.params.companyId);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    
+    // Return empty data instead of 500 error
+    res.json({
+      company: {
+        id: parseInt(req.params.companyId),
+        name: 'Loading...',
+        description: '',
+        logo: '',
+        website: '',
+        email: '',
+        country: '',
+        show_testimonials: false
+      },
+      products: [],
+      pagination: {
+        page: 1,
+        limit: 12,
+        total: 0,
+        pages: 0
+      },
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Database error'
     });
   }
 });
