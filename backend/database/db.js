@@ -1,18 +1,18 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 
 const dbPath = process.env.DB_PATH || './database/thrift_shop.db';
 
-class Database {
+class DatabaseWrapper {
   constructor() {
-    this.db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        console.error('Error opening database:', err.message);
-      } else {
-        console.log('📦 Connected to SQLite database');
-        this.initTables();
-      }
-    });
+    try {
+      this.db = new Database(dbPath, { verbose: console.log });
+      console.log('📦 Connected to SQLite database');
+      this.initTables();
+    } catch (err) {
+      console.error('Error opening database:', err.message);
+      throw err;
+    }
   }
 
   initTables() {
@@ -217,11 +217,11 @@ class Database {
     ];
 
     tables.forEach(table => {
-      this.db.run(table, (err) => {
-        if (err) {
-          console.error('Error creating table:', err.message);
-        }
-      });
+      try {
+        this.db.exec(table);
+      } catch (err) {
+        console.error('Error creating table:', err.message);
+      }
     });
 
     // Add profile_picture column to existing tables if it doesn't exist
@@ -230,18 +230,22 @@ class Database {
 
   addProfilePictureColumns() {
     // Add profile_picture to users table if it doesn't exist
-    this.db.run(`ALTER TABLE users ADD COLUMN profile_picture TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE users ADD COLUMN profile_picture TEXT`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding profile_picture to users:', err.message);
       }
-    });
+    }
 
     // Add profile_picture to user_info table if it doesn't exist
-    this.db.run(`ALTER TABLE user_info ADD COLUMN profile_picture TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE user_info ADD COLUMN profile_picture TEXT`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding profile_picture to user_info:', err.message);
       }
-    });
+    }
 
     // Add admin_id columns for multi-tenant support
     this.addMultiTenantColumns();
@@ -249,91 +253,99 @@ class Database {
 
   addMultiTenantColumns() {
     // Add company_id to users table (which company the user belongs to)
-    this.db.run(`ALTER TABLE users ADD COLUMN company_id INTEGER`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE users ADD COLUMN company_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding company_id to users:', err.message);
       }
-    });
+    }
 
     // Add company_id to products table (which company owns this product)
-    this.db.run(`ALTER TABLE products ADD COLUMN company_id INTEGER`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE products ADD COLUMN company_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding company_id to products:', err.message);
       }
-    });
+    }
 
     // Add company_id to orders table (which company's product was ordered)
-    this.db.run(`ALTER TABLE orders ADD COLUMN company_id INTEGER`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE orders ADD COLUMN company_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding company_id to orders:', err.message);
       }
-    });
+    }
 
     // Add company_id to transactions table (which company's transaction)
-    this.db.run(`ALTER TABLE transactions ADD COLUMN company_id INTEGER`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE transactions ADD COLUMN company_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding company_id to transactions:', err.message);
       }
-    });
+    }
 
     // Add admin_company_id to users table to link admins to companies
-    this.db.run(`ALTER TABLE users ADD COLUMN admin_company_id INTEGER`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE users ADD COLUMN admin_company_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding admin_company_id to users:', err.message);
       }
-    });
+    }
 
     // Add logo column to companies table
-    this.db.run(`ALTER TABLE companies ADD COLUMN logo TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE companies ADD COLUMN logo TEXT`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding logo to companies:', err.message);
       }
-    });
+    }
 
     // Add show_testimonials column to companies table
-    this.db.run(`ALTER TABLE companies ADD COLUMN show_testimonials BOOLEAN DEFAULT 1`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+    try {
+      this.db.exec(`ALTER TABLE companies ADD COLUMN show_testimonials BOOLEAN DEFAULT 1`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
         console.error('Error adding show_testimonials to companies:', err.message);
       }
-    });
+    }
   }
 
   // Helper methods
   get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+    try {
+      return this.db.prepare(sql).get(...params);
+    } catch (err) {
+      throw err;
+    }
   }
 
   all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    try {
+      return this.db.prepare(sql).all(...params);
+    } catch (err) {
+      throw err;
+    }
   }
 
   run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
-        if (err) reject(err);
-        else resolve({ id: this.lastID, changes: this.changes });
-      });
-    });
+    try {
+      const stmt = this.db.prepare(sql);
+      const result = stmt.run(...params);
+      return { id: result.lastInsertRowid, changes: result.changes };
+    } catch (err) {
+      throw err;
+    }
   }
 
   close() {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    this.db.close();
   }
 }
 
-module.exports = new Database();
+module.exports = new DatabaseWrapper();
