@@ -1,12 +1,27 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = process.env.DB_PATH || './database/thrift_shop.db';
+// Use in-memory database if we can't write to filesystem (Railway)
+let dbPath = process.env.DB_PATH || './database/thrift_shop.db';
+
+// Check if we can write to the filesystem
+try {
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+  // Test write access
+  fs.accessSync(dbDir, fs.constants.W_OK);
+} catch (err) {
+  console.warn('⚠️ Cannot write to filesystem, using in-memory database');
+  dbPath = ':memory:';
+}
 
 class DatabaseWrapper {
   constructor() {
     try {
-      this.db = new Database(dbPath, { verbose: console.log });
+      this.db = new Database(dbPath);
       console.log('📦 Connected to SQLite database at:', dbPath);
       this.initTables();
     } catch (err) {
