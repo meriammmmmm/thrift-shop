@@ -111,7 +111,7 @@
 │  ☐ pm2 start server.js --name backend                               │
 │  ☐ pm2 save                                                         │
 │  ☐ pm2 status (should show "online")                                │
-│  ☐ curl http://localhost:5001/api/health                            │
+│  ☐ curl https://thrift-shop-backend-production.up.railway.appapi/health                            │
 │                                                                      │
 │  ✅ Should see: {"status":"OK"}                                      │
 │                                                                      │

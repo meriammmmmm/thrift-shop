@@ -56,7 +56,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       setLoading(true);
       
       // Load testimonials from API
-      const response = await fetch('http://localhost:5001/api/testimonials', {
+      const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials', {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -87,7 +87,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       }
       
       // Load testimonials visibility setting
-      const settingsResponse = await fetch('http://localhost:5001/api/companies/me', {
+      const settingsResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/companies/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -115,7 +115,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
 
   const handleToggleTestimonials = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/testimonials/section/visibility', {
+      const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials/section/visibility', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     try {
       if (isAddingNew) {
         // Add new testimonial
-        const response = await fetch('http://localhost:5001/api/testimonials', {
+        const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
         }
       } else {
         // Update existing testimonial
-        const response = await fetch(`http://localhost:5001/api/testimonials/${testimonial.id}`, {
+        const response = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${testimonial.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
   const handleDeleteTestimonial = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this testimonial?')) {
       try {
-        const response = await fetch(`http://localhost:5001/api/testimonials/${id}`, {
+        const response = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`
@@ -269,7 +269,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     console.log('📊 Current testimonials state:', testimonials.map(t => ({ id: t.id, title: t.title, isActive: t.isActive })));
     
     try {
-      const response = await fetch(`http://localhost:5001/api/testimonials/${id}/toggle`, {
+      const response = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authToken}`

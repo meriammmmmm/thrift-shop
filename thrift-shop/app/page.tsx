@@ -138,7 +138,7 @@ export default function Home() {
 
   const loadTestimonials = async (companyId: string) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/testimonials/active?companyId=${companyId}`);
+      const response = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/active?companyId=${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data.testimonials || []);

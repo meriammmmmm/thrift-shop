@@ -31,7 +31,7 @@ async function runTests() {
     console.log('Testing Backend APIs...\n');
     
     // Test companies list
-    const companies = await testAPI('http://localhost:5001/api/companies/public/active', 'Companies List API');
+    const companies = await testAPI('https://thrift-shop-backend-production.up.railway.appapi/companies/public/active', 'Companies List API');
     
     if (companies && companies.companies) {
         console.log(`\n📊 Found ${companies.companies.length} active companies:`);
@@ -45,7 +45,7 @@ async function runTests() {
         for (let i = 0; i < Math.min(3, companies.companies.length); i++) {
             const company = companies.companies[i];
             const products = await testAPI(
-                `http://localhost:5001/api/products/company/${company.id}`, 
+                `https://thrift-shop-backend-production.up.railway.appapi/products/company/${company.id}`, 
                 `${company.name} Products API`
             );
             

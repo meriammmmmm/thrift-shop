@@ -249,7 +249,7 @@ deploy_vercel() {
             cp .env.company$i .env.local
             
             # Update API URL
-            sed -i.bak "s|http://localhost:5001/api|https://api.$DOMAIN/api|g" .env.local
+            sed -i.bak "s|https://thrift-shop-backend-production.up.railway.appapi|https://api.$DOMAIN/api|g" .env.local
             
             # Deploy
             vercel --prod --yes

@@ -112,7 +112,7 @@ if [ -d "$DEPLOY_DIR/admin-panel" ]; then
         cat > .env << EOF
 NODE_ENV=production
 PORT=8080
-REACT_APP_API_URL=http://localhost:5001/api
+REACT_APP_API_URL=https://thrift-shop-backend-production.up.railway.appapi
 EOF
     fi
     
@@ -149,7 +149,7 @@ deploy_company() {
     cat > .env.local << EOF
 NEXT_PUBLIC_COMPANY_ID=$COMPANY_ID
 NEXT_PUBLIC_COMPANY_NAME=$COMPANY_NAME
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
+NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.appapi
 EOF
     
     # Install and build

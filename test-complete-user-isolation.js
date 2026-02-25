@@ -9,7 +9,7 @@
 const fetch = require('node-fetch');
 
 async function loginAdmin(email, password) {
-  const response = await fetch('http://localhost:5001/api/auth/login', {
+  const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -23,7 +23,7 @@ async function loginAdmin(email, password) {
 }
 
 async function getAdminUsers(token) {
-  const response = await fetch('http://localhost:5001/api/admin/users', {
+  const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/users', {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   

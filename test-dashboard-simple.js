@@ -6,7 +6,7 @@ async function testDashboard() {
   try {
     // Login first
     console.log('1. Logging in...');
-    const loginResponse = await fetch('http://localhost:5001/api/auth/login', {
+    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -20,7 +20,7 @@ async function testDashboard() {
     
     // Get dashboard
     console.log('2. Getting dashboard data...');
-    const dashboardResponse = await fetch('http://localhost:5001/api/admin/dashboard', {
+    const dashboardResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/dashboard', {
       headers: { 'Authorization': `Bearer ${loginData.token}` }
     });
     

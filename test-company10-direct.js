@@ -40,7 +40,7 @@ async function testCompany10Direct() {
       console.log(`\n3. Trying password: ${password}`);
       
       try {
-        const loginResponse = await fetch('http://localhost:5001/api/auth/login', {
+        const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -55,7 +55,7 @@ async function testCompany10Direct() {
           
           // Get users
           console.log('4. Getting users for company 10...');
-          const usersResponse = await fetch('http://localhost:5001/api/admin/users', {
+          const usersResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/users', {
             headers: { 'Authorization': `Bearer ${loginData.token}` }
           });
           

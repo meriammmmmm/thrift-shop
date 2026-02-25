@@ -1,5 +1,5 @@
 // Admin Panel JavaScript
-const API_BASE_URL = 'http://localhost:5001/api'; // Direct backend connection
+const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.appapi'; // Direct backend connection
 let authToken = localStorage.getItem('admin-token');
 let currentUser = null;
 let currentThemeData = null;

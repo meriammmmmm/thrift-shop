@@ -219,7 +219,7 @@ JWT_SECRET=your-secret-key
 DB_PATH=./database/thrift_shop.db
 
 # Frontend  
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
+NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.appapi
 ```
 
 ### **Database Setup**

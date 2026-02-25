@@ -6,7 +6,7 @@ async function testToggleFunctionality() {
   try {
     // Test 1: Get current testimonials
     console.log('1. Getting current testimonials...');
-    const response = await fetch('http://localhost:5001/api/testimonials?companyId=1');
+    const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials?companyId=1');
     const data = await response.json();
     
     if (data.testimonials && data.testimonials.length > 0) {
@@ -20,7 +20,7 @@ async function testToggleFunctionality() {
 
       // Test 2: Toggle the testimonial
       console.log('\n2. Toggling testimonial status...');
-      const toggleResponse = await fetch(`http://localhost:5001/api/testimonials/${testimonial.id}/toggle`, {
+      const toggleResponse = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${testimonial.id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -39,7 +39,7 @@ async function testToggleFunctionality() {
 
         // Test 3: Verify the change
         console.log('\n3. Verifying the change...');
-        const verifyResponse = await fetch('http://localhost:5001/api/testimonials?companyId=1');
+        const verifyResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials?companyId=1');
         const verifyData = await verifyResponse.json();
         const updatedTestimonial = verifyData.testimonials.find(t => t.id === testimonial.id);
         
@@ -53,7 +53,7 @@ async function testToggleFunctionality() {
 
           // Test 4: Toggle back
           console.log('\n4. Toggling back to original state...');
-          const toggleBackResponse = await fetch(`http://localhost:5001/api/testimonials/${testimonial.id}/toggle`, {
+          const toggleBackResponse = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${testimonial.id}/toggle`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json'
