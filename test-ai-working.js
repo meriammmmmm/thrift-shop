@@ -6,7 +6,7 @@ const fs = require('fs');
 console.log('🤖 Testing REAL AI Image Analysis...\n');
 
 // Test configuration
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'https://thrift-shop-production.up.railway.app/api';
 const ADMIN_EMAIL = 'admin@thriftshop.com';
 const ADMIN_PASSWORD = 'admin123';
 

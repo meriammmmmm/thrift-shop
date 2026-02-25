@@ -1,7 +1,7 @@
 // Test script for admin user management functionality
 const axios = require('axios');
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'https://thrift-shop-production.up.railway.app/api';
 
 // Admin credentials
 const adminCredentials = {

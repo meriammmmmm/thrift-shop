@@ -7,7 +7,7 @@
 
 const fetch = require('node-fetch');
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'https://thrift-shop-production.up.railway.app/api';
 
 async function loginAdmin(email, password) {
   const response = await fetch(`${API_BASE}/auth/login`, {
