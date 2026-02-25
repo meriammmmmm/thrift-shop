@@ -488,7 +488,7 @@ export default function DailyEditPage() {
                 onClick={() => window.location.href = '/'}
                 className="text-2xl font-bold tracking-wider text-gray-900 hover:scale-105 transition-transform duration-300 cursor-pointer"
               >
-                {company?.name?.toUpperCase() || 'STORE'}
+                {company?.name?.toUpperCase() || 'MERY ROSE'}
               </div>
 
               {/* Right - Search and Icons */}
@@ -579,7 +579,7 @@ export default function DailyEditPage() {
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-6xl font-bold mb-4 animate-fade-in">{company?.name || 'Daily'} Edit</h1>
+          <h1 className="text-6xl font-bold mb-4 animate-fade-in">{company?.name || 'Mery Rose'} Edit</h1>
           <p className="text-2xl mb-8 opacity-90 animate-slide-up" style={{ animationDelay: '200ms' }}>
             This Week's Fresh Drops - {weeklyProducts.length} New Items
           </p>

@@ -272,7 +272,7 @@ export default function CheckoutPage() {
               className="text-2xl font-bold tracking-widest text-gray-900 hover:scale-105 transition-all duration-300 hover:tracking-[0.3em]"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
-              {company?.name?.toUpperCase() || 'STORE'}
+              {company?.name?.toUpperCase() || 'MERY ROSE'}
             </button>
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 bg-green-50 px-4 py-2 rounded-full border border-green-200">
               <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">

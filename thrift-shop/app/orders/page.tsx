@@ -184,7 +184,7 @@ export default function OrdersPage() {
               onClick={() => router.push('/')}
               className="text-2xl font-bold tracking-wider text-gray-900 hover:scale-105 transition-transform duration-300"
             >
-              {company?.name?.toUpperCase() || 'STORE'}
+              {company?.name?.toUpperCase() || 'MERY ROSE'}
             </button>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Hello, {user?.name || user?.email}</span>

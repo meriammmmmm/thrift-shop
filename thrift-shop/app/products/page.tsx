@@ -711,7 +711,7 @@ export default function ProductsPage() {
                 onClick={() => window.location.href = '/'}
                 className="text-2xl font-bold tracking-wider text-gray-900 hover:scale-105 transition-transform duration-300 cursor-pointer"
               >
-                {company?.name?.toUpperCase() || 'THREDUP'}
+                {company?.name?.toUpperCase() || 'MERY ROSE'}
               </div>
 
               {/* Right - Search and Icons */}
