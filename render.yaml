@@ -5,8 +5,9 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -23,8 +24,9 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd admin-panel && npm install && npm run build
-    startCommand: cd admin-panel && npm start
+    rootDir: admin-panel
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -39,8 +41,9 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd thrift-shop && npm install && npm run build
-    startCommand: cd thrift-shop && npm start
+    rootDir: thrift-shop
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_COMPANY_ID
         value: 1
