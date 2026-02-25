@@ -5,7 +5,7 @@ interface ThemeSettingsProps {
   authToken: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const presetThemes = [
   { id: 'mery-rose', name: '💋 Mery Rose', primary: '#8B1538', description: 'Bold Burgundy - Your Brand!' },
