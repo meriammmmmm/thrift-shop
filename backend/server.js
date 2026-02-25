@@ -21,31 +21,35 @@ const aiRoutes = require('./routes/ai');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS configuration - MUST come before helmet
+// CORS configuration - MUST come first, before any other middleware
+app.options('*', cors()); // Enable pre-flight for all routes
+
 app.use(cors({
-  origin: '*',
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  optionsSuccessStatus: 200
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours
 }));
 
-// Additional CORS headers
+// Additional CORS headers as backup
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
 
-// Security middleware - configured to allow CORS
+// Security middleware - configured to not interfere with CORS
 app.use(helmet({
-  crossOriginResourcePolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: false
 }));
