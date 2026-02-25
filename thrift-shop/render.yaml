@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pearl-box-store
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_COMPANY_ID
+        value: 1
+      - key: NEXT_PUBLIC_COMPANY_NAME
+        value: Pearl Box
+      - key: NEXT_PUBLIC_API_URL
+        value: https://thrift-shop-backend.onrender.com/api
