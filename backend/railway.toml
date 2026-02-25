@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node server.js"
+restartPolicyType = "ON_FAILURE"
+
+# Mount a persistent volume for the database
+[[deploy.volumes]]
+mountPath = "/app/database"
+name = "thrift-shop-db"

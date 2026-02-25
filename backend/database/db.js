@@ -3,8 +3,14 @@ const path = require('path');
 const fs = require('fs');
 const seedDatabase = require('./seed-data');
 
-// Use in-memory database if we can't write to filesystem (Railway)
+// Use persistent volume on Railway, or local path otherwise
 let dbPath = process.env.DB_PATH || './database/thrift_shop.db';
+
+// On Railway, use the mounted volume
+if (process.env.RAILWAY_ENVIRONMENT) {
+  dbPath = '/app/database/thrift_shop.db';
+  console.log('🚂 Railway detected - using persistent volume for database');
+}
 
 // Check if we can write to the filesystem
 try {
@@ -14,6 +20,7 @@ try {
   }
   // Test write access
   fs.accessSync(dbDir, fs.constants.W_OK);
+  console.log('✅ Database directory is writable:', dbDir);
 } catch (err) {
   console.warn('⚠️ Cannot write to filesystem, using in-memory database');
   dbPath = ':memory:';
@@ -26,8 +33,11 @@ class DatabaseWrapper {
       console.log('📦 Connected to SQLite database at:', dbPath);
       this.initTables();
       
-      // Seed database if using in-memory
-      if (dbPath === ':memory:') {
+      // Only seed if database is completely empty (no companies exist)
+      if (dbPath !== ':memory:') {
+        this.checkAndSeedIfEmpty();
+      } else {
+        // For in-memory, seed after a delay
         setTimeout(() => seedDatabase(this), 1000);
       }
     } catch (err) {
@@ -35,6 +45,20 @@ class DatabaseWrapper {
       console.error('Database path attempted:', dbPath);
       // Don't throw - let the app start even if DB fails
       this.db = null;
+    }
+  }
+
+  async checkAndSeedIfEmpty() {
+    try {
+      const company = await this.get('SELECT id FROM companies LIMIT 1');
+      if (!company) {
+        console.log('🌱 Database is empty, seeding initial data...');
+        await seedDatabase(this);
+      } else {
+        console.log('✅ Database already has data, skipping seed');
+      }
+    } catch (err) {
+      console.error('Error checking database:', err.message);
     }
   }
 
