@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const seedDatabase = require('./seed-data');
 
 // Use in-memory database if we can't write to filesystem (Railway)
 let dbPath = process.env.DB_PATH || './database/thrift_shop.db';
@@ -24,6 +25,11 @@ class DatabaseWrapper {
       this.db = new Database(dbPath);
       console.log('📦 Connected to SQLite database at:', dbPath);
       this.initTables();
+      
+      // Seed database if using in-memory
+      if (dbPath === ':memory:') {
+        setTimeout(() => seedDatabase(this), 1000);
+      }
     } catch (err) {
       console.error('❌ Error opening database:', err.message);
       console.error('Database path attempted:', dbPath);
