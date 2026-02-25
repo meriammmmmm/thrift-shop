@@ -12,8 +12,8 @@ module.exports = async function seedDatabase(db) {
 
     // Create default company
     await db.run(`
-      INSERT INTO companies (id, name, description, email, status, logo)
-      VALUES (1, 'Pearl Box', 'Vintage treasures and unique finds', 'info@pearlbox.com', 'active', '')
+      INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country)
+      VALUES (1, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'info@meryrose.com', 'active', '', 1, 'US')
     `);
 
     // Create some sample products

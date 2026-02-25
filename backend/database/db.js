@@ -163,6 +163,7 @@ class DatabaseWrapper {
         country TEXT,
         status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
         commission_rate REAL DEFAULT 0.05, -- 5% default commission
+        show_testimonials BOOLEAN DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,

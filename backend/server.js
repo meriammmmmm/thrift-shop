@@ -17,9 +17,22 @@ const companiesRoutes = require('./routes/companies');
 const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
 const aiRoutes = require('./routes/ai');
+const db = require('./database/db');
+const seedDatabase = require('./database/seed-data');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Initialize and seed database on startup
+(async () => {
+  try {
+    console.log('🌱 Initializing database...');
+    await seedDatabase(db);
+    console.log('✅ Database ready');
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+  }
+})();
 
 // CORS configuration - MUST come first, before any other middleware
 app.options('*', cors()); // Enable pre-flight for all routes
