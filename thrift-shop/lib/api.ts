@@ -1,5 +1,17 @@
 // API configuration for connecting to separate backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+// Ensure the URL is absolute and properly formatted
+const getApiBaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+  
+  // If URL doesn't start with http, make it absolute
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  
+  return url;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiClient {
   private baseURL: string;
