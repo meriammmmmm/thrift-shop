@@ -6,23 +6,35 @@ const seedDatabase = require('./seed-data');
 // Use persistent volume on Railway, or local path otherwise
 let dbPath = process.env.DB_PATH || './database/thrift_shop.db';
 
+console.log('🔍 Environment check:');
+console.log('- RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- Initial DB_PATH:', dbPath);
+
 // On Railway, use the mounted volume
 if (process.env.RAILWAY_ENVIRONMENT) {
   dbPath = '/app/database/thrift_shop.db';
   console.log('🚂 Railway detected - using persistent volume for database');
 }
 
+console.log('- Final dbPath:', dbPath);
+
 // Check if we can write to the filesystem
 try {
   const dbDir = path.dirname(dbPath);
+  console.log('- Checking directory:', dbDir);
+  
   if (!fs.existsSync(dbDir)) {
+    console.log('- Directory does not exist, creating...');
     fs.mkdirSync(dbDir, { recursive: true });
   }
+  
   // Test write access
   fs.accessSync(dbDir, fs.constants.W_OK);
   console.log('✅ Database directory is writable:', dbDir);
 } catch (err) {
-  console.warn('⚠️ Cannot write to filesystem, using in-memory database');
+  console.error('⚠️ Cannot write to filesystem:', err.message);
+  console.warn('⚠️ Using in-memory database - DATA WILL BE LOST ON RESTART!');
   dbPath = ':memory:';
 }
 
