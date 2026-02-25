@@ -7,15 +7,22 @@ class DatabaseWrapper {
   constructor() {
     try {
       this.db = new Database(dbPath, { verbose: console.log });
-      console.log('📦 Connected to SQLite database');
+      console.log('📦 Connected to SQLite database at:', dbPath);
       this.initTables();
     } catch (err) {
-      console.error('Error opening database:', err.message);
-      throw err;
+      console.error('❌ Error opening database:', err.message);
+      console.error('Database path attempted:', dbPath);
+      // Don't throw - let the app start even if DB fails
+      this.db = null;
     }
   }
 
   initTables() {
+    if (!this.db) {
+      console.error('⚠️ Database not initialized, skipping table creation');
+      return;
+    }
+    
     const tables = [
       // Users table
       `CREATE TABLE IF NOT EXISTS users (
@@ -319,9 +326,11 @@ class DatabaseWrapper {
   // Helper methods - wrapped in promises for compatibility with existing async/await code
   get(sql, params = []) {
     return Promise.resolve().then(() => {
+      if (!this.db) throw new Error('Database not initialized');
       try {
         return this.db.prepare(sql).get(...params);
       } catch (err) {
+        console.error('DB GET Error:', err.message, 'SQL:', sql);
         throw err;
       }
     });
@@ -329,9 +338,11 @@ class DatabaseWrapper {
 
   all(sql, params = []) {
     return Promise.resolve().then(() => {
+      if (!this.db) throw new Error('Database not initialized');
       try {
         return this.db.prepare(sql).all(...params);
       } catch (err) {
+        console.error('DB ALL Error:', err.message, 'SQL:', sql);
         throw err;
       }
     });
@@ -339,11 +350,13 @@ class DatabaseWrapper {
 
   run(sql, params = []) {
     return Promise.resolve().then(() => {
+      if (!this.db) throw new Error('Database not initialized');
       try {
         const stmt = this.db.prepare(sql);
         const result = stmt.run(...params);
         return { id: result.lastInsertRowid, changes: result.changes };
       } catch (err) {
+        console.error('DB RUN Error:', err.message, 'SQL:', sql);
         throw err;
       }
     });
@@ -351,7 +364,7 @@ class DatabaseWrapper {
 
   close() {
     return Promise.resolve().then(() => {
-      this.db.close();
+      if (this.db) this.db.close();
     });
   }
 }

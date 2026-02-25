@@ -124,8 +124,10 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Thrift Shop Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(`📁 Database path: ${process.env.DB_PATH || './database/thrift_shop.db'}`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
