@@ -741,93 +741,83 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Categories - REDESIGNED */}
-      <section className="relative py-20 overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 opacity-60"></div>
+      {/* Featured Categories - OLD UI RESTORED */}
+      <section className="relative py-16 bg-gradient-to-b from-white via-pink-50/30 to-white overflow-hidden">
+        {/* Subtle decorative elements */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-pink-100 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-purple-100 rounded-full blur-3xl opacity-20"></div>
         
-        {/* Floating decorative elements */}
-        <div className="absolute top-10 left-10 w-32 h-32 bg-pink-200 rounded-full blur-3xl opacity-20 animate-float"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-purple-200 rounded-full blur-3xl opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-blue-200 rounded-full blur-3xl opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
-        
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-          {/* Header with sparkle effect */}
-          <div className="text-center mb-16 scroll-animate scroll-fadeInUp">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="text-2xl animate-bounce">✨</span>
-              <span className="inline-block px-6 py-2 rounded-full text-xs font-bold uppercase tracking-[0.2em] bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <span className="text-xl">✨</span>
+              <span className="inline-block px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white">
                 Shop by Vibe
               </span>
-              <span className="text-2xl animate-bounce" style={{ animationDelay: '0.2s' }}>✨</span>
+              <span className="text-xl">✨</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-3">
               Find Your <span className="font-serif italic bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">Perfect Moment</span>
             </h2>
-            <p className="text-gray-600 text-base max-w-2xl mx-auto leading-relaxed">
+            <p className="text-gray-600 text-sm max-w-xl mx-auto">
               Every occasion deserves the perfect outfit. Discover curated collections for your lifestyle.
             </p>
           </div>
           
-          {/* Cards Grid with enhanced design */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          {/* Cards Grid - Cleaner, more elegant design */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
             {[
               { 
-                name: 'Night Out', 
-                emoji: '🌙',
-                gradient: 'from-indigo-400 to-purple-600',
+                name: 'NIGHT OUT', 
+                gradient: 'from-purple-500 to-indigo-600',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                   </svg>
                 )
               },
               { 
-                name: 'Casual', 
-                emoji: '☕',
-                gradient: 'from-amber-400 to-orange-500',
+                name: 'CASUAL', 
+                gradient: 'from-orange-400 to-amber-500',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                   </svg>
                 )
               },
               { 
-                name: 'Work', 
-                emoji: '💼',
-                gradient: 'from-slate-400 to-gray-600',
+                name: 'WORK', 
+                gradient: 'from-gray-500 to-slate-600',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
                 )
               },
               { 
-                name: 'Date Night', 
-                emoji: '💕',
-                gradient: 'from-pink-400 to-rose-600',
+                name: 'DATE NIGHT', 
+                gradient: 'from-pink-500 to-rose-600',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                   </svg>
                 )
               },
               { 
-                name: 'Weekend', 
-                emoji: '🌸',
-                gradient: 'from-green-400 to-emerald-600',
+                name: 'WEEKEND', 
+                gradient: 'from-emerald-400 to-green-600',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 )
               },
               { 
-                name: 'Events', 
-                emoji: '🎉',
-                gradient: 'from-fuchsia-400 to-pink-600',
+                name: 'EVENTS', 
+                gradient: 'from-fuchsia-500 to-pink-600',
                 icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
                 )
@@ -835,55 +825,35 @@ export default function Home() {
             ].map((category, index) => (
               <div 
                 key={category.name} 
-                className={`group cursor-pointer scroll-animate scroll-zoomIn stagger-${index + 1} relative`}
+                className="group cursor-pointer"
                 onClick={() => window.location.href = `/products?occasion=${encodeURIComponent(category.name)}`}
               >
-                {/* Card with glassmorphism effect */}
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 border-2 border-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 overflow-hidden">
-                  {/* Gradient overlay on hover */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-3xl`}></div>
-                  
-                  {/* Animated border glow */}
-                  <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r ${category.gradient} blur-xl -z-10`}></div>
-                  
-                  {/* Icon container with gradient */}
-                  <div className={`relative w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br ${category.gradient} flex items-center justify-center text-white shadow-lg transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500`}>
-                    <div className="absolute inset-0 rounded-2xl bg-white/20 animate-pulse"></div>
+                {/* Simple white card with shadow */}
+                <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  {/* Icon with gradient background */}
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.gradient} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-300`}>
                     {category.icon}
                   </div>
                   
-                  {/* Emoji badge */}
-                  <div className="absolute -top-3 -right-3 text-3xl transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 animate-bounce">
-                    {category.emoji}
-                  </div>
-                  
                   {/* Category name */}
-                  <h3 className="relative text-center text-sm font-bold tracking-wide uppercase text-gray-800 group-hover:text-gray-900 transition-colors duration-300">
+                  <h3 className="text-center text-xs font-bold tracking-wide text-gray-800">
                     {category.name}
                   </h3>
-                  
-                  {/* Hover arrow */}
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                    <svg className="w-5 h-5 text-gray-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
           
           {/* Bottom CTA */}
-          <div className="text-center mt-16 scroll-animate scroll-fadeInUp">
+          <div className="text-center">
             <button 
               onClick={() => window.location.href = '/products'}
-              className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-bold text-sm uppercase tracking-wider rounded-full shadow-2xl hover:shadow-pink-500/50 transform hover:scale-105 transition-all duration-300 overflow-hidden"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-semibold text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
-              <span className="relative z-10">Explore All Collections</span>
-              <svg className="relative z-10 w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <span>Explore All Collections</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>
           </div>
         </div>
