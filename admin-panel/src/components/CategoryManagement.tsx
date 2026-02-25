@@ -15,7 +15,7 @@ interface Category {
   updated_at: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);

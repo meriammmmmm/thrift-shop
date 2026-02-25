@@ -23,7 +23,7 @@ interface User {
   country?: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const UserManagement: React.FC<UserManagementProps> = ({ authToken }) => {
   const [users, setUsers] = useState<User[]>([]);

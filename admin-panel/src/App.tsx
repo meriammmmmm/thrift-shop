@@ -15,7 +15,7 @@ import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 interface User {
   id: number;

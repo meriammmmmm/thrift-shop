@@ -14,7 +14,7 @@ interface Order {
   created_at: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
   const [orders, setOrders] = useState<Order[]>([]);

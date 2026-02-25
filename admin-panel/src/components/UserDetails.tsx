@@ -28,7 +28,7 @@ interface UserDetails {
   country?: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);

@@ -24,7 +24,7 @@ interface Company {
   logo?: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
   const [stats, setStats] = useState<DashboardStats>({

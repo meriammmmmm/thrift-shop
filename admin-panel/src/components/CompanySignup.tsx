@@ -123,7 +123,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackToLogin }) => {
   const [loading, setLoading] = useState(false);

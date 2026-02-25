@@ -6,7 +6,7 @@ interface CreateUserProps {
   onBack: () => void;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const CreateUser: React.FC<CreateUserProps> = ({ authToken, onBack }) => {
   const [formData, setFormData] = useState({

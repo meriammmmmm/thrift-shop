@@ -14,7 +14,7 @@ interface Transaction {
   created_at: string;
 }
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = '/api';
 
 const TransactionManagement: React.FC<TransactionManagementProps> = ({ authToken }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
