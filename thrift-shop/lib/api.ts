@@ -1,17 +1,45 @@
 // API configuration for connecting to separate backend
+// Hardcoded for Railway deployment - change this to your backend URL
+const RAILWAY_BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
   
-  // If URL doesn't start with http, make it absolute
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    return `https://${url}`;
+  // Log for debugging
+  if (typeof window !== 'undefined') {
+    console.log('NEXT_PUBLIC_API_URL from env:', envUrl);
   }
   
-  return url;
+  // If in production and no env var, use hardcoded Railway URL
+  if (!envUrl && typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+    console.log('Using hardcoded Railway backend URL');
+    return RAILWAY_BACKEND_URL;
+  }
+  
+  // Default to localhost if not set
+  if (!envUrl) {
+    return 'http://localhost:5001/api';
+  }
+  
+  // If URL doesn't start with http, make it absolute
+  if (!envUrl.startsWith('http://') && !envUrl.startsWith('https://')) {
+    const absoluteUrl = `https://${envUrl}`;
+    if (typeof window !== 'undefined') {
+      console.log('Converting to absolute URL:', absoluteUrl);
+    }
+    return absoluteUrl;
+  }
+  
+  return envUrl;
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Log the final API URL
+if (typeof window !== 'undefined') {
+  console.log('Final API_BASE_URL:', API_BASE_URL);
+}
 
 class ApiClient {
   private baseURL: string;
