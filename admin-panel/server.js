@@ -51,7 +51,8 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🎨 React Admin Panel running on http://localhost:${PORT}`);
-  console.log(`📊 Backend API: http://localhost:5001/api`);
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
+  console.log(`🎨 React Admin Panel running on port ${PORT}`);
+  console.log(`📊 Backend API: ${backendUrl}/api`);
   console.log(`🔄 Proxy enabled: Admin panel requests will be forwarded to backend`);
 });
