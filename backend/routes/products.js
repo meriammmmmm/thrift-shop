@@ -457,7 +457,7 @@ router.get('/company/:companyId', async (req, res) => {
 
     console.log('🔍 Fetching company...');
     // First, get company information
-    const company = await db.get('SELECT * FROM companies WHERE id = ? AND status = "active"', [companyId]);
+    const company = await db.get('SELECT * FROM companies WHERE id = ?', [companyId]);
     console.log('Company result:', company);
     
     if (!company) {
