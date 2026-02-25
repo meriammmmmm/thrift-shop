@@ -441,6 +441,8 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
 // Get products for a specific company storefront
 router.get('/company/:companyId', async (req, res) => {
   try {
+    console.log('📥 Company products request:', req.params.companyId);
+    
     const { companyId } = req.params;
     const {
       page = 1,
@@ -453,11 +455,17 @@ router.get('/company/:companyId', async (req, res) => {
       maxPrice
     } = req.query;
 
+    console.log('🔍 Fetching company...');
     // First, get company information
     const company = await db.get('SELECT * FROM companies WHERE id = ? AND status = "active"', [companyId]);
+    console.log('Company result:', company);
+    
     if (!company) {
+      console.log('❌ Company not found');
       return res.status(404).json({ error: 'Company not found or inactive' });
     }
+
+    console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
     let whereClause = 'WHERE p.in_stock = 1 AND p.company_id = ?';
