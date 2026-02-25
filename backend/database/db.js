@@ -316,35 +316,43 @@ class DatabaseWrapper {
     }
   }
 
-  // Helper methods
+  // Helper methods - wrapped in promises for compatibility with existing async/await code
   get(sql, params = []) {
-    try {
-      return this.db.prepare(sql).get(...params);
-    } catch (err) {
-      throw err;
-    }
+    return Promise.resolve().then(() => {
+      try {
+        return this.db.prepare(sql).get(...params);
+      } catch (err) {
+        throw err;
+      }
+    });
   }
 
   all(sql, params = []) {
-    try {
-      return this.db.prepare(sql).all(...params);
-    } catch (err) {
-      throw err;
-    }
+    return Promise.resolve().then(() => {
+      try {
+        return this.db.prepare(sql).all(...params);
+      } catch (err) {
+        throw err;
+      }
+    });
   }
 
   run(sql, params = []) {
-    try {
-      const stmt = this.db.prepare(sql);
-      const result = stmt.run(...params);
-      return { id: result.lastInsertRowid, changes: result.changes };
-    } catch (err) {
-      throw err;
-    }
+    return Promise.resolve().then(() => {
+      try {
+        const stmt = this.db.prepare(sql);
+        const result = stmt.run(...params);
+        return { id: result.lastInsertRowid, changes: result.changes };
+      } catch (err) {
+        throw err;
+      }
+    });
   }
 
   close() {
-    this.db.close();
+    return Promise.resolve().then(() => {
+      this.db.close();
+    });
   }
 }
 
