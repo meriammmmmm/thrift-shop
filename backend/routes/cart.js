@@ -52,7 +52,7 @@ router.post('/add', authenticateToken, async (req, res) => {
     }
 
     // Check if product exists and is in stock
-    const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = true', [product_id]);
+    const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = 1', [product_id]);
     console.log('Product found:', product ? `${product.name} (in_stock: ${product.in_stock})` : 'Not found');
     
     if (!product) {

@@ -124,6 +124,63 @@ app.get('/api/fix-sequences', async (req, res) => {
   }
 });
 
+// Fix boolean columns endpoint (call once after migration to fix 0/1 to true/false)
+app.get('/api/fix-boolean-columns', async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.json({ error: 'Not using PostgreSQL' });
+    }
+    
+    const results = [];
+    
+    // Fix in_stock column in products table
+    try {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = CASE 
+          WHEN in_stock::text = '1' OR in_stock::text = 'true' THEN true 
+          ELSE false 
+        END
+      `);
+      results.push('✅ Fixed products.in_stock');
+    } catch (err) {
+      results.push(`⚠️ Error fixing products.in_stock: ${err.message}`);
+    }
+    
+    // Fix is_active column in testimonials table
+    try {
+      await db.run(`
+        UPDATE testimonials 
+        SET is_active = CASE 
+          WHEN is_active::text = '1' OR is_active::text = 'true' THEN true 
+          ELSE false 
+        END
+      `);
+      results.push('✅ Fixed testimonials.is_active');
+    } catch (err) {
+      results.push(`⚠️ Error fixing testimonials.is_active: ${err.message}`);
+    }
+    
+    // Fix show_testimonials column in companies table
+    try {
+      await db.run(`
+        UPDATE companies 
+        SET show_testimonials = CASE 
+          WHEN show_testimonials::text = '1' OR show_testimonials::text = 'true' THEN true 
+          ELSE false 
+        END
+      `);
+      results.push('✅ Fixed companies.show_testimonials');
+    } catch (err) {
+      results.push(`⚠️ Error fixing companies.show_testimonials: ${err.message}`);
+    }
+    
+    res.json({ success: true, results });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // CORS test endpoint
 app.get('/api/cors-test', (req, res) => {
   res.json({

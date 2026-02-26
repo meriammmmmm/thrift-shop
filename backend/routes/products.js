@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE p.in_stock = true';
+    let whereClause = 'WHERE p.in_stock = 1';
     let params = [];
 
     // Filter by company if specified
@@ -331,7 +331,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 // Get categories
 router.get('/meta/categories', async (req, res) => {
   try {
-    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = true');
+    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = 1');
     res.json(categories.map(c => c.category));
   } catch (error) {
     console.error('Categories fetch error:', error);
@@ -342,7 +342,7 @@ router.get('/meta/categories', async (req, res) => {
 // Get brands
 router.get('/meta/brands', async (req, res) => {
   try {
-    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = true');
+    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = 1');
     res.json(brands.map(b => b.brand));
   } catch (error) {
     console.error('Brands fetch error:', error);
@@ -492,7 +492,7 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE p.in_stock = true AND p.company_id = ?';
+    let whereClause = 'WHERE p.in_stock = 1 AND p.company_id = ?';
     let params = [parseInt(companyId)];
 
     // Build where clause
@@ -557,6 +557,9 @@ router.get('/company/:companyId', async (req, res) => {
     // Parse JSON fields and add company info
     const parsedProducts = products.map(product => ({
       ...product,
+      price: parseFloat(product.price),
+      original_price: product.original_price ? parseFloat(product.original_price) : null,
+      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
       images: product.images ? JSON.parse(product.images) : [],
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],

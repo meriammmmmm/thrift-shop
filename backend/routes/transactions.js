@@ -108,14 +108,14 @@ router.get('/', async (req, res) => {
 });
 
 // Get transaction by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    const transaction = db.prepare(`
+    const transaction = await db.get(`
       SELECT 
         t.*,
-        u.username,
+        u.name as username,
         u.email,
         p.name as product_name,
         p.price as product_price
@@ -123,7 +123,7 @@ router.get('/:id', (req, res) => {
       LEFT JOIN users u ON t.user_id = u.id
       LEFT JOIN products p ON t.product_id = p.id
       WHERE t.id = ?
-    `).get(id);
+    `, [id]);
     
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found' });
@@ -137,7 +137,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new transaction
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const {
       user_id,
@@ -156,12 +156,12 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Type and amount are required' });
     }
     
-    const transaction = db.prepare(`
+    const transaction = await db.run(`
       INSERT INTO transactions (
         user_id, product_id, order_id, type, amount, currency, 
         status, payment_method, description, metadata, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `).run(
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `, [
       user_id || null,
       product_id || null,
       order_id || null,
@@ -172,19 +172,19 @@ router.post('/', (req, res) => {
       payment_method || null,
       description || null,
       JSON.stringify(metadata || {})
-    );
+    ]);
     
-    const newTransaction = db.prepare(`
+    const newTransaction = await db.get(`
       SELECT 
         t.*,
-        u.username,
+        u.name as username,
         u.email,
         p.name as product_name
       FROM transactions t
       LEFT JOIN users u ON t.user_id = u.id
       LEFT JOIN products p ON t.product_id = p.id
       WHERE t.id = ?
-    `).get(transaction.lastInsertRowid);
+    `, [transaction.id]);
     
     res.status(201).json(newTransaction);
   } catch (error) {
@@ -194,7 +194,7 @@ router.post('/', (req, res) => {
 });
 
 // Update transaction status
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
@@ -208,27 +208,27 @@ router.patch('/:id/status', (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
     
-    const result = db.prepare(`
+    const result = await db.run(`
       UPDATE transactions 
-      SET status = ?, notes = ?, updated_at = datetime('now')
+      SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(status, notes || null, id);
+    `, [status, notes || null, id]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
     
-    const updatedTransaction = db.prepare(`
+    const updatedTransaction = await db.get(`
       SELECT 
         t.*,
-        u.username,
+        u.name as username,
         u.email,
         p.name as product_name
       FROM transactions t
       LEFT JOIN users u ON t.user_id = u.id
       LEFT JOIN products p ON t.product_id = p.id
       WHERE t.id = ?
-    `).get(id);
+    `, [id]);
     
     res.json(updatedTransaction);
   } catch (error) {
@@ -238,7 +238,7 @@ router.patch('/:id/status', (req, res) => {
 });
 
 // Get transaction analytics
-router.get('/analytics/summary', (req, res) => {
+router.get('/analytics/summary', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
@@ -257,7 +257,7 @@ router.get('/analytics/summary', (req, res) => {
     }
     
     // Total revenue by type
-    const revenueByType = db.prepare(`
+    const revenueByType = await db.all(`
       SELECT 
         type,
         COUNT(*) as count,
@@ -265,26 +265,26 @@ router.get('/analytics/summary', (req, res) => {
         AVG(amount) as avg_amount
       FROM transactions 
       ${dateFilter}
-      AND status = 'completed'
+      ${dateFilter ? 'AND' : 'WHERE'} status = 'completed'
       GROUP BY type
-    `).all(...params);
+    `, params);
     
     // Daily revenue trend
-    const dailyRevenue = db.prepare(`
+    const dailyRevenue = await db.all(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as transaction_count,
         SUM(amount) as total_amount
       FROM transactions 
       ${dateFilter}
-      AND status = 'completed'
+      ${dateFilter ? 'AND' : 'WHERE'} status = 'completed'
       GROUP BY DATE(created_at)
       ORDER BY date DESC
       LIMIT 30
-    `).all(...params);
+    `, params);
     
     // Status breakdown
-    const statusBreakdown = db.prepare(`
+    const statusBreakdown = await db.all(`
       SELECT 
         status,
         COUNT(*) as count,
@@ -292,10 +292,10 @@ router.get('/analytics/summary', (req, res) => {
       FROM transactions 
       ${dateFilter}
       GROUP BY status
-    `).all(...params);
+    `, params);
     
     // Top products by revenue
-    const topProducts = db.prepare(`
+    const topProducts = await db.all(`
       SELECT 
         p.name,
         p.id,
@@ -304,12 +304,12 @@ router.get('/analytics/summary', (req, res) => {
       FROM transactions t
       JOIN products p ON t.product_id = p.id
       ${dateFilter}
-      AND t.status = 'completed'
+      ${dateFilter ? 'AND' : 'WHERE'} t.status = 'completed'
       AND t.type = 'purchase'
       GROUP BY p.id, p.name
       ORDER BY total_revenue DESC
       LIMIT 10
-    `).all(...params);
+    `, params);
     
     res.json({
       revenueByType,

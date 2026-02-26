@@ -108,7 +108,7 @@ router.get('/public/active', async (req, res) => {
       SELECT c.id, c.name, c.description, c.logo, c.website, c.email,
              COUNT(DISTINCT p.id) as product_count
       FROM companies c
-      LEFT JOIN products p ON c.id = p.company_id AND p.in_stock = true
+      LEFT JOIN products p ON c.id = p.company_id AND p.in_stock = 1
       WHERE c.status = 'active'
       GROUP BY c.id
       ORDER BY c.name ASC

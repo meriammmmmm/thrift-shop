@@ -34,7 +34,7 @@ router.get('/active', async (req, res) => {
     
     const testimonials = await db.all(`
       SELECT * FROM testimonials 
-      WHERE company_id = ? AND is_active = 1 
+      WHERE company_id = ? AND is_active = true 
       ORDER BY display_order ASC, created_at DESC
     `, [companyId]);
 
@@ -67,14 +67,14 @@ router.post('/', authenticateToken, async (req, res) => {
     const result = await db.run(`
       INSERT INTO testimonials (
         company_id, title, name, description, image, is_active, display_order, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [
       companyId,
       title,
       name || title,
       description,
       image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
-      isActive ? 1 : 0,
+      isActive ? true : false,
       displayOrder || 0
     ]);
 
@@ -124,14 +124,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     await db.run(`
       UPDATE testimonials 
-      SET title = ?, name = ?, description = ?, image = ?, is_active = ?, display_order = ?, updated_at = datetime('now')
+      SET title = ?, name = ?, description = ?, image = ?, is_active = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND company_id = ?
     `, [
       title,
       name || title,
       description,
       image || existing.image,
-      isActive ? 1 : 0,
+      isActive ? true : false,
       displayOrder || existing.display_order,
       id,
       companyId
@@ -208,11 +208,11 @@ router.patch('/:id/toggle', authenticateToken, async (req, res) => {
       });
     }
 
-    const newStatus = existing.is_active ? 0 : 1;
+    const newStatus = existing.is_active ? false : true;
 
     await db.run(`
       UPDATE testimonials 
-      SET is_active = ?, updated_at = datetime('now')
+      SET is_active = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND company_id = ?
     `, [newStatus, id, companyId]);
 
@@ -242,9 +242,9 @@ router.patch('/section/visibility', authenticateToken, async (req, res) => {
 
     await db.run(`
       UPDATE companies 
-      SET show_testimonials = ?, updated_at = datetime('now')
+      SET show_testimonials = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [showTestimonials ? 1 : 0, companyId]);
+    `, [showTestimonials ? true : false, companyId]);
 
     res.json({
       success: true,
@@ -274,14 +274,14 @@ router.post('/customer-submit', async (req, res) => {
     const result = await db.run(`
       INSERT INTO testimonials (
         company_id, title, name, description, image, is_active, display_order, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [
       companyId || 1,
       title || 'Customer Review',
       name,
       message,
       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
-      0, // Inactive by default - admin needs to approve
+      false, // Inactive by default - admin needs to approve
       999 // Put at end
     ]);
 

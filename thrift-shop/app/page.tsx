@@ -105,7 +105,7 @@ export default function Home() {
           category: product.category,
           condition: product.condition,
           color: product.color,
-          inStock: product.in_stock === 1,
+          inStock: product.in_stock === 1 || product.in_stock === true || product.in_stock === '1' || product.in_stock === undefined || product.in_stock === null,
           material: product.material,
           measurements: product.measurements || {},
           careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
