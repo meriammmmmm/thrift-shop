@@ -746,15 +746,13 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           {/* Header */}
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="text-xl">✨</span>
-              <span className="inline-block px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-white" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)' }}>
+            <div className="inline-flex items-center justify-center mb-4">
+              <span className="inline-block px-6 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest" style={{ backgroundColor: '#F5E6E8', color: '#8B1538', letterSpacing: '0.15em' }}>
                 Shop by Vibe
               </span>
-              <span className="text-xl">✨</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-4 tracking-tight">
-              Find Your <span className="font-serif italic" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Perfect Moment</span>
+              Find Your <span className="font-serif italic" style={{ color: '#8B1538' }}>Perfect Moment</span>
             </h2>
             <p className="text-gray-600 text-base max-w-2xl mx-auto leading-relaxed">
               Every occasion deserves the perfect outfit. Discover curated collections for your lifestyle.
@@ -824,13 +822,10 @@ export default function Home() {
                 className="group cursor-pointer"
                 onClick={() => window.location.href = `/products?occasion=${encodeURIComponent(category.name)}`}
               >
-                {/* Clean white card */}
-                <div className="bg-white rounded-2xl p-7 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
-                  {/* Icon with solid color background */}
-                  <div 
-                    className="w-16 h-16 mx-auto mb-5 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300"
-                    style={{ backgroundColor: category.color }}
-                  >
+                {/* Clean white card with theme colored shadow */}
+                <div className="bg-white rounded-2xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,165,165,0.5)] hover:-translate-y-2 transition-all duration-300 border border-gray-100">
+                  {/* Icon without background */}
+                  <div className="w-16 h-16 mx-auto mb-5 flex items-center justify-center text-gray-600 group-hover:scale-105 transition-transform duration-300">
                     {category.icon}
                   </div>
                   
@@ -847,8 +842,8 @@ export default function Home() {
           <div className="text-center">
             <button 
               onClick={() => window.location.href = '/products'}
-              className="inline-flex items-center gap-2 px-10 py-3.5 text-white font-semibold text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)' }}
+              className="inline-flex items-center gap-2 px-10 py-3.5 text-white font-semibold text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
+              style={{ backgroundColor: '#8B1538' }}
             >
               <span>Explore All Collections</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

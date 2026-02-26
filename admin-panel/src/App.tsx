@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const applyThemeToAdminPanel = (theme: any) => {
     const root = document.documentElement;
     
+    // Apply all theme colors
     root.style.setProperty('--color-primary', theme.primary);
     root.style.setProperty('--color-primary-hover', theme.primaryHover);
     root.style.setProperty('--color-primary-light', theme.primaryLight);
@@ -92,10 +93,13 @@ const App: React.FC = () => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
       return result ? 
         `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
-        '13, 148, 136'; // fallback
+        '212, 165, 165'; // fallback to soft dusty rose
     };
     
     root.style.setProperty('--color-primary-rgb', hexToRgb(theme.primary));
+    
+    // Apply to body background for consistency
+    document.body.style.background = theme.background || '#FFF5F7';
   };
 
   const checkAuth = async (token: string) => {
@@ -188,7 +192,7 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FFF5F7' }}>
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -215,7 +219,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen" style={{ background: '#FFF5F7' }}>
       <Header 
         user={currentUser} 
         onLogout={logout}
@@ -232,7 +236,7 @@ const App: React.FC = () => {
           user={currentUser}
         />
         
-        <main className="main-content flex-1 bg-gray-100">
+        <main className="main-content flex-1" style={{ background: '#FFF5F7' }}>
           {renderContent()}
         </main>
       </div>

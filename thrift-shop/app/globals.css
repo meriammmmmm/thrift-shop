@@ -850,7 +850,6 @@ a {
 
 /* Smooth reveal on scroll */
 .reveal-on-scroll {
-  opacity: 0;
   transform: translateY(40px);
   transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -2288,6 +2287,43 @@ a {
 .gpu-accelerated {
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Colored Shadow Hover Effect - Like the image */
+.card-colored-shadow {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-colored-shadow:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(212, 165, 165, 0.5), 
+              0 10px 20px rgba(255, 182, 193, 0.3);
+}
+
+/* Colored shadow variants */
+.shadow-pink-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shadow-pink-hover:hover {
+  box-shadow: 0 20px 40px rgba(255, 182, 193, 0.6);
+}
+
+.shadow-lavender-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shadow-lavender-hover:hover {
+  box-shadow: 0 20px 40px rgba(230, 213, 232, 0.6);
+}
+
+.shadow-rose-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shadow-rose-hover:hover {
+  box-shadow: 0 20px 40px rgba(212, 165, 165, 0.6);
 }
 
 /* Reduce motion for accessibility */

@@ -455,29 +455,29 @@ export default function DailyEditPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className={`bg-white sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg backdrop-blur-md bg-white/95' : ''}`}>
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'}`} style={{ backgroundColor: theme.background }}>
         {/* Top Banner */}
-        <div className="text-center py-2 text-sm font-medium animate-pulse text-white" style={{ backgroundColor: theme.primary }}>
+        <div className="text-center py-2 text-sm font-medium luxury-shimmer text-white" style={{ backgroundColor: theme.primary }}>
           <span>YOUR FIRST ORDER: GET 50% OFF & FREE SHIPPING. EXCLUSIONS APPLY. CODE </span>
           <strong className="animate-bounce inline-block">FIRST50</strong>
           <button className="ml-4 underline hover:no-underline transition-all">READ TERMS</button>
         </div>
         
         {/* Main Header */}
-        <div className="border-b">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="bg-white border-b border-gray-200">
+          <div className="mx-auto px-4">
             <div className="flex items-center justify-between">
-              {/* Left - Shop/Sell */}
+              {/* Left - Navigation */}
               <div className="flex items-center space-x-6">
                 <button 
                   onClick={() => window.location.href = '/'}
-                  className="text-sm font-medium text-gray-900 hover:text-gray-600"
+                  className="text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
                 >
                   ← BACK TO HOME
                 </button>
                 <button 
                   onClick={() => window.location.href = '/products'}
-                  className="text-sm font-medium text-gray-900 hover:text-gray-600"
+                  className="text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors"
                 >
                   ALL PRODUCTS
                 </button>
@@ -486,9 +486,14 @@ export default function DailyEditPage() {
               {/* Center - Logo */}
               <div 
                 onClick={() => window.location.href = '/'}
-                className="text-2xl font-bold tracking-wider text-gray-900 hover:scale-105 transition-transform duration-300 cursor-pointer"
+                className="flex items-center justify-center hover:scale-100 transition-transform duration-300 cursor-pointer"
               >
-                {company?.name?.toUpperCase() || 'MERY ROSE'}
+                <img 
+                  src="/images/mery-rose-logo.png" 
+                  alt={company?.name || 'Mery Rose'} 
+                  className="w-auto object-contain"
+                  style={{ height: '80px', width: '500px', objectFit: 'contain' }}
+                />
               </div>
 
               {/* Right - Search and Icons */}
