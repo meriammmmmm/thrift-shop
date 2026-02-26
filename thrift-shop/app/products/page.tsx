@@ -147,7 +147,7 @@ export default function ProductsPage() {
         });
         
         console.log('✅ Transformed products:', transformedProducts.length);
-        console.log('✅ Products with inStock=true:', transformedProducts.filter(p => p.inStock).length);
+        console.log('✅ Products with inStock=true:', transformedProducts.filter((p: any) => p.inStock).length);
         setProducts(transformedProducts);
       }
     } catch (error) {
