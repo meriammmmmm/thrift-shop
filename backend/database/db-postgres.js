@@ -238,6 +238,21 @@ class PostgresDatabase {
         )
       `);
 
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS categories (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          icon TEXT,
+          parent_id INTEGER,
+          company_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (company_id) REFERENCES companies (id),
+          FOREIGN KEY (parent_id) REFERENCES categories (id)
+        )
+      `);
+
       console.log('✅ PostgreSQL tables initialized');
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');
