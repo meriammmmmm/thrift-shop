@@ -1,3 +1,10 @@
+// Check if PostgreSQL is available (Railway auto-sets DATABASE_URL)
+if (process.env.DATABASE_URL) {
+  console.log('🐘 PostgreSQL detected - using PostgreSQL database');
+  module.exports = require('./db-postgres');
+  return;
+}
+
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
