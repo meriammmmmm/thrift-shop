@@ -274,6 +274,16 @@ class PostgresDatabase {
     // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
     let paramIndex = 1;
     const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    
+    // Check if it's an INSERT query
+    if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
+      const result = await this.pool.query(pgSql + ' RETURNING id', params);
+      return { 
+        id: result.rows[0]?.id || null,
+        changes: result.rowCount 
+      };
+    }
+    
     const result = await this.pool.query(pgSql, params);
     return { 
       id: result.rows[0]?.id || result.rowCount,
