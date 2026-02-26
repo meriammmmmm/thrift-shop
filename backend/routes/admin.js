@@ -32,14 +32,14 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       revenueThisWeek
     ] = await Promise.all([
       // Get users who have ordered from this company
-      db.get('SELECT COUNT(DISTINCT user_id) as count FROM orders WHERE company_id = ?', [companyId]),
-      db.get('SELECT COUNT(*) as count FROM products WHERE company_id = ?', [companyId]),
-      db.get('SELECT COUNT(*) as count FROM orders WHERE company_id = ?', [companyId]),
-      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = ? AND status != 'CANCELLED'", [companyId]),
+      db.get('SELECT COUNT(DISTINCT user_id) as count FROM orders WHERE company_id = $1', [companyId]),
+      db.get('SELECT COUNT(*) as count FROM products WHERE company_id = $1', [companyId]),
+      db.get('SELECT COUNT(*) as count FROM orders WHERE company_id = $1', [companyId]),
+      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = $1 AND status != 'CANCELLED'", [companyId]),
       // Get new users who ordered from this company this week
-      db.get("SELECT COUNT(DISTINCT o.user_id) as count FROM orders o JOIN users u ON o.user_id = u.id WHERE o.company_id = ? AND u.created_at >= date('now', '-7 days')", [companyId]),
-      db.get("SELECT COUNT(*) as count FROM orders WHERE company_id = ? AND created_at >= date('now', '-7 days')", [companyId]),
-      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = ? AND created_at >= date('now', '-7 days') AND status != 'CANCELLED'", [companyId])
+      db.get("SELECT COUNT(DISTINCT o.user_id) as count FROM orders o JOIN users u ON o.user_id = u.id WHERE o.company_id = $1 AND u.created_at >= NOW() - INTERVAL '7 days'", [companyId]),
+      db.get("SELECT COUNT(*) as count FROM orders WHERE company_id = $1 AND created_at >= NOW() - INTERVAL '7 days'", [companyId]),
+      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = $1 AND created_at >= NOW() - INTERVAL '7 days' AND status != 'CANCELLED'", [companyId])
     ]);
 
     // Daily sales for the last 30 days (company specific)
@@ -49,7 +49,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
         COUNT(*) as orders,
         SUM(total) as revenue
       FROM orders 
-      WHERE company_id = ? AND created_at >= date('now', '-30 days')
+      WHERE company_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
         AND status != 'CANCELLED'
       GROUP BY DATE(created_at)
       ORDER BY date ASC
@@ -64,7 +64,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       FROM products p
       JOIN order_items oi ON p.id = oi.product_id
       JOIN orders o ON oi.order_id = o.id
-      WHERE p.company_id = ? AND o.status != 'CANCELLED'
+      WHERE p.company_id = $1 AND o.status != 'CANCELLED'
       GROUP BY p.category
       ORDER BY sales DESC
       LIMIT 10
@@ -79,7 +79,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       FROM products p
       JOIN order_items oi ON p.id = oi.product_id
       JOIN orders o ON oi.order_id = o.id
-      WHERE p.company_id = ? AND o.status != 'CANCELLED'
+      WHERE p.company_id = $1 AND o.status != 'CANCELLED'
       GROUP BY p.brand
       ORDER BY sales DESC
       LIMIT 10
@@ -95,8 +95,8 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       FROM orders o
       JOIN users u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.company_id = ?
-      GROUP BY o.id
+      WHERE o.company_id = $1
+      GROUP BY o.id, u.name, u.email
       ORDER BY o.created_at DESC
       LIMIT 10
     `, [companyId]);
