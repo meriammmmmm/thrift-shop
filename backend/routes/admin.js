@@ -284,7 +284,16 @@ router.get('/users', requireAdmin, async (req, res) => {
     // Get users who belong to this company (registered through their website) OR have ordered from this company
     const users = await db.all(`
       SELECT 
-        u.*,
+        u.id,
+        u.email,
+        u.name,
+        u.password,
+        u.role,
+        u.profile_picture,
+        u.company_id,
+        u.admin_company_id,
+        u.created_at,
+        u.updated_at,
         ui.phone,
         ui.address,
         ui.city,
@@ -299,7 +308,9 @@ router.get('/users', requireAdmin, async (req, res) => {
         AND (u.company_id = ? OR EXISTS (
           SELECT 1 FROM orders o2 WHERE o2.user_id = u.id AND o2.company_id = ?
         ))
-      GROUP BY u.id
+      GROUP BY u.id, u.email, u.name, u.password, u.role, u.profile_picture, u.company_id, 
+               u.admin_company_id, u.created_at, u.updated_at, ui.phone, ui.address, ui.city, 
+               ui.country, ui.profile_picture
       ORDER BY u.created_at DESC
       LIMIT ? OFFSET ?
     `, [companyId, companyId, companyId, companyId, parseInt(limit), offset]);
