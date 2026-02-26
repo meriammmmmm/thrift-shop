@@ -203,11 +203,13 @@ router.post('/', requireAdmin, async (req, res) => {
       seller_name, seller_rating, seller_location, companyId
     ]);
 
+    console.log('Product created with ID:', result.id);
     const product = await db.get('SELECT * FROM products WHERE id = ?', [result.id]);
     res.status(201).json(product);
   } catch (error) {
     console.error('Product creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 });
 
