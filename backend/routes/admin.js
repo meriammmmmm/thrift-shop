@@ -88,7 +88,20 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
     // Recent orders (company specific)
     const recentOrders = await db.all(`
       SELECT 
-        o.*,
+        o.id,
+        o.user_id,
+        o.status,
+        o.total,
+        o.subtotal,
+        o.tax,
+        o.shipping,
+        o.payment_method,
+        o.payment_id,
+        o.shipping_address,
+        o.billing_address,
+        o.company_id,
+        o.created_at,
+        o.updated_at,
         u.name as user_name,
         u.email as user_email,
         COUNT(oi.id) as item_count
@@ -96,7 +109,9 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       JOIN users u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       WHERE o.company_id = ?
-      GROUP BY o.id, u.name, u.email
+      GROUP BY o.id, o.user_id, o.status, o.total, o.subtotal, o.tax, o.shipping, 
+               o.payment_method, o.payment_id, o.shipping_address, o.billing_address, 
+               o.company_id, o.created_at, o.updated_at, u.name, u.email
       ORDER BY o.created_at DESC
       LIMIT 10
     `, [companyId]);
@@ -119,7 +134,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
         COUNT(DISTINCT u.id) as registrations
       FROM users u
       JOIN orders o ON u.id = o.user_id
-      WHERE u.created_at >= date('now', '-30 days')
+      WHERE u.created_at >= NOW() - INTERVAL '30 days'
         AND u.role != 'ADMIN'
         AND o.company_id = ?
       GROUP BY DATE(u.created_at)
