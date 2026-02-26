@@ -255,17 +255,26 @@ class PostgresDatabase {
   }
 
   async get(sql, params = []) {
-    const result = await this.pool.query(sql, params);
+    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    const result = await this.pool.query(pgSql, params);
     return result.rows[0];
   }
 
   async all(sql, params = []) {
-    const result = await this.pool.query(sql, params);
+    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    const result = await this.pool.query(pgSql, params);
     return result.rows;
   }
 
   async run(sql, params = []) {
-    const result = await this.pool.query(sql, params);
+    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    const result = await this.pool.query(pgSql, params);
     return { 
       id: result.rows[0]?.id || result.rowCount,
       changes: result.rowCount 
