@@ -3,6 +3,35 @@ const router = express.Router();
 const db = require('../database/db');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
+// Get theme settings (must come before /:key route)
+router.get('/theme', async (req, res) => {
+  try {
+    const setting = await db.get('SELECT * FROM settings WHERE key = ?', ['theme']);
+    if (!setting) {
+      // Return default theme if not found
+      const defaultTheme = {
+        primary: '#0d9488',
+        primaryHover: '#0f766e',
+        primaryLight: '#5eead4',
+        secondary: '#64748b',
+        accent: '#f59e0b',
+        background: '#ffffff',
+        text: '#1f2937',
+        textLight: '#6b7280',
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+      };
+      return res.json({ theme: defaultTheme });
+    }
+    res.json({ theme: JSON.parse(setting.value) });
+  } catch (error) {
+    console.error('Get theme error:', error);
+    res.status(500).json({ error: 'Failed to get theme' });
+  }
+});
+
 // Get all settings (public endpoint)
 router.get('/', async (req, res) => {
   try {
@@ -141,35 +170,6 @@ router.post('/init', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Initialize settings error:', error);
     res.status(500).json({ error: 'Failed to initialize settings' });
-  }
-});
-
-// Get theme settings
-router.get('/theme', async (req, res) => {
-  try {
-    const setting = await db.get('SELECT * FROM settings WHERE key = ?', ['theme']);
-    if (!setting) {
-      // Return default theme if not found
-      const defaultTheme = {
-        primary: '#0d9488',
-        primaryHover: '#0f766e',
-        primaryLight: '#5eead4',
-        secondary: '#64748b',
-        accent: '#f59e0b',
-        background: '#ffffff',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
-      };
-      return res.json({ theme: defaultTheme });
-    }
-    res.json({ theme: JSON.parse(setting.value) });
-  } catch (error) {
-    console.error('Get theme error:', error);
-    res.status(500).json({ error: 'Failed to get theme' });
   }
 });
 
