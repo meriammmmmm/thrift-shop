@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../database/db');
 
 // Get all transactions with filtering and pagination
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
     let query = `
       SELECT 
         t.*,
-        u.username,
+        u.name as username,
         u.email,
         p.name as product_name,
         p.price as product_price
@@ -59,7 +59,7 @@ router.get('/', (req, res) => {
     query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
     
-    const transactions = db.prepare(query).all(...params);
+    const transactions = await db.all(query, params);
     
     // Get total count for pagination
     let countQuery = 'SELECT COUNT(*) as total FROM transactions t WHERE 1=1';
@@ -90,15 +90,15 @@ router.get('/', (req, res) => {
       countParams.push(endDate);
     }
     
-    const { total } = db.prepare(countQuery).get(...countParams);
+    const totalResult = await db.get(countQuery, countParams);
     
     res.json({
       transactions,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
       }
     });
   } catch (error) {
