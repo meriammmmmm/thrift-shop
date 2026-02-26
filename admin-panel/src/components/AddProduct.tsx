@@ -259,57 +259,74 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   // Compress image to reduce size while maintaining quality
   const compressImage = (file: File, maxSizeKB: number = 800): Promise<string> => {
     return new Promise((resolve, reject) => {
+      // Validate file size (max 10MB before compression)
+      if (file.size > 10 * 1024 * 1024) {
+        reject(new Error(`File too large: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum 10MB.`));
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          // Calculate new dimensions (max 1920px on longest side for better quality)
-          const maxDimension = 1920;
-          if (width > height && width > maxDimension) {
-            height = (height * maxDimension) / width;
-            width = maxDimension;
-          } else if (height > maxDimension) {
-            width = (width * maxDimension) / height;
-            height = maxDimension;
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Calculate new dimensions (max 1920px on longest side for better quality)
+            const maxDimension = 1920;
+            if (width > height && width > maxDimension) {
+              height = (height * maxDimension) / width;
+              width = maxDimension;
+            } else if (height > maxDimension) {
+              width = (width * maxDimension) / height;
+              height = maxDimension;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('Failed to get canvas context'));
+              return;
+            }
+            
+            // Enable image smoothing for better quality
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Start with higher quality and reduce if needed
+            let quality = 0.92;
+            let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            // Reduce quality until size is acceptable, but don't go below 0.6 (60%)
+            while (compressedDataUrl.length > maxSizeKB * 1024 && quality > 0.6) {
+              quality -= 0.05;
+              compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            
+            const sizeKB = (compressedDataUrl.length / 1024).toFixed(2);
+            console.log(`🖼️ Compressed image: ${sizeKB} KB (quality: ${(quality * 100).toFixed(0)}%)`);
+            
+            resolve(compressedDataUrl);
+          } catch (canvasError) {
+            console.error('Canvas processing error:', canvasError);
+            reject(new Error(`Failed to process image: ${file.name}`));
           }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-          
-          // Enable image smoothing for better quality
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Start with higher quality and reduce if needed
-          let quality = 0.92;
-          let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-          
-          // Reduce quality until size is acceptable, but don't go below 0.6 (60%)
-          while (compressedDataUrl.length > maxSizeKB * 1024 && quality > 0.6) {
-            quality -= 0.05;
-            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-          }
-          
-          const sizeKB = (compressedDataUrl.length / 1024).toFixed(2);
-          console.log(`🖼️ Compressed image: ${sizeKB} KB (quality: ${(quality * 100).toFixed(0)}%)`);
-          
-          resolve(compressedDataUrl);
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => {
+          console.error('Failed to load image:', file.name, file.type);
+          reject(new Error(`Failed to load image: ${file.name}. Please ensure it's a valid image file (JPG, PNG, WebP).`));
+        };
         img.src = e.target?.result as string;
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => {
+        console.error('Failed to read file:', file.name);
+        reject(new Error(`Failed to read file: ${file.name}`));
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -319,6 +336,15 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     const currentPreviewCount = imagePreviews.length;
     
     if (files.length === 0) return;
+    
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type.toLowerCase()));
+    
+    if (invalidFiles.length > 0) {
+      showError('Invalid File Type', `Please upload only image files (JPG, PNG, WebP, GIF). Invalid: ${invalidFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
     
     // Show loading state
     showSuccess('Processing', `Compressing ${files.length} image(s)...`);
