@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE p.in_stock = 1';
+    let whereClause = 'WHERE p.in_stock = true';
     let params = [];
 
     // Filter by company if specified
@@ -331,7 +331,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 // Get categories
 router.get('/meta/categories', async (req, res) => {
   try {
-    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = 1');
+    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = true');
     res.json(categories.map(c => c.category));
   } catch (error) {
     console.error('Categories fetch error:', error);
@@ -342,7 +342,7 @@ router.get('/meta/categories', async (req, res) => {
 // Get brands
 router.get('/meta/brands', async (req, res) => {
   try {
-    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = 1');
+    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = true');
     res.json(brands.map(b => b.brand));
   } catch (error) {
     console.error('Brands fetch error:', error);
@@ -492,7 +492,7 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE p.in_stock = 1 AND p.company_id = ?';
+    let whereClause = 'WHERE p.in_stock = true AND p.company_id = ?';
     let params = [parseInt(companyId)];
 
     // Build where clause

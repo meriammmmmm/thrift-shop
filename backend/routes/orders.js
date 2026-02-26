@@ -59,7 +59,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const companiesInOrder = new Set();
 
     for (const item of items) {
-      const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = 1', [item.product_id]);
+      const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = true', [item.product_id]);
       
       if (!product) {
         return res.status(400).json({ error: `Product ${item.product_id} is not available` });
@@ -109,7 +109,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Update product stock (mark as sold for thrift items)
     for (const item of items) {
-      await db.run('UPDATE products SET in_stock = 0 WHERE id = ?', [item.product_id]);
+      await db.run('UPDATE products SET in_stock = false WHERE id = ?', [item.product_id]);
     }
 
     // Get complete order
