@@ -91,6 +91,9 @@ router.get('/', async (req, res) => {
     // Parse JSON fields and add company info
     const parsedProducts = products.map(product => ({
       ...product,
+      price: parseFloat(product.price),
+      original_price: product.original_price ? parseFloat(product.original_price) : null,
+      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
       images: product.images ? JSON.parse(product.images) : [],
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
