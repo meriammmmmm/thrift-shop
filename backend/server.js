@@ -92,6 +92,38 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Fix sequences endpoint (call once after migration)
+app.get('/api/fix-sequences', async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.json({ error: 'Not using PostgreSQL' });
+    }
+    
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    const tables = ['users', 'products', 'orders', 'order_items', 'companies', 'settings', 'transactions', 'user_info', 'testimonials', 'verification_codes', 'wishlist', 'reviews', 'cart'];
+    const results = [];
+    
+    for (const table of tables) {
+      try {
+        await pool.query(`SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), true)`);
+        results.push(`✅ Fixed ${table}`);
+      } catch (err) {
+        results.push(`⚠️ Skipped ${table}: ${err.message}`);
+      }
+    }
+    
+    await pool.end();
+    res.json({ success: true, results });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // CORS test endpoint
 app.get('/api/cors-test', (req, res) => {
   res.json({
