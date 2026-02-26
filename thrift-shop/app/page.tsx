@@ -741,83 +741,79 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Categories - OLD UI RESTORED */}
-      <section className="relative py-16 bg-gradient-to-b from-white via-pink-50/30 to-white overflow-hidden">
-        {/* Subtle decorative elements */}
-        <div className="absolute top-20 right-20 w-64 h-64 bg-pink-100 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute bottom-20 left-20 w-64 h-64 bg-purple-100 rounded-full blur-3xl opacity-20"></div>
-        
+      {/* Featured Categories - Elegant Mery Rose Style */}
+      <section className="relative py-20 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 mb-3">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 mb-4">
               <span className="text-xl">✨</span>
-              <span className="inline-block px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white">
+              <span className="inline-block px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-white" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)' }}>
                 Shop by Vibe
               </span>
               <span className="text-xl">✨</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-3">
-              Find Your <span className="font-serif italic bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">Perfect Moment</span>
+            <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-4 tracking-tight">
+              Find Your <span className="font-serif italic" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Perfect Moment</span>
             </h2>
-            <p className="text-gray-600 text-sm max-w-xl mx-auto">
+            <p className="text-gray-600 text-base max-w-2xl mx-auto leading-relaxed">
               Every occasion deserves the perfect outfit. Discover curated collections for your lifestyle.
             </p>
           </div>
           
-          {/* Cards Grid - Cleaner, more elegant design */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+          {/* Cards Grid - Matching your theme */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-12">
             {[
               { 
                 name: 'NIGHT OUT', 
-                gradient: 'from-purple-500 to-indigo-600',
+                color: '#8b5cf6',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                   </svg>
                 )
               },
               { 
                 name: 'CASUAL', 
-                gradient: 'from-orange-400 to-amber-500',
+                color: '#f59e0b',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                   </svg>
                 )
               },
               { 
                 name: 'WORK', 
-                gradient: 'from-gray-500 to-slate-600',
+                color: '#64748b',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
                 )
               },
               { 
                 name: 'DATE NIGHT', 
-                gradient: 'from-pink-500 to-rose-600',
+                color: '#ec4899',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                   </svg>
                 )
               },
               { 
                 name: 'WEEKEND', 
-                gradient: 'from-emerald-400 to-green-600',
+                color: '#10b981',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 )
               },
               { 
                 name: 'EVENTS', 
-                gradient: 'from-fuchsia-500 to-pink-600',
+                color: '#d946ef',
                 icon: (
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
                 )
@@ -828,15 +824,18 @@ export default function Home() {
                 className="group cursor-pointer"
                 onClick={() => window.location.href = `/products?occasion=${encodeURIComponent(category.name)}`}
               >
-                {/* Simple white card with shadow */}
-                <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  {/* Icon with gradient background */}
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.gradient} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                {/* Clean white card */}
+                <div className="bg-white rounded-2xl p-7 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
+                  {/* Icon with solid color background */}
+                  <div 
+                    className="w-16 h-16 mx-auto mb-5 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300"
+                    style={{ backgroundColor: category.color }}
+                  >
                     {category.icon}
                   </div>
                   
                   {/* Category name */}
-                  <h3 className="text-center text-xs font-bold tracking-wide text-gray-800">
+                  <h3 className="text-center text-xs font-bold tracking-wide uppercase text-gray-800">
                     {category.name}
                   </h3>
                 </div>
@@ -848,7 +847,8 @@ export default function Home() {
           <div className="text-center">
             <button 
               onClick={() => window.location.href = '/products'}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-semibold text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              className="inline-flex items-center gap-2 px-10 py-3.5 text-white font-semibold text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              style={{ background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%)' }}
             >
               <span>Explore All Collections</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
