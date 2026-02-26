@@ -282,7 +282,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.brand || 'No Brand'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getCurrentCurrencySymbol()}{(parseFloat(product.price) || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getCurrentCurrencySymbol()}{(Number(product.price) || 0).toFixed(2)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category || 'Uncategorized'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${
