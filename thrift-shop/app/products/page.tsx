@@ -111,32 +111,43 @@ export default function ProductsPage() {
       }
       
       if (response.products) {
-        const transformedProducts = response.products.map((product: any) => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: parseFloat(product.price),
-          originalPrice: product.original_price ? parseFloat(product.original_price) : undefined,
-          images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
-          brand: product.brand,
-          size: product.size,
-          category: product.category,
-          condition: product.condition,
-          color: product.color,
-          inStock: product.in_stock === true || product.in_stock === 1 || product.in_stock === '1' || product.in_stock === undefined || product.in_stock === null,
-          material: product.material,
-          measurements: product.measurements || {},
-          careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
-          tags: Array.isArray(product.tags) ? product.tags : [],
-          seller: {
-            name: product.seller_name || 'Unknown',
-            rating: product.seller_rating || 4.5,
-            location: product.seller_location || 'Unknown'
-          },
-          dateAdded: product.created_at,
-          views: product.views || 0,
-          likes: product.likes || 0
-        }));
+        console.log('🔍 Raw products from API:', response.products.length);
+        console.log('🔍 First product in_stock value:', response.products[0]?.in_stock);
+        
+        const transformedProducts = response.products.map((product: any) => {
+          const inStockValue = product.in_stock === true || product.in_stock === 1 || product.in_stock === '1' || product.in_stock === undefined || product.in_stock === null;
+          console.log(`Product ${product.id} (${product.name}): in_stock=${product.in_stock}, transformed=${inStockValue}`);
+          
+          return {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: parseFloat(product.price),
+            originalPrice: product.original_price ? parseFloat(product.original_price) : undefined,
+            images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+            brand: product.brand,
+            size: product.size,
+            category: product.category,
+            condition: product.condition,
+            color: product.color,
+            inStock: inStockValue,
+            material: product.material,
+            measurements: product.measurements || {},
+            careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
+            tags: Array.isArray(product.tags) ? product.tags : [],
+            seller: {
+              name: product.seller_name || 'Unknown',
+              rating: product.seller_rating || 4.5,
+              location: product.seller_location || 'Unknown'
+            },
+            dateAdded: product.created_at,
+            views: product.views || 0,
+            likes: product.likes || 0
+          };
+        });
+        
+        console.log('✅ Transformed products:', transformedProducts.length);
+        console.log('✅ Products with inStock=true:', transformedProducts.filter(p => p.inStock).length);
         setProducts(transformedProducts);
       }
     } catch (error) {
@@ -266,7 +277,7 @@ export default function ProductsPage() {
         }
       }
       
-      return matchesSearch && matchesCategory && matchesOccasion && matchesCondition && matchesSize && matchesPrice && product.inStock;
+      return matchesSearch && matchesCategory && matchesOccasion && matchesCondition && matchesSize && matchesPrice;
     });
   }, [products, searchQuery, selectedCategory, selectedOccasion, selectedCondition, selectedSizes, priceRange, customPriceMin, customPriceMax, priceRangeMap]);
 

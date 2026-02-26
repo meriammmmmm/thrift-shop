@@ -129,7 +129,7 @@ export default function DailyEditPage() {
     const productDate = new Date(product.dateAdded);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return productDate >= oneWeekAgo && product.inStock;
+    return productDate >= oneWeekAgo;
   });
 
   // Filter and search logic for weekly products
@@ -166,7 +166,7 @@ export default function DailyEditPage() {
       }
     }
     
-    return matchesSearch && matchesCategory && matchesCondition && matchesSize && matchesPrice && product.inStock;
+    return matchesSearch && matchesCategory && matchesCondition && matchesSize && matchesPrice;
   });
 
   // Sort logic

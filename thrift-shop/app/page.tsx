@@ -156,7 +156,7 @@ export default function Home() {
     const matchesBrand = selectedBrand === 'All' || product.brand === selectedBrand;
     const matchesSection = activeSection === 'all' || 
                           (activeSection === 'new-arrivals' && new Date(product.dateAdded) > new Date('2026-01-15'));
-    return matchesSearch && matchesCategory && matchesBrand && matchesSection && product.inStock;
+    return matchesSearch && matchesCategory && matchesBrand && matchesSection;
   });
 
   // Sort
@@ -183,7 +183,7 @@ export default function Home() {
     const productDate = new Date(product.dateAdded);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return productDate >= oneWeekAgo && product.inStock;
+    return productDate >= oneWeekAgo;
   });
 
   useEffect(() => {
