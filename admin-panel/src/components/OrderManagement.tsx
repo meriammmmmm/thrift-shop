@@ -104,7 +104,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        setOrders(data.orders || data);
+        const ordersData = data.orders || data;
+        // Normalize total to always be a number
+        const normalizedOrders = ordersData.map((order: Order) => ({
+          ...order,
+          total: Number(order.total) || 0
+        }));
+        setOrders(normalizedOrders);
       }
     } catch (error) {
       console.error('Orders load error:', error);
