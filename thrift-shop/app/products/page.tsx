@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import ProductCard from '../components/ProductCard';
 import Cart from '../components/Cart';
+import Wishlist from '../components/Wishlist';
 import Notification from '../components/Notification';
 import ProductDetails from '../components/ProductDetails';
 import UserOrders from '../components/UserOrders';
@@ -17,6 +18,7 @@ export default function ProductsPage() {
   const [cart, setCart] = useState<Product[]>([]);
   const [cartItemIds, setCartItemIds] = useState<Set<number>>(new Set());
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -43,6 +45,7 @@ export default function ProductsPage() {
     type: 'success',
     isVisible: false
   });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   // Real products from API
   const [products, setProducts] = useState<Product[]>([]);
@@ -319,7 +322,15 @@ export default function ProductsPage() {
     
     // Load products from API
     loadProducts();
+    loadProfilePicture();
   }, []);
+
+  const loadProfilePicture = () => {
+    const savedPicture = localStorage.getItem('profile-picture');
+    if (savedPicture) {
+      setProfilePicture(savedPicture);
+    }
+  };
 
   // Load user's cart from API
   const loadUserCart = async () => {
@@ -1215,6 +1226,21 @@ export default function ProductsPage() {
         total={cartTotal}
         onCheckout={handleCheckout}
         user={user}
+      />
+
+      {/* Wishlist Modal */}
+      <Wishlist
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        wishlist={products.filter(p => wishlist.includes(p.id))}
+        onAddToCart={addToCart}
+        onRemove={toggleWishlist}
+        onViewDetails={(product) => {
+          setSelectedProduct(product);
+          setIsProductDetailsOpen(true);
+          setIsWishlistOpen(false);
+        }}
+        currencySymbol={companyCurrency.symbol}
       />
 
       {/* User Orders Modal */}
