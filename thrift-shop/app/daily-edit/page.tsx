@@ -40,6 +40,7 @@ export default function DailyEditPage() {
     type: 'success',
     isVisible: false
   });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   // Real products from API
   const [products, setProducts] = useState<Product[]>([]);
@@ -201,7 +202,15 @@ export default function DailyEditPage() {
     }
     // Load products from API
     loadProducts();
+    loadProfilePicture();
   }, []);
+
+  const loadProfilePicture = () => {
+    const savedPicture = localStorage.getItem('profile-picture');
+    if (savedPicture) {
+      setProfilePicture(savedPicture);
+    }
+  };
 
   // Load user's cart from API
   const loadUserCart = async () => {
