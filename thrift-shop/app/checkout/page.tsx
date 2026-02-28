@@ -88,7 +88,7 @@ export default function CheckoutPage() {
       }
       
       // Normalize prices to ensure they're valid numbers
-      const normalizedItems = (cartData.items || []).map(item => {
+      const normalizedItems = (cartData.items || []).map((item: any) => {
         let normalizedPrice = 0;
         
         // Try to extract a valid number from the price
