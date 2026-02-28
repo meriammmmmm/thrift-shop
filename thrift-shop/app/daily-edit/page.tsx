@@ -890,7 +890,7 @@ export default function DailyEditPage() {
       <Wishlist
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
-        wishlistIds={wishlist}
+        wishlist={wishlist}
         products={products}
         onAddToCart={addToCart}
         onRemove={toggleWishlist}
