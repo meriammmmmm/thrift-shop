@@ -890,10 +890,14 @@ export default function DailyEditPage() {
       <Wishlist
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
-        wishlist={wishlist}
-        products={products}
+        wishlist={products.filter(p => wishlist.includes(p.id))}
         onAddToCart={addToCart}
         onRemove={toggleWishlist}
+        onViewDetails={(product) => {
+          setSelectedProduct(product);
+          setIsProductDetailsOpen(true);
+          setIsWishlistOpen(false);
+        }}
         currencySymbol={companyCurrency.symbol}
       />
 
