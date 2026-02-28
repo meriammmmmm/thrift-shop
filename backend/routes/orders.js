@@ -61,10 +61,15 @@ router.post('/', authenticateToken, async (req, res) => {
     const companiesInOrder = new Set();
 
     for (const item of items) {
-      const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = TRUE', [item.product_id]);
+      const product = await db.get('SELECT * FROM products WHERE id = ?', [item.product_id]);
       
       if (!product) {
         return res.status(400).json({ error: `Product ${item.product_id} is not available` });
+      }
+      
+      // Check if product is already sold
+      if (product.in_stock === false || product.in_stock === 0) {
+        return res.status(400).json({ error: `Product ${item.product_id} is already sold` });
       }
 
       const itemTotal = product.price * item.quantity;
