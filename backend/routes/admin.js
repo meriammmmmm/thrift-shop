@@ -184,18 +184,21 @@ router.get('/orders', requireAdmin, async (req, res) => {
     const adminUser = req.user;
     const companyId = adminUser.admin_company_id;
 
-    if (!companyId) {
-      return res.status(403).json({ error: 'Admin not associated with any company' });
-    }
-
     const { page = 1, limit = 20, status } = req.query;
     const offset = (page - 1) * limit;
 
-    let whereClause = 'WHERE o.company_id = ?';
-    let params = [companyId];
+    let whereClause = '';
+    let params = [];
+
+    // If admin has a company, filter by that company OR null (for legacy orders)
+    // If super admin (no company), show all orders
+    if (companyId) {
+      whereClause = 'WHERE (o.company_id = ? OR o.company_id IS NULL)';
+      params.push(companyId);
+    }
 
     if (status) {
-      whereClause += ' AND o.status = ?';
+      whereClause += whereClause ? ' AND o.status = ?' : 'WHERE o.status = ?';
       params.push(status);
     }
 
