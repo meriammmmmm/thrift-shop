@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
 import Cart from '../components/Cart';
+import Wishlist from '../components/Wishlist';
 import Notification from '../components/Notification';
 import ProductDetails from '../components/ProductDetails';
 import UserOrders from '../components/UserOrders';
@@ -17,6 +18,7 @@ export default function DailyEditPage() {
   const [cart, setCart] = useState<Product[]>([]);
   const [cartItemIds, setCartItemIds] = useState<Set<number>>(new Set());
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -873,6 +875,17 @@ export default function DailyEditPage() {
         total={cartTotal}
         onCheckout={handleCheckout}
         user={user}
+      />
+
+      {/* Wishlist Modal */}
+      <Wishlist
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        wishlistIds={wishlist}
+        products={products}
+        onAddToCart={addToCart}
+        onRemove={toggleWishlist}
+        currencySymbol={companyCurrency.symbol}
       />
 
       {/* User Orders Modal */}
