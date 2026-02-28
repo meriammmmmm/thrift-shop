@@ -23,7 +23,7 @@ interface UserInfo {
 interface CartItem {
   id: number;
   name: string;
-  price: number;
+  price: number | string;
   images: string[];
   brand: string;
   size: string;
@@ -40,6 +40,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [backendTotal, setBackendTotal] = useState<number>(0);
 
   // Company info for current store
   const [company, setCompany] = useState<{id: number, name: string, description: string} | null>(null);
@@ -76,9 +78,43 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
       const cartData = await api.getCart();
-      setCart(cartData.items || []);
+      
+      console.log('Backend response:', cartData);
+      console.log('Backend total:', cartData.total);
+      
+      // Store the backend's calculated total
+      if (cartData.total !== undefined && cartData.total !== null) {
+        setBackendTotal(parseFloat(cartData.total) || 0);
+      }
+      
+      // Normalize prices to ensure they're valid numbers
+      const normalizedItems = (cartData.items || []).map(item => {
+        let normalizedPrice = 0;
+        
+        // Try to extract a valid number from the price
+        if (item.price !== null && item.price !== undefined) {
+          if (typeof item.price === 'number' && !isNaN(item.price)) {
+            normalizedPrice = item.price;
+          } else {
+            // Try to parse as string
+            const priceStr = String(item.price).replace(/[^\d.]/g, '');
+            const parsed = parseFloat(priceStr);
+            normalizedPrice = (!isNaN(parsed) && parsed >= 0) ? parsed : 0;
+          }
+        }
+        
+        console.log(`Item: ${item.name}, Price: ${normalizedPrice}`);
+        
+        return {
+          ...item,
+          price: normalizedPrice
+        };
+      });
+      
+      setCart(normalizedItems);
     } catch (error) {
       console.error('Failed to load cart:', error);
+      setCart([]);
     } finally {
       setLoading(false);
     }
@@ -139,8 +175,11 @@ export default function CheckoutPage() {
           };
           setUserInfo(frontendInfo);
         }
-      } catch (error) {
-        console.error('Failed to load user info:', error);
+      } catch (error: any) {
+        // 404 is expected if user hasn't saved info yet - not an error
+        if (error?.status !== 404) {
+          console.error('Failed to load user info:', error);
+        }
         // Fallback to localStorage
         const savedUserInfo = localStorage.getItem('user-info');
         if (savedUserInfo) {
@@ -155,14 +194,14 @@ export default function CheckoutPage() {
   }, [user]);
 
   const calculateTotal = () => {
-    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    const shipping = subtotal > 50 ? 0 : 9.99; // Free shipping over $50
-    const tax = subtotal * 0.08; // 8% tax
+    // Use the backend's calculated total directly
+    const total = backendTotal > 0 ? backendTotal : 0;
+    
     return {
-      subtotal,
-      shipping,
-      tax,
-      total: subtotal + shipping + tax
+      subtotal: total,
+      shipping: 0,
+      tax: 0,
+      total: total
     };
   };
 
@@ -177,6 +216,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Show confirmation modal instead of placing order directly
+    setShowConfirmModal(true);
+  };
+
+  const confirmOrder = async () => {
+    setShowConfirmModal(false);
     setIsProcessingOrder(true);
 
     try {
@@ -186,47 +231,64 @@ export default function CheckoutPage() {
           quantity: 1
         })),
         shipping_address: {
-          name: userInfo.fullName,
-          street: userInfo.address,
-          city: userInfo.city,
-          state: userInfo.state,
-          zip: userInfo.zipCode,
-          country: userInfo.country,
-          phone: userInfo.phone,
-          optional_phone: userInfo.optionalPhone
+          name: userInfo!.fullName,
+          street: userInfo!.address,
+          city: userInfo!.city,
+          state: userInfo!.state,
+          zip: userInfo!.zipCode,
+          country: userInfo!.country,
+          phone: userInfo!.phone,
+          optional_phone: userInfo!.optionalPhone
         },
         billing_address: {
-          name: userInfo.fullName,
-          street: userInfo.address,
-          city: userInfo.city,
-          state: userInfo.state,
-          zip: userInfo.zipCode,
-          country: userInfo.country,
-          phone: userInfo.phone,
-          email: userInfo.email
+          name: userInfo!.fullName,
+          street: userInfo!.address,
+          city: userInfo!.city,
+          state: userInfo!.state,
+          zip: userInfo!.zipCode,
+          country: userInfo!.country,
+          phone: userInfo!.phone,
+          email: userInfo!.email
         },
-        payment_method: "credit_card",
+        payment_method: "cash",
         contact_info: {
-          email: userInfo.email,
-          phone: userInfo.phone,
-          optional_phone: userInfo.optionalPhone
+          email: userInfo!.email,
+          phone: userInfo!.phone,
+          optional_phone: userInfo!.optionalPhone
         }
       };
 
       const response = await api.createOrder(orderData);
       
-      // Clear cart after successful order
-      await api.clearCart();
+      // Backend returns { order: {...} } on success
+      if (response.order) {
+        // Clear cart after successful order
+        await api.clearCart();
+        
+        // Redirect to orders page to see the order immediately
+        router.push('/orders');
+      } else {
+        throw new Error('Order creation failed');
+      }
       
-      // Redirect to success page
-      router.push(`/order-success?orderId=${response.order.id}`);
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order creation failed:', error);
-      alert('Échec de la commande. Veuillez réessayer.');
+      
+      // Check if it's a product availability error
+      if (error?.response?.data?.error?.includes('not available')) {
+        alert('Some items in your cart are no longer available. Your cart has been updated. Please review and try again.');
+        // Reload cart to show updated items
+        await loadCart();
+      } else {
+        alert('Échec de la commande. Veuillez réessayer.');
+      }
     } finally {
       setIsProcessingOrder(false);
     }
+  };
+
+  const cancelOrder = () => {
+    setShowConfirmModal(false);
   };
 
   const totals = calculateTotal();
@@ -345,32 +407,16 @@ export default function CheckoutPage() {
                   <h3 className="text-xl font-bold text-gray-900">Payment Method</h3>
                 </div>
                 <div className="space-y-2">
-                  <label className="flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-all hover:shadow-md bg-white">
-                    <input type="radio" name="payment" value="credit_card" defaultChecked className="mr-4 w-5 h-5" style={{ accentColor: theme.primary }} />
+                  <label className="flex items-center p-3 border-2 border-gray-300 rounded-xl cursor-pointer bg-white shadow-md" style={{ borderColor: theme.primary }}>
+                    <input type="radio" name="payment" value="cash" defaultChecked className="mr-4 w-5 h-5" style={{ accentColor: theme.primary }} />
                     <div className="flex items-center gap-3 flex-1">
-                      <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                      <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                       </svg>
-                      <span className="font-semibold text-gray-900">Credit Card</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-all hover:shadow-md bg-white">
-                    <input type="radio" name="payment" value="paypal" className="mr-4 w-5 h-5" style={{ accentColor: theme.primary }} />
-                    <div className="flex items-center gap-3 flex-1">
-                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.77.77 0 0 1 .76-.653h8.538c2.24 0 4.283.74 5.328 2.24 1.045 1.5 1.045 3.48.24 5.64-.806 2.16-2.24 3.72-4.283 4.68-2.043.96-4.283 1.2-6.326 1.2H7.076z"/>
-                      </svg>
-                      <span className="font-semibold text-gray-900">PayPal</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-all hover:shadow-md bg-white">
-                    <input type="radio" name="payment" value="apple_pay" className="mr-4 w-5 h-5" style={{ accentColor: theme.primary }} />
-                    <div className="flex items-center gap-3 flex-1">
-                      <svg className="w-6 h-6 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                      </svg>
-                      <span className="font-semibold text-gray-900">Apple Pay</span>
+                      <div>
+                        <span className="font-semibold text-gray-900 block">Cash on Delivery</span>
+                        <span className="text-xs text-gray-600">Pay when you receive your order</span>
+                      </div>
                     </div>
                   </label>
                 </div>
@@ -414,40 +460,22 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-xl">${item.price.toFixed(2)}</p>
+                      <p className="font-bold text-gray-900 text-xl">
+                        {(() => {
+                          const price = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0;
+                          return price.toFixed(2);
+                        })()} DT
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Order Totals */}
-              <div className="border-t-2 border-gray-200 pt-3 space-y-2 bg-gradient-to-br from-gray-50 to-white p-4 rounded-2xl mb-3">
-                <div className="flex justify-between text-base font-semibold">
-                  <span className="text-gray-700">Subtotal</span>
-                  <span className="text-gray-900">${totals.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-base font-semibold">
-                  <span className="text-gray-700">Shipping</span>
-                  <span className="text-gray-900">
-                    {totals.shipping === 0 ? (
-                      <span className="text-green-600 font-bold flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        FREE
-                      </span>
-                    ) : (
-                      `$${totals.shipping.toFixed(2)}`
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between text-base font-semibold">
-                  <span className="text-gray-700">Tax</span>
-                  <span className="text-gray-900">${totals.tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold border-t-2 border-gray-300 pt-3 mt-2">
+              {/* Order Total */}
+              <div className="border-t-2 border-gray-200 pt-4 bg-gradient-to-br from-gray-50 to-white p-4 rounded-2xl mb-3">
+                <div className="flex justify-between text-2xl font-bold">
                   <span className="text-gray-900">Total</span>
-                  <span className="text-gray-900" style={{ color: theme.primary }}>${totals.total.toFixed(2)}</span>
+                  <span style={{ color: theme.primary }}>{totals.total.toFixed(2)} DT</span>
                 </div>
               </div>
 
@@ -534,6 +562,52 @@ export default function CheckoutPage() {
         title={userInfo ? "Modifier l'adresse de livraison" : "Ajouter l'adresse de livraison"}
         isEditing={!!userInfo}
       />
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={cancelOrder}></div>
+          
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 animate-scaleIn">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}20` }}>
+                <svg className="w-8 h-8" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Your Order</h3>
+              <p className="text-gray-600">Are you sure you want to place this order?</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-600">Items:</span>
+                <span className="font-semibold">{cart.length}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                <span>Total:</span>
+                <span style={{ color: theme.primary }}>{totals.total.toFixed(2)} DT</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelOrder}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmOrder}
+                className="flex-1 px-6 py-3 text-white rounded-lg font-semibold transition-all duration-300 hover:scale-105"
+                style={{ backgroundColor: theme.primary }}
+              >
+                Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

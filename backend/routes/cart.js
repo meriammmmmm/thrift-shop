@@ -6,6 +6,15 @@ const { authenticateToken } = require('../middleware/auth');
 // Get user's cart
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    // Clean up cart items that are no longer available (out of stock or deleted)
+    await db.run(`
+      DELETE FROM cart 
+      WHERE user_id = ? 
+      AND product_id NOT IN (
+        SELECT id FROM products WHERE in_stock = TRUE
+      )
+    `, [req.user.id]);
+
     const cartItems = await db.all(`
       SELECT 
         c.id as cart_id,
@@ -14,13 +23,15 @@ router.get('/', authenticateToken, async (req, res) => {
         p.*
       FROM cart c
       JOIN products p ON c.product_id = p.id
-      WHERE c.user_id = ?
+      WHERE c.user_id = ? AND p.in_stock = TRUE
       ORDER BY c.created_at DESC
     `, [req.user.id]);
 
-    // Parse JSON fields
+    // Parse JSON fields and ensure numeric types
     const formattedItems = cartItems.map(item => ({
       ...item,
+      price: parseFloat(item.price) || 0,
+      original_price: item.original_price ? parseFloat(item.original_price) : null,
       images: item.images ? JSON.parse(item.images) : [],
       measurements: item.measurements ? JSON.parse(item.measurements) : {},
       care_instructions: item.care_instructions ? JSON.parse(item.care_instructions) : [],

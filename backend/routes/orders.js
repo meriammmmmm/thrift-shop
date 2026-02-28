@@ -18,9 +18,11 @@ router.get('/', authenticateToken, async (req, res) => {
     const ordersWithItems = [];
     for (const order of orders) {
       const items = await db.all(`
-        SELECT oi.*, p.name as product_name, p.images as product_images
+        SELECT oi.*, 
+               COALESCE(p.name, 'Product no longer available') as product_name, 
+               COALESCE(p.images, '[]') as product_images
         FROM order_items oi
-        JOIN products p ON oi.product_id = p.id
+        LEFT JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = ?
       `, [order.id]);
 
@@ -148,9 +150,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 
     const orderItems = await db.all(`
-      SELECT oi.*, p.name as product_name, p.images as product_images
+      SELECT oi.*, 
+             COALESCE(p.name, 'Product no longer available') as product_name, 
+             COALESCE(p.images, '[]') as product_images
       FROM order_items oi
-      JOIN products p ON oi.product_id = p.id
+      LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
     `, [req.params.id]);
 
