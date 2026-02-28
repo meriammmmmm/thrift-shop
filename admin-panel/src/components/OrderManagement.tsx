@@ -204,7 +204,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
                     {order.user ? (order.user.name || order.user.email) : 'Unknown Customer'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{order.item_count || 0} items</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{getCurrentCurrencySymbol()}{(order.total || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{getCurrentCurrencySymbol()}{(Number(order.total) || 0).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs rounded-full ${getOrderStatusColor(order.status || 'PENDING')}`}>
                       {order.status || 'PENDING'}
