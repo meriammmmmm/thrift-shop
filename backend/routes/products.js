@@ -20,8 +20,8 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    // Use TRUE for PostgreSQL compatibility (works in both SQLite and PostgreSQL)
-    let whereClause = 'WHERE p.in_stock = TRUE';
+    // Show all products including sold out ones
+    let whereClause = 'WHERE 1=1';
     let params = [];
 
     // Filter by company if specified
@@ -493,8 +493,8 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    // Use TRUE for PostgreSQL compatibility (works in both SQLite and PostgreSQL)
-    let whereClause = 'WHERE p.in_stock = TRUE AND p.company_id = ?';
+    // Show all products including sold out ones
+    let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
 
     // Build where clause

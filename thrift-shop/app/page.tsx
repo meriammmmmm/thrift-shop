@@ -861,12 +861,26 @@ export default function Home() {
                       className="group cursor-pointer shadow-md rounded-lg overflow-hidden bg-white max-w-[280px] mx-auto"
                       onClick={() => handleViewDetails(product)}
                     >
-                      <div className={`relative ${index === 1 ? 'bg-white' : 'bg-gray-50'} aspect-[3/4]`}>
+                      <div className={`relative ${index === 1 ? 'bg-white' : 'bg-gray-50'} aspect-[3/4] ${!product.inStock ? 'opacity-60' : ''}`}>
                         <img 
                           src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                           alt={product.name}
                           className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'}`}
                         />
+                        {/* Sold Out Overlay */}
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                            <div className="bg-white px-4 py-2 rounded-lg shadow-2xl">
+                              <p className="text-red-600 font-bold text-lg">SOLD OUT</p>
+                            </div>
+                          </div>
+                        )}
+                        {/* Sold Out Badge */}
+                        {!product.inStock && (
+                          <div className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-600 shadow-lg">
+                            SOLD OUT
+                          </div>
+                        )}
                         {wishlist.includes(product.id) && (
                           <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md">
                             <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
@@ -932,12 +946,26 @@ export default function Home() {
                 className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
                 onClick={() => handleViewDetails(product)}
               >
-                <div className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4`}>
+                <div className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4 ${!product.inStock ? 'opacity-60' : ''}`}>
                   <img 
                     src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                     alt={product.name}
                     className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-700`}
                   />
+                  {/* Sold Out Overlay */}
+                  {!product.inStock && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                      <div className="bg-white px-4 py-2 rounded-lg shadow-2xl">
+                        <p className="text-red-600 font-bold text-lg">SOLD OUT</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Sold Out Badge */}
+                  {!product.inStock && (
+                    <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-600 shadow-lg">
+                      SOLD OUT
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <button className="w-full py-2.5 px-4 bg-white text-gray-900 rounded font-medium text-xs tracking-wide uppercase hover:bg-gray-100 transition-colors magnetic-btn">
@@ -1054,7 +1082,7 @@ export default function Home() {
                       onClick={() => handleViewDetails(product)}
                     >
                       <div 
-                        className="rounded-full overflow-hidden bg-white/80 backdrop-blur-md"
+                        className={`rounded-full overflow-hidden bg-white/80 backdrop-blur-md relative ${!product.inStock ? 'opacity-50' : ''}`}
                         style={{
                           width: `${baseSize}px`,
                           height: `${baseSize}px`,
@@ -1066,6 +1094,14 @@ export default function Home() {
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
+                        {/* Sold Out Overlay for circular images */}
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full">
+                            <div className="bg-white px-2 py-1 rounded text-xs font-bold text-red-600">
+                              SOLD
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
