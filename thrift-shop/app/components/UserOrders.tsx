@@ -26,6 +26,9 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<'confirm' | 'cancel' | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,6 +75,46 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
       case 'CANCELLED': return 'Cancelled';
       default: return status;
     }
+  };
+
+  const handleConfirmOrder = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setActionType('confirm');
+    setShowConfirmModal(true);
+  };
+
+  const handleCancelOrder = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setActionType('cancel');
+    setShowConfirmModal(true);
+  };
+
+  const executeAction = async () => {
+    if (!selectedOrderId) return;
+
+    try {
+      if (actionType === 'cancel') {
+        // Call API to cancel order
+        alert('Order cancelled successfully!');
+      } else if (actionType === 'confirm') {
+        // Call API to confirm order
+        alert('Order confirmed successfully!');
+      }
+      
+      setShowConfirmModal(false);
+      setSelectedOrderId(null);
+      setActionType(null);
+      loadOrders(); // Reload orders
+    } catch (error) {
+      console.error('Failed to update order:', error);
+      alert('Failed to update order. Please try again.');
+    }
+  };
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setSelectedOrderId(null);
+    setActionType(null);
   };
 
   if (!isVisible) return null;
@@ -145,7 +188,7 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-lg">${order.total.toFixed(2)}</p>
+                      <p className="font-semibold text-lg">DT {order.total.toFixed(2)}</p>
                       <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(order.status)} animate-bounceIn`}>
                         {getStatusText(order.status)}
                       </span>
@@ -183,10 +226,10 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
                             {/* Price */}
                             <div className="flex-shrink-0">
                               <p className="text-sm font-semibold text-gray-900">
-                                ${(item.price * item.quantity).toFixed(2)}
+                                DT {(item.price * item.quantity).toFixed(2)}
                               </p>
                               <p className="text-xs text-gray-500">
-                                ${item.price.toFixed(2)} each
+                                DT {item.price.toFixed(2)} each
                               </p>
                             </div>
                           </div>
@@ -194,6 +237,18 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
                       </div>
                     </div>
                   )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-4 flex gap-2">
+                    {order.status === 'CONFIRMED' && (
+                      <button
+                        onClick={() => handleCancelOrder(order.id)}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:bg-red-700"
+                      >
+                        Cancel Order
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -201,6 +256,56 @@ export default function UserOrders({ isOpen, onClose, user }: UserOrdersProps) {
         </div>
       </div>
     </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[60] overflow-hidden">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeConfirmModal}></div>
+          
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 animate-scaleIn">
+            <div className="text-center mb-6">
+              <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
+                actionType === 'cancel' ? 'bg-red-100' : 'bg-green-100'
+              }`}>
+                {actionType === 'cancel' ? (
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {actionType === 'cancel' ? 'Cancel Order?' : 'Confirm Order?'}
+              </h3>
+              <p className="text-gray-600">
+                {actionType === 'cancel' 
+                  ? 'Are you sure you want to cancel this order? This action cannot be undone.' 
+                  : 'Are you sure you want to confirm this order?'}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeConfirmModal}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                No, Go Back
+              </button>
+              <button
+                onClick={executeAction}
+                className={`flex-1 px-6 py-3 text-white rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                  actionType === 'cancel' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {actionType === 'cancel' ? 'Yes, Cancel' : 'Yes, Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ export default function DailyEditPage() {
   const { theme, isLoading: themeLoading } = useTheme();
   
   const [cart, setCart] = useState<Product[]>([]);
+  const [cartTotal, setCartTotal] = useState<number>(0);
   const [cartItemIds, setCartItemIds] = useState<Set<number>>(new Set());
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -218,6 +219,7 @@ export default function DailyEditPage() {
       const cartData = await api.getCart();
       const items = cartData.items || [];
       setCart(items);
+      setCartTotal(cartData.total || 0);
       // Track which product IDs are in cart
       const itemIds = new Set<number>(items.map((item: any) => item.id));
       setCartItemIds(itemIds);
@@ -417,7 +419,6 @@ export default function DailyEditPage() {
   };
 
   const cartCount = cart.length;
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
 
   // Show loading state while theme is loading
   if (themeLoading) {
@@ -884,6 +885,7 @@ export default function DailyEditPage() {
         total={cartTotal}
         onCheckout={handleCheckout}
         user={user}
+        currencySymbol={companyCurrency.symbol}
       />
 
       {/* Wishlist Modal */}

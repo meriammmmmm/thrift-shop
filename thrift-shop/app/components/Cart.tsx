@@ -10,9 +10,10 @@ interface CartProps {
   total: number;
   onCheckout: () => void;
   user: any;
+  currencySymbol?: string;
 }
 
-export default function Cart({ isOpen, onClose, cart, onRemove, total, onCheckout, user }: CartProps) {
+export default function Cart({ isOpen, onClose, cart, onRemove, total, onCheckout, user, currencySymbol = 'DT' }: CartProps) {
   const router = useRouter();
   if (!isOpen) return null;
 
@@ -32,15 +33,8 @@ export default function Cart({ isOpen, onClose, cart, onRemove, total, onCheckou
     router.push('/checkout');
   };
 
-  const cartItems = cart.reduce((acc, item) => {
-    const existing = acc.find(i => i.id === item.id);
-    if (existing) {
-      existing.quantity++;
-    } else {
-      acc.push({ ...item, quantity: 1 });
-    }
-    return acc;
-  }, [] as (Product & { quantity: number })[]);
+  // For thrift shop, each item is unique (no grouping needed)
+  const cartItems = cart.map(item => ({ ...item, quantity: 1 }));
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -120,14 +114,14 @@ export default function Cart({ isOpen, onClose, cart, onRemove, total, onCheckou
                       {item.condition}
                     </p>
                     <p className="text-gray-600 text-sm mt-1 font-medium">
-                      ${item.price.toFixed(2)} × {item.quantity}
+                      {Number(item.price || 0).toFixed(2)} {currencySymbol}
                     </p>
                   </div>
                   
                   {/* Price and Remove */}
                   <div className="flex flex-col items-end ml-4">
                     <span className="font-semibold text-gray-900 text-sm mb-2">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {Number(item.price || 0).toFixed(2)} {currencySymbol}
                     </span>
                     <button 
                       onClick={() => onRemove(item.id)}
@@ -142,15 +136,23 @@ export default function Cart({ isOpen, onClose, cart, onRemove, total, onCheckou
               <div className="pt-4 mt-4 border-t">
                 <div className="flex justify-between items-center mb-4">
                   <span className="font-semibold text-gray-900">Total:</span>
-                  <span className="font-bold text-lg text-gray-900">${total.toFixed(2)}</span>
+                  <span className="font-bold text-lg text-gray-900">{Number(total || 0).toFixed(2)} {currencySymbol}</span>
                 </div>
 
-                <button 
-                  onClick={handleCheckout}
-                  className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white py-3 rounded-md font-medium transition-all duration-300 hover:scale-105 magnetic-btn shadow-lg hover:shadow-xl"
-                >
-                  {user ? 'Proceed to Checkout' : 'Sign In to Checkout'}
-                </button>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={onClose}
+                    className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-md font-semibold transition-all duration-300 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleCheckout}
+                    className="flex-1 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white py-3 rounded-md font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    {user ? 'Confirm Order' : 'Sign In'}
+                  </button>
+                </div>
                 
                 {!user && (
                   <p className="text-xs text-gray-500 text-center mt-2">

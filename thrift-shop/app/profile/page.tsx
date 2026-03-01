@@ -103,9 +103,12 @@ export default function ProfilePage() {
           setProfilePicture(backendInfo.profile_picture);
         }
       }
-    } catch (error) {
-      console.error('Failed to load user info:', error);
-      // User info doesn't exist yet, which is fine
+    } catch (error: any) {
+      // 404 is expected for new users who haven't added their info yet
+      if (error?.status !== 404) {
+        console.error('Failed to load user info:', error);
+      }
+      // User info doesn't exist yet, which is fine for new users
     } finally {
       setIsLoadingUserInfo(false);
       setLoading(false);

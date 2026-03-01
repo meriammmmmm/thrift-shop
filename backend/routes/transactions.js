@@ -97,7 +97,7 @@ router.get('/', async (req, res) => {
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: totalResult.total,
+        total: parseInt(totalResult.total),
         pages: Math.ceil(totalResult.total / limit)
       }
     });

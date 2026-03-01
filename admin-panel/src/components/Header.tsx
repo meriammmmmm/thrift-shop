@@ -37,30 +37,31 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavi
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-      <div className="px-6 py-4">
+      <div className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-center justify-between">
           {/* Left side - Brand Identity */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 min-w-0">
             <button
               onClick={onToggleSidebar}
-              className="custom-mobile-only p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="custom-mobile-only p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+              aria-label="Toggle sidebar"
             >
               <i className="fas fa-bars text-gray-600"></i>
             </button>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0">
               {/* Brand Logo */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] shadow-lg overflow-hidden">
+              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] shadow-lg overflow-hidden flex-shrink-0">
                 {user?.company?.logo ? (
                   <img src={user.company.logo} alt="Brand Logo" className="w-full h-full object-cover" />
                 ) : (
-                  <i className="fas fa-store text-white text-lg"></i>
+                  <i className="fas fa-store text-white text-sm sm:text-lg"></i>
                 )}
               </div>
               
               {/* Brand Info */}
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              <div className="hidden sm:block min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 leading-tight truncate">
                   {user?.company?.name || 'Thrift Shop'}
                 </h1>
                 <p className="text-xs text-gray-500 font-medium">
@@ -71,32 +72,33 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavi
           </div>
 
           {/* Right side - User Profile */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-3 px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 border border-gray-200"
+                className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 border border-gray-200"
+                aria-label="User menu"
               >
                 {/* User Avatar */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] flex items-center justify-center shadow-md">
-                  <span className="text-white font-semibold text-sm">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] flex items-center justify-center shadow-md flex-shrink-0">
+                  <span className="text-white font-semibold text-xs sm:text-sm">
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
                   </span>
                 </div>
                 
                 {/* User Info */}
-                <div className="hidden md:block text-left">
-                  <div className="font-semibold text-gray-900 text-sm">
+                <div className="hidden md:block text-left min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm truncate max-w-[120px] lg:max-w-[150px]">
                     {user?.name || 'Admin User'}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 truncate max-w-[120px] lg:max-w-[150px]">
                     {user?.email}
                   </div>
                 </div>
                 
                 {/* Dropdown Arrow */}
-                <i className={`fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}></i>
+                <i className={`fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} hidden sm:block`}></i>
               </button>
 
               {/* Dropdown Menu */}

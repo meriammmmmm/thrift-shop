@@ -14,13 +14,14 @@ router.get('/', authenticateToken, async (req, res) => {
       ORDER BY created_at DESC
     `, [req.user.id]);
 
-    // Get order items for each order
+    // Get order items for each order - ALWAYS show items even if product is sold/deleted
     const ordersWithItems = [];
     for (const order of orders) {
       const items = await db.all(`
         SELECT oi.*, 
-               COALESCE(p.name, 'Product no longer available') as product_name, 
-               COALESCE(p.images, '[]') as product_images
+               COALESCE(p.name, oi.product_id) as product_name, 
+               COALESCE(p.images, '[]') as product_images,
+               COALESCE(p.description, '') as product_description
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = ?
@@ -32,7 +33,8 @@ router.get('/', authenticateToken, async (req, res) => {
         billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
         items: items.map(item => ({
           ...item,
-          product_images: item.product_images ? JSON.parse(item.product_images) : []
+          product_images: item.product_images ? JSON.parse(item.product_images) : [],
+          product_name: item.product_name || `Product #${item.product_id}`
         }))
       });
     }
@@ -154,10 +156,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    // ALWAYS show order items even if product is sold/deleted
     const orderItems = await db.all(`
       SELECT oi.*, 
-             COALESCE(p.name, 'Product no longer available') as product_name, 
-             COALESCE(p.images, '[]') as product_images
+             COALESCE(p.name, oi.product_id) as product_name, 
+             COALESCE(p.images, '[]') as product_images,
+             COALESCE(p.description, '') as product_description
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
@@ -169,7 +173,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
       billing_address: JSON.parse(order.billing_address),
       items: orderItems.map(item => ({
         ...item,
-        product_images: item.product_images ? JSON.parse(item.product_images) : []
+        product_images: item.product_images ? JSON.parse(item.product_images) : [],
+        product_name: item.product_name || `Product #${item.product_id}`
       }))
     });
   } catch (error) {
@@ -201,6 +206,26 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     res.json(order);
   } catch (error) {
     console.error('Order status update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark order as delivered (for testing/demo)
+router.post('/:id/deliver', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.run(
+      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+      ['DELIVERED', req.params.id, req.user.id]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Order marked as delivered', order });
+  } catch (error) {
+    console.error('Order delivery update error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

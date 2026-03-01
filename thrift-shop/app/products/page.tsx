@@ -16,6 +16,7 @@ export default function ProductsPage() {
   const { theme, isLoading: themeLoading } = useTheme();
   
   const [cart, setCart] = useState<Product[]>([]);
+  const [cartTotal, setCartTotal] = useState<number>(0);
   const [cartItemIds, setCartItemIds] = useState<Set<number>>(new Set());
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -338,6 +339,7 @@ export default function ProductsPage() {
       const cartData = await api.getCart();
       const items = cartData.items || [];
       setCart(items);
+      setCartTotal(cartData.total || 0);
       // Track which product IDs are in cart
       const itemIds = new Set<number>(items.map((item: any) => item.id));
       setCartItemIds(itemIds);
@@ -558,7 +560,6 @@ export default function ProductsPage() {
   };
 
   const cartCount = cart.length;
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
 
   const handleDropdownToggle = useCallback((dropdown: string) => {
     closeAllDropdowns();
@@ -1226,6 +1227,7 @@ export default function ProductsPage() {
         total={cartTotal}
         onCheckout={handleCheckout}
         user={user}
+        currencySymbol={companyCurrency.symbol}
       />
 
       {/* Wishlist Modal */}

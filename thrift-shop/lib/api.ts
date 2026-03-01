@@ -72,10 +72,11 @@ class ApiClient {
           // Clear invalid token
           if (typeof window !== 'undefined') {
             localStorage.removeItem('auth-token');
+            localStorage.removeItem('user');
           }
           
-          const errorData = await response.json().catch(() => ({ error: 'Invalid or expired token' }));
-          const error = new Error(errorData.error || 'Invalid or expired token');
+          const errorData = await response.json().catch(() => ({ error: 'Session expired. Please sign in again.' }));
+          const error = new Error(errorData.error || 'Session expired. Please sign in again.');
           (error as any).status = 401;
           throw error;
         }
@@ -88,7 +89,10 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      // Don't log 404 errors as they're often expected (e.g., user info not found)
+      if ((error as any)?.status !== 404) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -236,6 +240,12 @@ class ApiClient {
     });
   }
 
+  async markOrderDelivered(id: number) {
+    return this.request(`/orders/${id}/deliver`, {
+      method: 'POST',
+    });
+  }
+
   // User endpoints
   async getUserProfile() {
     return this.request('/users/profile');
@@ -285,7 +295,15 @@ class ApiClient {
 
   // User Information endpoints
   async getUserInfo() {
-    return this.request('/users/info');
+    try {
+      return await this.request('/users/info');
+    } catch (error: any) {
+      // 404 is expected when user hasn't saved info yet - don't log as error
+      if (error?.status === 404) {
+        throw error; // Re-throw but without logging
+      }
+      throw error;
+    }
   }
 
   async saveUserInfo(userInfo: {

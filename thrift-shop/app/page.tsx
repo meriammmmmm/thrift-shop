@@ -17,6 +17,7 @@ export default function Home() {
   const themeStyles = useThemeStyles();
   
   const [cart, setCart] = useState<Product[]>([]);
+  const [cartTotal, setCartTotal] = useState<number>(0);
   const [cartItemIds, setCartItemIds] = useState<Set<number>>(new Set());
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -139,7 +140,7 @@ export default function Home() {
 
   const loadTestimonials = async (companyId: string) => {
     try {
-      const response = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/active?companyId=${companyId}`);
+      const response = await fetch(`https://thrift-shop-backend-production.up.railway.app/api/testimonials/active?companyId=${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data.testimonials || []);
@@ -211,6 +212,7 @@ export default function Home() {
       const cartData = await api.getCart();
       const items = cartData.items || [];
       setCart(items);
+      setCartTotal(cartData.total || 0);
       const itemIds = new Set<number>(items.map((item: any) => item.id));
       setCartItemIds(itemIds);
     } catch (error: any) {
@@ -481,7 +483,6 @@ export default function Home() {
   };
 
   const cartCount = cart.length;
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
 
   const heroSlides = [
     {
@@ -1419,6 +1420,7 @@ export default function Home() {
         total={cartTotal}
         onCheckout={handleCheckout}
         user={user}
+        currencySymbol={companyCurrency.symbol}
       />
 
       <Wishlist

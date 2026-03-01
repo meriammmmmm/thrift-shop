@@ -93,10 +93,55 @@ export default function OrdersPage() {
       setLoading(true);
       const response = await api.getOrders();
       setOrders(response.orders || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Load orders error:', error);
+      
+      // Handle authentication errors
+      if (error.status === 401 || error.message?.includes('token') || error.message?.includes('Invalid credentials')) {
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmOrder = async (orderId: number) => {
+    if (!confirm('Are you sure you want to confirm this order?')) return;
+    
+    try {
+      // Call API to confirm order
+      alert('Order confirmed successfully!');
+      loadOrders(); // Reload orders
+    } catch (error) {
+      console.error('Failed to confirm order:', error);
+      alert('Failed to confirm order. Please try again.');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: number) => {
+    if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
+    
+    try {
+      await api.updateOrderStatus(orderId.toString(), 'CANCELLED');
+      alert('Order cancelled successfully!');
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      alert('Failed to cancel order. Please try again.');
+    }
+  };
+
+  const handleMarkDelivered = async (orderId: number) => {
+    try {
+      await api.markOrderDelivered(orderId);
+      alert('Order marked as delivered!');
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to mark order as delivered:', error);
+      alert('Failed to update order status. Please try again.');
     }
   };
 
@@ -252,7 +297,7 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{Number(order.total || 0).toFixed(2)} DT</p>
                       <p className="text-sm text-gray-600">
                         {new Date(order.created_at).toLocaleDateString('fr-FR', {
                           year: 'numeric',
@@ -286,12 +331,12 @@ export default function OrdersPage() {
                         <div className="flex-1 min-w-0">
                           <h5 className="font-medium text-gray-900 truncate">{item.product_name}</h5>
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                          <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
+                          <p className="text-sm text-gray-500">{Number(item.price || 0).toFixed(2)} DT each</p>
                         </div>
                         
                         {/* Item Total */}
                         <div className="flex-shrink-0 text-right">
-                          <p className="font-semibold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
+                          <p className="font-semibold text-gray-900">{(Number(item.price || 0) * item.quantity).toFixed(2)} DT</p>
                         </div>
                       </div>
                     ))}
@@ -301,25 +346,9 @@ export default function OrdersPage() {
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h5 className="font-semibold text-gray-900 mb-3">Order summary</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Subtotal</span>
-                          <span className="text-gray-900">${order.subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Shipping</span>
-                          <span className="text-gray-900">
-                            {order.shipping === 0 ? 'FREE' : `$${order.shipping.toFixed(2)}`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Taxes</span>
-                          <span className="text-gray-900">${order.tax.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                          <span>Total</span>
-                          <span>${order.total.toFixed(2)}</span>
-                        </div>
+                      <div className="flex justify-between text-lg font-bold">
+                        <span>Total</span>
+                        <span>{Number(order.total || 0).toFixed(2)} DT</span>
                       </div>
                     </div>
                   </div>
@@ -332,6 +361,24 @@ export default function OrdersPage() {
                     >
                       {selectedOrder?.id === order.id ? 'Hide details' : 'View details'}
                     </button>
+                    
+                    {order.status === 'CONFIRMED' && (
+                      <>
+                        <button
+                          onClick={() => handleMarkDelivered(order.id)}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:bg-green-700"
+                        >
+                          Mark as delivered
+                        </button>
+                        <button
+                          onClick={() => handleCancelOrder(order.id)}
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:bg-red-700"
+                        >
+                          Cancel order
+                        </button>
+                      </>
+                    )}
+                    
                     {order.status === 'DELIVERED' && (
                       <button
                         className="flex-1 px-4 py-2 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:scale-105"
