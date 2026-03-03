@@ -65,16 +65,16 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
         </div>
       )}
 
-      {/* Sold Out Badge */}
+      {/* Sold Out Badge - Clean and minimal */}
       {!product.inStock && (
-        <div className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-600 shadow-lg">
+        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-red-600">
           SOLD OUT
         </div>
       )}
 
       {/* Image Container */}
       <div 
-        className={`relative h-72 cursor-pointer overflow-hidden bg-gray-50 ${!product.inStock ? 'opacity-60' : ''}`}
+        className="relative h-72 cursor-pointer overflow-hidden bg-gray-50"
         onClick={() => onViewDetails(product)}
       >
         <Image 
@@ -83,14 +83,6 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        {/* Sold Out Overlay */}
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="bg-white px-6 py-3 rounded-lg shadow-2xl">
-              <p className="text-red-600 font-bold text-xl">SOLD OUT</p>
-            </div>
-          </div>
-        )}
       </div>
       
       {/* Product Info */}

@@ -861,23 +861,15 @@ export default function Home() {
                       className="group cursor-pointer shadow-md rounded-lg overflow-hidden bg-white max-w-[280px] mx-auto"
                       onClick={() => handleViewDetails(product)}
                     >
-                      <div className={`relative ${index === 1 ? 'bg-white' : 'bg-gray-50'} aspect-[3/4] ${!product.inStock ? 'opacity-60' : ''}`}>
+                      <div className={`relative ${index === 1 ? 'bg-white' : 'bg-gray-50'} aspect-[3/4]`}>
                         <img 
                           src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                           alt={product.name}
                           className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'}`}
                         />
-                        {/* Sold Out Overlay */}
+                        {/* Sold Out Badge - Clean and minimal */}
                         {!product.inStock && (
-                          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                            <div className="bg-white px-4 py-2 rounded-lg shadow-2xl">
-                              <p className="text-red-600 font-bold text-lg">SOLD OUT</p>
-                            </div>
-                          </div>
-                        )}
-                        {/* Sold Out Badge */}
-                        {!product.inStock && (
-                          <div className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-600 shadow-lg">
+                          <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
                             SOLD OUT
                           </div>
                         )}
@@ -946,23 +938,15 @@ export default function Home() {
                 className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
                 onClick={() => handleViewDetails(product)}
               >
-                <div className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4 ${!product.inStock ? 'opacity-60' : ''}`}>
+                <div className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4`}>
                   <img 
                     src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                     alt={product.name}
                     className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-700`}
                   />
-                  {/* Sold Out Overlay */}
+                  {/* Sold Out Badge - Clean and minimal */}
                   {!product.inStock && (
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                      <div className="bg-white px-4 py-2 rounded-lg shadow-2xl">
-                        <p className="text-red-600 font-bold text-lg">SOLD OUT</p>
-                      </div>
-                    </div>
-                  )}
-                  {/* Sold Out Badge */}
-                  {!product.inStock && (
-                    <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-600 shadow-lg">
+                    <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
                       SOLD OUT
                     </div>
                   )}
@@ -1082,7 +1066,7 @@ export default function Home() {
                       onClick={() => handleViewDetails(product)}
                     >
                       <div 
-                        className={`rounded-full overflow-hidden bg-white/80 backdrop-blur-md relative ${!product.inStock ? 'opacity-50' : ''}`}
+                        className="rounded-full overflow-hidden bg-white/80 backdrop-blur-md relative"
                         style={{
                           width: `${baseSize}px`,
                           height: `${baseSize}px`,
@@ -1094,12 +1078,10 @@ export default function Home() {
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
-                        {/* Sold Out Overlay for circular images */}
+                        {/* Sold Out Badge for circular images */}
                         {!product.inStock && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full">
-                            <div className="bg-white px-2 py-1 rounded text-xs font-bold text-red-600">
-                              SOLD
-                            </div>
+                          <div className="absolute top-1 left-1 bg-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold text-white">
+                            SOLD
                           </div>
                         )}
                       </div>
