@@ -5,19 +5,7 @@ async function seedDatabase() {
   try {
     console.log('🌱 Starting database seeding...');
 
-    // Create admin user
-    const adminPassword = await bcrypt.hash('admin123', 12);
-    await db.run(`
-      INSERT OR REPLACE INTO users (id, email, name, password, role)
-      VALUES (1, 'admin@thriftshop.com', 'Admin User', ?, 'ADMIN')
-    `, [adminPassword]);
-
-    // Create test user
-    const userPassword = await bcrypt.hash('user123', 12);
-    await db.run(`
-      INSERT OR REPLACE INTO users (id, email, name, password, role)
-      VALUES (2, 'user@example.com', 'Test User', ?, 'USER')
-    `, [userPassword]);
+    // Demo users removed - create users through the admin panel or signup
 
     // Sample products
     const products = [
@@ -286,8 +274,6 @@ async function seedDatabase() {
     `);
 
     console.log('✅ Database seeded successfully!');
-    console.log('👤 Admin user: admin@thriftshop.com / admin123');
-    console.log('👤 Test user: user@example.com / user123');
     console.log('📦 Products created:', products.length);
     console.log('🛒 Sample order created');
 

@@ -116,7 +116,7 @@ export default function ProductsPage() {
       
       if (response.products) {
         const transformedProducts = response.products.map((product: any) => {
-          const inStockValue = product.in_stock === true || product.in_stock === 1 || product.in_stock === '1' || product.in_stock === undefined || product.in_stock === null;
+          const inStockValue = product.in_stock === true || product.in_stock === 1 || product.in_stock === '1';
           
           return {
             id: product.id,
