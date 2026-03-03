@@ -48,14 +48,7 @@ async function setupCompanies() {
       );
       console.log(`✅ Created company: ${company.name} (ID: ${result.id})`);
 
-      // Create admin user for each company
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      const adminResult = await db.run(
-        `INSERT INTO users (email, password, name, role, admin_company_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [company.email, hashedPassword, `${company.name} Admin`, 'ADMIN', result.id]
-      );
-      console.log(`✅ Created admin user for ${company.name}: ${company.email}`);
+      // Demo admin users removed - create admin users through the company signup process
     }
 
     // Update existing products to belong to random companies (for demo)
@@ -89,18 +82,16 @@ async function setupCompanies() {
     }
 
     console.log('\n🎉 Multi-company marketplace setup complete!');
-    console.log('\n📋 Company Admin Credentials:');
+    console.log('\n📋 Companies Created:');
     companies.forEach((company, index) => {
       console.log(`\n${index + 1}. ${company.name}`);
-      console.log(`   Email: ${company.email}`);
-      console.log(`   Password: admin123`);
       console.log(`   Description: ${company.description}`);
     });
 
     console.log('\n🔗 Access your admin panels at:');
     console.log('   http://localhost:8080 (Admin Panel)');
-    console.log('\n👥 Users will see products from all companies in the main store:');
-    console.log('   http://localhost:3000 (Customer Store)');
+    console.log('\n👥 Create admin accounts through the company signup process');
+    console.log('   Main store: http://localhost:3000 (Customer Store)');
 
   } catch (error) {
     console.error('❌ Error setting up companies:', error);

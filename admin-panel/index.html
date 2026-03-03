@@ -670,10 +670,16 @@
             <div id="login-section" class="max-w-md mx-auto mt-20">
                 <div class="modern-card p-8">
                     <div class="text-center mb-8">
-                        <div class="w-20 h-20 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-shield-alt text-white text-2xl"></i>
+                        <!-- Creative Admin Logo -->
+                        <div class="relative inline-block mb-4">
+                            <div class="absolute -inset-2 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-500 rounded-full blur opacity-30 animate-pulse"></div>
+                            <div class="relative w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center mx-auto shadow-2xl transform hover:scale-110 transition-transform duration-300">
+                                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                            </div>
                         </div>
-                        <h2 class="text-3xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">Admin Portal</h2>
+                        <h2 class="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-700 bg-clip-text text-transparent">Admin Portal</h2>
                         <p class="text-gray-600 mt-2">Secure access to your dashboard</p>
                     </div>
                     <form onsubmit="login(event)" class="space-y-6">
@@ -690,16 +696,6 @@
                             Sign In
                         </button>
                     </form>
-                    <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                        <div class="flex items-center mb-2">
-                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                            <span class="font-semibold text-blue-700">Demo Credentials</span>
-                        </div>
-                        <div class="text-sm text-blue-600 space-y-1">
-                            <p><strong>Email:</strong> admin@thriftshop.com</p>
-                            <p><strong>Password:</strong> admin123</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
