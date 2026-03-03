@@ -233,35 +233,51 @@ router.get('/orders', requireAdmin, async (req, res) => {
     `, [...params, parseInt(limit), offset]);
 
     // Get order items for each order
-    const ordersWithItems = await Promise.all(orders.map(async (order) => {
-      const items = await db.all(`
-        SELECT 
-          oi.*,
-          COALESCE(p.name, oi.product_id) as product_name,
-          COALESCE(p.images, '[]') as product_images,
-          COALESCE(p.description, '') as product_description,
-          COALESCE(p.category, '') as product_category,
-          COALESCE(p.brand, '') as product_brand
-        FROM order_items oi
-        LEFT JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = ?
-      `, [order.id]);
+    const ordersWithItems = [];
+    for (const order of orders) {
+      try {
+        const items = await db.all(`
+          SELECT 
+            oi.*,
+            COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name,
+            COALESCE(p.images, '[]') as product_images,
+            COALESCE(p.description, '') as product_description,
+            COALESCE(p.category, '') as product_category,
+            COALESCE(p.brand, '') as product_brand
+          FROM order_items oi
+          LEFT JOIN products p ON oi.product_id = p.id
+          WHERE oi.order_id = ?
+        `, [order.id]);
 
-      return {
-        ...order,
-        user: {
-          name: order.user_name,
-          email: order.user_email
-        },
-        shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
-        billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
-        items: items.map(item => ({
-          ...item,
-          product_images: item.product_images ? JSON.parse(item.product_images) : [],
-          product_name: item.product_name || `Product #${item.product_id}`
-        }))
-      };
-    }));
+        ordersWithItems.push({
+          ...order,
+          user: {
+            name: order.user_name,
+            email: order.user_email
+          },
+          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
+          items: items.map(item => ({
+            ...item,
+            product_images: item.product_images ? JSON.parse(item.product_images) : [],
+            product_name: item.product_name || `Product #${item.product_id}`
+          }))
+        });
+      } catch (itemError) {
+        console.error(`Error fetching items for order ${order.id}:`, itemError);
+        // Add order without items if there's an error
+        ordersWithItems.push({
+          ...order,
+          user: {
+            name: order.user_name,
+            email: order.user_email
+          },
+          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
+          items: []
+        });
+      }
+    }
 
     const totalResult = await db.get(`
       SELECT COUNT(*) as total FROM orders o ${whereClause}
