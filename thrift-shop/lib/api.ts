@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
   
   // Default to localhost if not set
   if (!envUrl) {
-    return 'https://thrift-shop-backend-production.up.railway.appapi';
+    return 'http://localhost:5001/api';
   }
   
   // If URL doesn't start with http, make it absolute

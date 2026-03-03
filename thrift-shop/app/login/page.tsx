@@ -36,17 +36,20 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       let data;
       if (isLogin) {
         data = await api.login({ email: formData.email, password: formData.password });
+        setSuccess('Signed in successfully!');
       } else {
         // For registration, use email from userInfo or fallback to formData
         const emailToUse = userInfo.email || formData.email;
@@ -67,18 +70,22 @@ export default function LoginPage() {
             country: userInfo.country
           }
         });
+        setSuccess('Account created successfully!');
       }
 
       // Store token and user data
       localStorage.setItem('auth-token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Redirect based on user role
-      if (data.user.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
+      // Show success message briefly before redirect
+      setTimeout(() => {
+        // Redirect based on user role
+        if (data.user.role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -102,6 +109,18 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Success Notification */}
+      {success && (
+        <div className="fixed top-4 right-4 z-50 animate-slideInRight">
+          <div className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">{success}</span>
+          </div>
+        </div>
+      )}
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">

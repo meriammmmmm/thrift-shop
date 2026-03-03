@@ -19,7 +19,7 @@ router.get('/', authenticateToken, async (req, res) => {
     for (const order of orders) {
       const items = await db.all(`
         SELECT oi.*, 
-               COALESCE(p.name, oi.product_id) as product_name, 
+               COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
                COALESCE(p.images, '[]') as product_images,
                COALESCE(p.description, '') as product_description
         FROM order_items oi
@@ -44,7 +44,8 @@ router.get('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Orders fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

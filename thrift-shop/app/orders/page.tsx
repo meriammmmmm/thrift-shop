@@ -91,18 +91,29 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      console.log('Loading orders...');
       const response = await api.getOrders();
+      console.log('Orders response:', response);
       setOrders(response.orders || []);
     } catch (error: any) {
       console.error('Load orders error:', error);
+      console.error('Error details:', {
+        status: error.status,
+        message: error.message,
+        response: error.response
+      });
       
       // Handle authentication errors
       if (error.status === 401 || error.message?.includes('token') || error.message?.includes('Invalid credentials')) {
+        console.log('Authentication error, redirecting to login...');
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user');
         router.push('/login');
         return;
       }
+      
+      // Show error to user
+      alert('Failed to load orders. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }

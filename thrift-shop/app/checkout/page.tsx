@@ -265,8 +265,8 @@ export default function CheckoutPage() {
         // Clear cart after successful order
         await api.clearCart();
         
-        // Redirect to orders page to see the order immediately
-        router.push('/orders');
+        // Show success notification and redirect
+        router.push('/order-success?orderId=' + response.order.id);
       } else {
         throw new Error('Order creation failed');
       }
