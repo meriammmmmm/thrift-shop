@@ -232,20 +232,43 @@ router.get('/orders', requireAdmin, async (req, res) => {
       LIMIT ? OFFSET ?
     `, [...params, parseInt(limit), offset]);
 
-    const totalResult = await db.get(`
-      SELECT COUNT(*) as total FROM orders o ${whereClause}
-    `, params);
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(orders.map(async (order) => {
+      const items = await db.all(`
+        SELECT 
+          oi.*,
+          COALESCE(p.name, oi.product_id) as product_name,
+          COALESCE(p.images, '[]') as product_images,
+          COALESCE(p.description, '') as product_description,
+          COALESCE(p.category, '') as product_category,
+          COALESCE(p.brand, '') as product_brand
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
 
-    res.json({
-      orders: orders.map(order => ({
+      return {
         ...order,
         user: {
           name: order.user_name,
           email: order.user_email
         },
         shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
-        billing_address: order.billing_address ? JSON.parse(order.billing_address) : null
-      })),
+        billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
+        items: items.map(item => ({
+          ...item,
+          product_images: item.product_images ? JSON.parse(item.product_images) : [],
+          product_name: item.product_name || `Product #${item.product_id}`
+        }))
+      };
+    }));
+
+    const totalResult = await db.get(`
+      SELECT COUNT(*) as total FROM orders o ${whereClause}
+    `, params);
+
+    res.json({
+      orders: ordersWithItems,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
