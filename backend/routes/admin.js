@@ -1164,60 +1164,55 @@ router.post('/fix-inventory', requireAdmin, async (req, res) => {
     
     // Get all orders that are CONFIRMED, SHIPPED, or DELIVERED
     const completedOrders = await db.all(`
-      SELECT id, status FROM orders 
-      WHERE status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
+      SELECT DISTINCT oi.product_id 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
     `);
     
-    console.log(`Found ${completedOrders.length} completed orders`);
+    console.log(`Found ${completedOrders.length} products in completed orders`);
     
     let fixedProducts = 0;
     
-    for (const order of completedOrders) {
-      // Get order items
-      const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [order.id]);
+    for (const item of completedOrders) {
+      const result = await db.run(`
+        UPDATE products 
+        SET in_stock = 0,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
       
-      // Mark all products as SOLD
-      for (const item of orderItems) {
-        const result = await db.run(`
-          UPDATE products 
-          SET in_stock = 0,
-              reservation_status = 'sold',
-              reserved_by_order_id = NULL
-          WHERE id = ?
-        `, [item.product_id]);
-        
-        if (result.changes > 0) {
-          fixedProducts++;
-          console.log(`✓ Fixed product ${item.product_id} from order ${order.id}`);
-        }
+      if (result.changes > 0) {
+        fixedProducts++;
+        console.log(`✓ Fixed product ${item.product_id}`);
       }
     }
     
     // Get all PROCESSING orders and mark as RESERVED
     const processingOrders = await db.all(`
-      SELECT id FROM orders WHERE status = 'PROCESSING'
+      SELECT oi.product_id, o.id as order_id
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'PROCESSING'
     `);
     
-    console.log(`Found ${processingOrders.length} processing orders`);
+    console.log(`Found ${processingOrders.length} products in processing orders`);
     
     let reservedProducts = 0;
     
-    for (const order of processingOrders) {
-      const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [order.id]);
+    for (const item of processingOrders) {
+      const result = await db.run(`
+        UPDATE products 
+        SET in_stock = 1,
+            reservation_status = 'reserved',
+            reserved_by_order_id = ?
+        WHERE id = ?
+      `, [item.order_id, item.product_id]);
       
-      for (const item of orderItems) {
-        const result = await db.run(`
-          UPDATE products 
-          SET in_stock = 1,
-              reservation_status = 'reserved',
-              reserved_by_order_id = ?
-          WHERE id = ?
-        `, [order.id, item.product_id]);
-        
-        if (result.changes > 0) {
-          reservedProducts++;
-          console.log(`✓ Reserved product ${item.product_id} for order ${order.id}`);
-        }
+      if (result.changes > 0) {
+        reservedProducts++;
+        console.log(`✓ Reserved product ${item.product_id} for order ${item.order_id}`);
       }
     }
     
@@ -1226,13 +1221,68 @@ router.post('/fix-inventory', requireAdmin, async (req, res) => {
     res.json({
       success: true,
       message: 'Inventory fixed successfully',
-      completedOrders: completedOrders.length,
+      completedProducts: completedOrders.length,
       fixedProducts,
-      processingOrders: processingOrders.length,
+      processingProducts: processingOrders.length,
       reservedProducts
     });
   } catch (error) {
     console.error('Fix inventory error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Public endpoint to trigger inventory fix (for testing)
+router.get('/fix-inventory-now', async (req, res) => {
+  try {
+    console.log('🔧 PUBLIC: Starting inventory fix...');
+    
+    const completedOrders = await db.all(`
+      SELECT DISTINCT oi.product_id 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
+    `);
+    
+    let fixedProducts = 0;
+    for (const item of completedOrders) {
+      const result = await db.run(`
+        UPDATE products 
+        SET in_stock = 0,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
+      if (result.changes > 0) fixedProducts++;
+    }
+    
+    const processingOrders = await db.all(`
+      SELECT oi.product_id, o.id as order_id
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'PROCESSING'
+    `);
+    
+    let reservedProducts = 0;
+    for (const item of processingOrders) {
+      const result = await db.run(`
+        UPDATE products 
+        SET in_stock = 1,
+            reservation_status = 'reserved',
+            reserved_by_order_id = ?
+        WHERE id = ?
+      `, [item.order_id, item.product_id]);
+      if (result.changes > 0) reservedProducts++;
+    }
+    
+    res.json({
+      success: true,
+      message: 'Inventory fixed!',
+      fixedProducts,
+      reservedProducts
+    });
+  } catch (error) {
+    console.error('Fix error:', error);
     res.status(500).json({ error: error.message });
   }
 });
