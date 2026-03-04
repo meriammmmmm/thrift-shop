@@ -113,17 +113,17 @@ router.post('/', authenticateToken, async (req, res) => {
     for (const item of orderItems) {
       await db.run(`
         INSERT INTO order_items (order_id, product_id, quantity, price)
-        VALUES (?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4)
       `, [orderResult.id, item.product_id, item.quantity, item.price]);
       
       // Mark product as RESERVED (not sold yet)
       await db.run(`
         UPDATE products 
-        SET reservation_status = 'reserved', 
-            reserved_by_order_id = ?,
-            in_stock = 1
-        WHERE id = ?
-      `, [orderResult.id, item.product_id]);
+        SET reservation_status = $1, 
+            reserved_by_order_id = $2,
+            in_stock = $3
+        WHERE id = $4
+      `, ['reserved', orderResult.id, true, item.product_id]);
     }
 
     // NOTE: Products are marked as RESERVED when order is created
