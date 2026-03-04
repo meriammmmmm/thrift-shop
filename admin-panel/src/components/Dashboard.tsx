@@ -296,7 +296,7 @@ const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{getCurrentCurrencySymbol()}{(Number(stats.totalRevenue) || 0).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{getCurrentCurrencySymbol()}{(parseFloat(stats.totalRevenue as any) || 0).toFixed(2)}</p>
               <p className="text-xs text-[var(--color-primary)] mt-2 flex items-center">
                 <i className="fas fa-coins mr-1"></i>
                 Total earned

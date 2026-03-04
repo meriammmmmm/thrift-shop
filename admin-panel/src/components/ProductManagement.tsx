@@ -116,7 +116,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setProducts(data.products || data);
+        const productsList = data.products || data;
+        // Ensure all prices are numbers
+        const productsWithParsedPrices = productsList.map((p: any) => ({
+          ...p,
+          price: p.price !== undefined && p.price !== null ? parseFloat(p.price) : 0
+        }));
+        setProducts(productsWithParsedPrices);
       }
     } catch (error) {
       console.error('Products load error:', error);
@@ -282,7 +288,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.brand || 'No Brand'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getCurrentCurrencySymbol()}{(Number(product.price) || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category || 'Uncategorized'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${

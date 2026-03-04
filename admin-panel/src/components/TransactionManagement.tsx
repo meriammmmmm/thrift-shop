@@ -265,7 +265,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ authToken
                       {(transaction.type || 'payment').toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{getCurrentCurrencySymbol()}{(transaction.amount || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{getCurrentCurrencySymbol()}{(parseFloat(transaction.amount as any) || 0).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className={`modern-badge ${getTransactionStatusColor(transaction.status || 'pending')}`}>
                       {(transaction.status || 'pending').toUpperCase()}

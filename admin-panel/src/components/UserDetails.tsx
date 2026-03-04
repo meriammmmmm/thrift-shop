@@ -485,7 +485,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) 
             <div className="text-blue-600 font-medium">Total Orders</div>
           </div>
           <div className="bg-green-50 p-6 rounded-xl">
-            <div className="text-3xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(user.total_spent || 0).toFixed(2)}</div>
+            <div className="text-3xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(parseFloat(user.total_spent as any) || 0).toFixed(2)}</div>
             <div className="text-green-600 font-medium">Total Spent</div>
           </div>
           <div className="bg-gray-50 p-6 rounded-xl">
