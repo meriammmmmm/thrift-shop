@@ -21,6 +21,8 @@ interface Order {
     product_images: string[];
     quantity: number;
     price: number;
+    product_in_stock?: number;
+    product_reservation_status?: string;
   }>;
 }
 
