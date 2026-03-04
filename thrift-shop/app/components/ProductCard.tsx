@@ -65,7 +65,14 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
         </div>
       )}
 
-      {/* Sold Out Badge - Clean and minimal */}
+      {/* Reserved Badge - Yellow/Orange */}
+      {product.inStock && (product as any).reservation_status === 'reserved' && (
+        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
+          RESERVED
+        </div>
+      )}
+
+      {/* Sold Out Badge - Red */}
       {!product.inStock && (
         <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-red-600">
           SOLD OUT
@@ -137,15 +144,21 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
           </button>
           <button 
             onClick={() => onAddToCart(product)}
-            disabled={!product.inStock || isInCart}
+            disabled={!product.inStock || isInCart || (product as any).reservation_status === 'reserved'}
             className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-200 ${
-              !product.inStock || isInCart
+              !product.inStock || isInCart || (product as any).reservation_status === 'reserved'
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:opacity-90'
             }`}
             style={{ backgroundColor: theme.primary }}
           >
-            {!product.inStock ? 'Sold Out' : isInCart ? 'In Cart' : 'Add to Bag'}
+            {!product.inStock 
+              ? 'Sold Out' 
+              : (product as any).reservation_status === 'reserved'
+              ? 'Reserved'
+              : isInCart 
+              ? 'In Cart' 
+              : 'Add to Bag'}
           </button>
         </div>
       </div>

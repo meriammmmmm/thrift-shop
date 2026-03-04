@@ -32,6 +32,17 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'confirm';
+    onConfirm?: () => void;
+  }>({
+    title: '',
+    message: '',
+    type: 'success'
+  });
 
   // Company info for current store
   const [company, setCompany] = useState<{id: number, name: string, description: string} | null>(null);
@@ -113,52 +124,103 @@ export default function OrdersPage() {
       }
       
       // Show error to user
-      alert('Failed to load orders. Please try refreshing the page.');
+      setModalConfig({
+        title: 'Error',
+        message: 'Failed to load orders. Please try refreshing the page.',
+        type: 'error'
+      });
+      setShowModal(true);
     } finally {
       setLoading(false);
     }
   };
 
   const handleConfirmOrder = async (orderId: number) => {
-    if (!confirm('Are you sure you want to confirm this order?')) return;
-    
-    try {
-      // Call API to confirm order
-      alert('Order confirmed successfully!');
-      loadOrders(); // Reload orders
-    } catch (error) {
-      console.error('Failed to confirm order:', error);
-      alert('Failed to confirm order. Please try again.');
-    }
+    setModalConfig({
+      title: 'Confirm Order',
+      message: 'Are you sure you want to confirm this order?',
+      type: 'confirm',
+      onConfirm: async () => {
+        setShowModal(false);
+        // Call API to confirm order
+        setModalConfig({
+          title: 'Success',
+          message: 'Order confirmed successfully!',
+          type: 'success'
+        });
+        setShowModal(true);
+        setTimeout(() => setShowModal(false), 2000);
+        loadOrders();
+      }
+    });
+    setShowModal(true);
   };
 
   const handleCancelOrder = async (orderId: number) => {
-    if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
-    
-    try {
-      await api.updateOrderStatus(orderId.toString(), 'CANCELLED');
-      alert('Order cancelled successfully!');
-      loadOrders();
-    } catch (error) {
-      console.error('Failed to cancel order:', error);
-      alert('Failed to cancel order. Please try again.');
-    }
+    setModalConfig({
+      title: 'Cancel Order',
+      message: 'Are you sure you want to cancel this order? This action cannot be undone.',
+      type: 'confirm',
+      onConfirm: async () => {
+        setShowModal(false);
+        try {
+          await api.updateOrderStatus(orderId.toString(), 'CANCELLED');
+          setModalConfig({
+            title: 'Success',
+            message: 'Order cancelled successfully!',
+            type: 'success'
+          });
+          setShowModal(true);
+          setTimeout(() => setShowModal(false), 2000);
+          loadOrders();
+        } catch (error) {
+          console.error('Failed to cancel order:', error);
+          setModalConfig({
+            title: 'Error',
+            message: 'Failed to cancel order. Please try again.',
+            type: 'error'
+          });
+          setShowModal(true);
+        }
+      }
+    });
+    setShowModal(true);
   };
 
   const handleMarkDelivered = async (orderId: number) => {
-    try {
-      await api.markOrderDelivered(orderId);
-      alert('Order marked as delivered!');
-      loadOrders();
-    } catch (error) {
-      console.error('Failed to mark order as delivered:', error);
-      alert('Failed to update order status. Please try again.');
-    }
+    setModalConfig({
+      title: 'Mark as Delivered',
+      message: 'Confirm that you have received this order?',
+      type: 'confirm',
+      onConfirm: async () => {
+        setShowModal(false);
+        try {
+          await api.markOrderDelivered(orderId);
+          setModalConfig({
+            title: 'Success',
+            message: 'Order marked as delivered!',
+            type: 'success'
+          });
+          setShowModal(true);
+          setTimeout(() => setShowModal(false), 2000);
+          loadOrders();
+        } catch (error) {
+          console.error('Failed to mark order as delivered:', error);
+          setModalConfig({
+            title: 'Error',
+            message: 'Failed to update order status. Please try again.',
+            type: 'error'
+          });
+          setShowModal(true);
+        }
+      }
+    });
+    setShowModal(true);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'CONFIRMED': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'PROCESSING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'SHIPPED': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'DELIVERED': return 'bg-green-100 text-green-800 border-green-200';
@@ -169,7 +231,7 @@ export default function OrdersPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'Confirmed';
+      case 'CONFIRMED': return 'Reserved';
       case 'PROCESSING': return 'Processing';
       case 'SHIPPED': return 'Shipped';
       case 'DELIVERED': return 'Delivered';
@@ -221,7 +283,7 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: theme.primary }}></div>
           <p className="text-gray-600">Loading your orders...</p>
@@ -231,7 +293,74 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fadeIn border border-gray-200">
+            <div className="text-center">
+              {/* Icon */}
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                modalConfig.type === 'success' ? 'bg-green-100' :
+                modalConfig.type === 'error' ? 'bg-red-100' :
+                'bg-blue-100'
+              }`}>
+                {modalConfig.type === 'success' && (
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {modalConfig.type === 'error' && (
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+                {modalConfig.type === 'confirm' && (
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{modalConfig.title}</h3>
+              
+              {/* Message */}
+              <p className="text-gray-600 mb-6">{modalConfig.message}</p>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                {modalConfig.type === 'confirm' ? (
+                  <>
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={modalConfig.onConfirm}
+                      className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors"
+                      style={{ backgroundColor: theme.primary }}
+                    >
+                      OK
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-full px-4 py-2.5 text-white rounded-lg font-medium transition-colors"
+                    style={{ backgroundColor: theme.primary }}
+                  >
+                    OK
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -257,8 +386,8 @@ export default function OrdersPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-2">
             <button
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -267,52 +396,48 @@ export default function OrdersPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
+            <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
           </div>
-          <p className="text-gray-600">View your order history and track their status</p>
+          <p className="text-sm text-gray-600 ml-11">View your order history and track their status</p>
         </div>
 
         {orders.length === 0 ? (
-          <div className="text-center py-16 scroll-animate scroll-fadeInUp">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center animate-float">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <div className="text-center py-16">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No orders yet</h2>
             <p className="text-gray-600 mb-6">You haven't placed any orders yet</p>
             <button 
               onClick={() => router.push('/')}
-              className="px-6 py-3 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 magnetic-btn"
+              className="px-6 py-3 rounded-lg font-medium text-white transition-all duration-300"
               style={{ backgroundColor: theme.primary }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.primaryHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.primary}
             >
               Start shopping
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {orders.map((order, index) => (
-              <div key={order.id} className={`bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 scroll-animate scroll-fadeInUp stagger-${Math.min(index + 1, 6)} card-hover-enhanced`}>
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div key={order.id} className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 {/* Order Header */}
-                <div className="px-6 py-4 border-b border-gray-200 reveal-on-scroll" style={{ background: `linear-gradient(135deg, ${theme.primaryLight}10, ${theme.primary}05)` }}>
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="text-xl font-bold text-gray-900">My Order</h3>
-                        <div className={`flex items-center space-x-1 px-3 py-1 text-sm rounded-full border ${getStatusColor(order.status)} animate-bounceIn`}>
-                          {getStatusIcon(order.status)}
-                          <span className="font-medium">{getStatusText(order.status)}</span>
-                        </div>
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-lg font-semibold text-gray-900">My Order</h3>
+                      <div className={`flex items-center space-x-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(order.status)}`}>
+                        {getStatusIcon(order.status)}
+                        <span className="font-medium">{getStatusText(order.status)}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">{Number(order.total || 0).toFixed(2)} DT</p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(order.created_at).toLocaleDateString('fr-FR', {
+                      <p className="text-xl font-bold text-gray-900">{Number(order.total || 0).toFixed(2)} DT</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
-                          month: 'long',
+                          month: 'short',
                           day: 'numeric'
                         })}
                       </p>
@@ -322,53 +447,41 @@ export default function OrdersPage() {
 
                 {/* Order Items */}
                 <div className="p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4">Ordered items</h4>
-                  <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Ordered items</h4>
+                  <div className="space-y-3">
                     {order.items?.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                        {/* Product Image */}
+                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                         <div className="flex-shrink-0 w-16 h-16">
                           <img 
-                            src={item.product_images?.[0] || 'https://via.placeholder.com/64x64/f3f4f6/9ca3af?text=No+Image'} 
+                            src={item.product_images?.[0] || 'https://via.placeholder.com/64'} 
                             alt={item.product_name}
-                            className="w-full h-full object-cover rounded-lg border border-gray-200"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/64x64/f3f4f6/9ca3af?text=No+Image';
-                            }}
+                            className="w-full h-full object-cover rounded border border-gray-200"
                           />
                         </div>
-                        
-                        {/* Product Details */}
                         <div className="flex-1 min-w-0">
-                          <h5 className="font-medium text-gray-900 truncate">{item.product_name}</h5>
-                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                          <p className="text-sm text-gray-500">{Number(item.price || 0).toFixed(2)} DT each</p>
+                          <h5 className="text-sm font-medium text-gray-900 truncate">{item.product_name}</h5>
+                          <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
                         </div>
-                        
-                        {/* Item Total */}
-                        <div className="flex-shrink-0 text-right">
-                          <p className="font-semibold text-gray-900">{(Number(item.price || 0) * item.quantity).toFixed(2)} DT</p>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">{Number(item.price || 0).toFixed(2)} DT</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Order Summary */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h5 className="font-semibold text-gray-900 mb-3">Order summary</h5>
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Total</span>
-                        <span>{Number(order.total || 0).toFixed(2)} DT</span>
-                      </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Total</span>
+                      <span className="font-bold text-gray-900">{Number(order.total || 0).toFixed(2)} DT</span>
                     </div>
                   </div>
 
                   {/* Order Actions */}
-                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  <div className="mt-4 flex gap-2">
                     <button
                       onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+                      className="flex-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       {selectedOrder?.id === order.id ? 'Hide details' : 'View details'}
                     </button>
@@ -377,63 +490,47 @@ export default function OrdersPage() {
                       <>
                         <button
                           onClick={() => handleMarkDelivered(order.id)}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:bg-green-700"
+                          className="flex-1 px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
-                          Mark as delivered
+                          Mark delivered
                         </button>
                         <button
                           onClick={() => handleCancelOrder(order.id)}
-                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:bg-red-700"
+                          className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                         >
-                          Cancel order
+                          Cancel
                         </button>
                       </>
                     )}
-                    
-                    {order.status === 'DELIVERED' && (
-                      <button
-                        className="flex-1 px-4 py-2 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:scale-105"
-                        style={{ backgroundColor: theme.primary }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.primaryHover}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.primary}
-                      >
-                        Leave a review
-                      </button>
-                    )}
                   </div>
 
-                  {/* Expanded Order Details */}
+                  {/* Expanded Details */}
                   {selectedOrder?.id === order.id && (
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Shipping Address */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {order.shipping_address && (
                           <div>
-                            <h5 className="font-semibold text-gray-900 mb-3">Shipping address</h5>
-                            <div className="bg-gray-50 rounded-lg p-4 text-sm">
+                            <h5 className="text-sm font-semibold text-gray-900 mb-2">Shipping address</h5>
+                            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-700">
                               <p className="font-medium">{order.shipping_address.name}</p>
                               <p>{order.shipping_address.street}</p>
                               <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zip}</p>
                               <p>{order.shipping_address.country}</p>
                               {order.shipping_address.phone && (
-                                <p className="mt-2 text-gray-600">Phone: {order.shipping_address.phone}</p>
+                                <p className="mt-1 text-gray-600">Phone: {order.shipping_address.phone}</p>
                               )}
                             </div>
                           </div>
                         )}
 
-                        {/* Billing Address */}
                         {order.billing_address && (
                           <div>
-                            <h5 className="font-semibold text-gray-900 mb-3">Billing address</h5>
-                            <div className="bg-gray-50 rounded-lg p-4 text-sm">
+                            <h5 className="text-sm font-semibold text-gray-900 mb-2">Billing address</h5>
+                            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-700">
                               <p className="font-medium">{order.billing_address.name}</p>
                               <p>{order.billing_address.street}</p>
                               <p>{order.billing_address.city}, {order.billing_address.state} {order.billing_address.zip}</p>
                               <p>{order.billing_address.country}</p>
-                              {order.billing_address.email && (
-                                <p className="mt-2 text-gray-600">Email: {order.billing_address.email}</p>
-                              )}
                             </div>
                           </div>
                         )}
@@ -447,20 +544,18 @@ export default function OrdersPage() {
         )}
 
         {/* Quick Actions */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex space-x-4">
+        <div className="mt-8 text-center">
+          <div className="inline-flex gap-3">
             <button
               onClick={() => router.push('/')}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
             >
               Continue shopping
             </button>
             <button
               onClick={() => router.push('/profile')}
-              className="px-6 py-3 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
+              className="px-6 py-2.5 text-white rounded-lg text-sm font-medium transition-colors"
               style={{ backgroundColor: theme.primary }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.primaryHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.primary}
             >
               My profile
             </button>
