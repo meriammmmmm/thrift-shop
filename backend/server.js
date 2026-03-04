@@ -230,7 +230,7 @@ async function fixInventoryOnStartup() {
     for (const item of completedOrders) {
       await db.run(`
         UPDATE products 
-        SET in_stock = 0,
+        SET in_stock = FALSE,
             reservation_status = 'sold',
             reserved_by_order_id = NULL
         WHERE id = ?
@@ -250,7 +250,7 @@ async function fixInventoryOnStartup() {
     for (const item of processingOrders) {
       await db.run(`
         UPDATE products 
-        SET in_stock = 1,
+        SET in_stock = TRUE,
             reservation_status = 'reserved',
             reserved_by_order_id = ?
         WHERE id = ?

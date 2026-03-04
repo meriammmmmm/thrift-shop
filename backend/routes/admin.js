@@ -334,7 +334,7 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
-          SET in_stock = 1, 
+          SET in_stock = TRUE, 
               reservation_status = 'available',
               reserved_by_order_id = NULL
           WHERE id = ?
@@ -347,7 +347,7 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
-          SET in_stock = 0,
+          SET in_stock = FALSE,
               reservation_status = 'sold',
               reserved_by_order_id = NULL
           WHERE id = ?
@@ -360,7 +360,7 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
-          SET in_stock = 1,
+          SET in_stock = TRUE,
               reservation_status = 'reserved',
               reserved_by_order_id = ?
           WHERE id = ?
@@ -1177,7 +1177,7 @@ router.post('/fix-inventory', requireAdmin, async (req, res) => {
     for (const item of completedOrders) {
       const result = await db.run(`
         UPDATE products 
-        SET in_stock = 0,
+        SET in_stock = FALSE,
             reservation_status = 'sold',
             reserved_by_order_id = NULL
         WHERE id = ?
@@ -1204,7 +1204,7 @@ router.post('/fix-inventory', requireAdmin, async (req, res) => {
     for (const item of processingOrders) {
       const result = await db.run(`
         UPDATE products 
-        SET in_stock = 1,
+        SET in_stock = TRUE,
             reservation_status = 'reserved',
             reserved_by_order_id = ?
         WHERE id = ?
@@ -1248,7 +1248,7 @@ router.get('/fix-inventory-now', async (req, res) => {
     for (const item of completedOrders) {
       const result = await db.run(`
         UPDATE products 
-        SET in_stock = 0,
+        SET in_stock = FALSE,
             reservation_status = 'sold',
             reserved_by_order_id = NULL
         WHERE id = ?
@@ -1267,7 +1267,7 @@ router.get('/fix-inventory-now', async (req, res) => {
     for (const item of processingOrders) {
       const result = await db.run(`
         UPDATE products 
-        SET in_stock = 1,
+        SET in_stock = TRUE,
             reservation_status = 'reserved',
             reserved_by_order_id = ?
         WHERE id = ?
