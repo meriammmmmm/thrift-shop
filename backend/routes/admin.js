@@ -1157,4 +1157,84 @@ router.post('/setup-reservation-system', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Fix inventory for all delivered/confirmed orders
+router.post('/fix-inventory', requireAdmin, async (req, res) => {
+  try {
+    console.log('🔧 Starting inventory fix...');
+    
+    // Get all orders that are CONFIRMED, SHIPPED, or DELIVERED
+    const completedOrders = await db.all(`
+      SELECT id, status FROM orders 
+      WHERE status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
+    `);
+    
+    console.log(`Found ${completedOrders.length} completed orders`);
+    
+    let fixedProducts = 0;
+    
+    for (const order of completedOrders) {
+      // Get order items
+      const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [order.id]);
+      
+      // Mark all products as SOLD
+      for (const item of orderItems) {
+        const result = await db.run(`
+          UPDATE products 
+          SET in_stock = 0,
+              reservation_status = 'sold',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+        
+        if (result.changes > 0) {
+          fixedProducts++;
+          console.log(`✓ Fixed product ${item.product_id} from order ${order.id}`);
+        }
+      }
+    }
+    
+    // Get all PROCESSING orders and mark as RESERVED
+    const processingOrders = await db.all(`
+      SELECT id FROM orders WHERE status = 'PROCESSING'
+    `);
+    
+    console.log(`Found ${processingOrders.length} processing orders`);
+    
+    let reservedProducts = 0;
+    
+    for (const order of processingOrders) {
+      const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [order.id]);
+      
+      for (const item of orderItems) {
+        const result = await db.run(`
+          UPDATE products 
+          SET in_stock = 1,
+              reservation_status = 'reserved',
+              reserved_by_order_id = ?
+          WHERE id = ?
+        `, [order.id, item.product_id]);
+        
+        if (result.changes > 0) {
+          reservedProducts++;
+          console.log(`✓ Reserved product ${item.product_id} for order ${order.id}`);
+        }
+      }
+    }
+    
+    console.log('✅ Inventory fix complete!');
+    
+    res.json({
+      success: true,
+      message: 'Inventory fixed successfully',
+      completedOrders: completedOrders.length,
+      fixedProducts,
+      processingOrders: processingOrders.length,
+      reservedProducts
+    });
+  } catch (error) {
+    console.error('Fix inventory error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;module.exports = router;
