@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "Mery Rose Clothing - Quality Second-Hand Clothes",
   description: "Sustainable style at affordable prices",
   icons: {
-    icon: "/images/mery-rose-logo.png",
-    apple: "/images/mery-rose-logo.png",
+    icon: "/images/image.jpeg",
+    apple: "/images/image.jpeg",
   },
 };
 
