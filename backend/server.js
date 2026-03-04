@@ -214,10 +214,63 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// Run inventory migration on startup
+async function fixInventoryOnStartup() {
+  try {
+    console.log('🔧 Running inventory migration...');
+    
+    // Fix CONFIRMED/SHIPPED/DELIVERED orders
+    const completedOrders = await db.all(`
+      SELECT DISTINCT oi.product_id 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
+    `);
+    
+    for (const item of completedOrders) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = 0,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
+    }
+    
+    console.log(`✅ Fixed ${completedOrders.length} sold products`);
+    
+    // Fix PROCESSING orders
+    const processingOrders = await db.all(`
+      SELECT oi.product_id, o.id as order_id
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'PROCESSING'
+    `);
+    
+    for (const item of processingOrders) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = 1,
+            reservation_status = 'reserved',
+            reserved_by_order_id = ?
+        WHERE id = ?
+      `, [item.order_id, item.product_id]);
+    }
+    
+    console.log(`✅ Fixed ${processingOrders.length} reserved products`);
+    console.log('✅ Inventory migration complete!');
+  } catch (error) {
+    console.error('❌ Inventory migration error:', error);
+  }
+}
+
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Thrift Shop Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
   console.log(`📁 Database path: ${process.env.DB_PATH || './database/thrift_shop.db'}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Run inventory fix
+  await fixInventoryOnStartup();
 });
