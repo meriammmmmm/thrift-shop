@@ -257,6 +257,10 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
 
       if (response.ok) {
         const data = await response.json();
+        // Ensure price is a number
+        if (data.price !== undefined && data.price !== null) {
+          data.price = parseFloat(data.price);
+        }
         setProduct(data);
         setEditForm(data);
         // Set existing images as URLs for editing
@@ -671,7 +675,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
             </h3>
             <p className="text-gray-600 text-lg">{product.brand || 'No Brand'}</p>
             <div className="flex items-center space-x-3 mt-2">
-              <span className="text-2xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(product.price || 0).toFixed(2)}</span>
+              <span className="text-2xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</span>
               <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                 product.in_stock !== false 
                   ? 'bg-green-100 text-green-800' 
@@ -810,7 +814,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                   />
                 </div>
               ) : (
-                <p className="text-gray-900 text-lg">{getCurrentCurrencySymbol()}{(product.price || 0).toFixed(2)}</p>
+                <p className="text-gray-900 text-lg">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">Currency: {companyCurrency.currency}</p>
             </div>
