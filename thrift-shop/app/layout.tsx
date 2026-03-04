@@ -3,8 +3,12 @@ import "./globals.css";
 import { ThemeProvider } from "../lib/theme";
 
 export const metadata: Metadata = {
-  title: "Thrift Shop - Quality Second-Hand Clothes",
+  title: "Mery Rose Clothing - Quality Second-Hand Clothes",
   description: "Sustainable style at affordable prices",
+  icons: {
+    icon: "/images/mery-rose-logo.png",
+    apple: "/images/mery-rose-logo.png",
+  },
 };
 
 export default function RootLayout({
