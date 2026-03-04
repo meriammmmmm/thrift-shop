@@ -98,12 +98,12 @@ router.post('/', authenticateToken, async (req, res) => {
     // For now, we'll use the first company or null if mixed
     const primaryCompanyId = companiesInOrder.size === 1 ? Array.from(companiesInOrder)[0] : null;
 
-    // Create order
+    // Create order with PROCESSING status (items reserved)
     const orderResult = await db.run(`
       INSERT INTO orders (
         user_id, subtotal, tax, shipping, total, payment_method,
         shipping_address, billing_address, status, company_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CONFIRMED', ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PROCESSING', ?)
     `, [
       req.user.id, subtotal, tax, shipping, total, payment_method,
       JSON.stringify(shipping_address), JSON.stringify(billing_address), primaryCompanyId
@@ -116,7 +116,7 @@ router.post('/', authenticateToken, async (req, res) => {
         VALUES ($1, $2, $3, $4)
       `, [orderResult.id, item.product_id, item.quantity, item.price]);
       
-      // Mark product as RESERVED (not sold yet)
+      // Mark product as RESERVED (processing order)
       await db.run(`
         UPDATE products 
         SET reservation_status = $1, 
@@ -126,8 +126,8 @@ router.post('/', authenticateToken, async (req, res) => {
       `, ['reserved', orderResult.id, true, item.product_id]);
     }
 
-    // NOTE: Products are marked as RESERVED when order is created
-    // They will be marked as SOLD only when order is DELIVERED
+    // NOTE: Products are marked as RESERVED when order is PROCESSING
+    // They will be marked as SOLD when order is CONFIRMED
     // This allows orders to be cancelled without affecting inventory
 
     // Get complete order
@@ -168,7 +168,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     // ALWAYS show order items even if product is sold/deleted
     const orderItems = await db.all(`
       SELECT oi.*, 
-             COALESCE(p.name, oi.product_id) as product_name, 
+             COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
              COALESCE(p.images, '[]') as product_images,
              COALESCE(p.description, '') as product_description
       FROM order_items oi
@@ -232,8 +232,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
-    // If changing to DELIVERED, mark products as SOLD OUT
-    if (status === 'DELIVERED' && oldStatus !== 'DELIVERED') {
+    // If changing to CONFIRMED, mark products as SOLD OUT
+    if (status === 'CONFIRMED' && oldStatus !== 'CONFIRMED') {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
@@ -245,8 +245,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
-    // If changing to CONFIRMED/PROCESSING/SHIPPED, keep as RESERVED
-    if (['CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(status) && !['CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(oldStatus)) {
+    // If changing to PROCESSING, mark as RESERVED
+    if (status === 'PROCESSING' && oldStatus !== 'PROCESSING') {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
@@ -255,6 +255,19 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
               reserved_by_order_id = ?
           WHERE id = ?
         `, [req.params.id, item.product_id]);
+      }
+    }
+
+    // If changing to SHIPPED or DELIVERED, keep as SOLD
+    if (['SHIPPED', 'DELIVERED'].includes(status) && !['CONFIRMED', 'SHIPPED', 'DELIVERED'].includes(oldStatus)) {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 0,
+              reservation_status = 'sold',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
       }
     }
 
@@ -275,17 +288,23 @@ router.post('/:id/confirm-payment', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Get order items and mark products as sold
+    // Get order items and mark products as SOLD OUT
     const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
     
     for (const item of orderItems) {
-      await db.run('UPDATE products SET in_stock = false WHERE id = ?', [item.product_id]);
+      await db.run(`
+        UPDATE products 
+        SET in_stock = 0,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
     }
 
-    // Update order status to PROCESSING (payment confirmed)
+    // Update order status to CONFIRMED (payment confirmed, items sold)
     await db.run(
       'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      ['PROCESSING', req.params.id]
+      ['CONFIRMED', req.params.id]
     );
 
     const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
@@ -346,27 +365,15 @@ router.post('/:id/deliver', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Mark products as SOLD when delivered
-    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
-    
-    for (const item of orderItems) {
-      await db.run(`
-        UPDATE products 
-        SET in_stock = 0,
-            reservation_status = 'sold',
-            reserved_by_order_id = NULL
-        WHERE id = ?
-      `, [item.product_id]);
-    }
-
-    // Update order status
+    // Products should already be SOLD if order was CONFIRMED
+    // Just update order status to DELIVERED
     await db.run(
       'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       ['DELIVERED', req.params.id]
     );
 
     const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Order marked as delivered, products marked as sold', order: updatedOrder });
+    res.json({ message: 'Order marked as delivered', order: updatedOrder });
   } catch (error) {
     console.error('Order delivery update error:', error);
     res.status(500).json({ error: 'Internal server error' });

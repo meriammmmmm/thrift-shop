@@ -308,6 +308,15 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
+    // Get current order status
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const oldStatus = order.status;
+
+    // Update order status
     const result = await db.run(
       'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [status, req.params.id]
@@ -317,8 +326,63 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
-    res.json(order);
+    // Handle inventory changes based on status transitions
+    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
+
+    // If changing to CANCELLED or REFUNDED, make products available again
+    if ((status === 'CANCELLED' || status === 'REFUNDED') && !['CANCELLED', 'REFUNDED'].includes(oldStatus)) {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 1, 
+              reservation_status = 'available',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+      }
+    }
+
+    // If changing to CONFIRMED, mark products as SOLD OUT
+    if (status === 'CONFIRMED' && oldStatus !== 'CONFIRMED') {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 0,
+              reservation_status = 'sold',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+      }
+    }
+
+    // If changing to PROCESSING, mark as RESERVED
+    if (status === 'PROCESSING' && oldStatus !== 'PROCESSING') {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 1,
+              reservation_status = 'reserved',
+              reserved_by_order_id = ?
+          WHERE id = ?
+        `, [req.params.id, item.product_id]);
+      }
+    }
+
+    // If changing to SHIPPED or DELIVERED, keep as SOLD
+    if (['SHIPPED', 'DELIVERED'].includes(status) && !['CONFIRMED', 'SHIPPED', 'DELIVERED'].includes(oldStatus)) {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 0,
+              reservation_status = 'sold',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+      }
+    }
+
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json(updatedOrder);
   } catch (error) {
     console.error('Order status update error:', error);
     res.status(500).json({ error: 'Internal server error' });

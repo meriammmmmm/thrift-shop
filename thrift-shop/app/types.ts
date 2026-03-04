@@ -11,6 +11,8 @@ export interface Product {
   condition: 'Like New' | 'Excellent' | 'Good' | 'Fair';
   color: string;
   inStock: boolean;
+  reservation_status?: 'available' | 'reserved' | 'sold';
+  reserved_by_order_id?: number | null;
   material?: string;
   measurements?: {
     chest?: string;

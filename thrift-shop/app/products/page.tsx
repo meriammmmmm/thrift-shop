@@ -131,6 +131,8 @@ export default function ProductsPage() {
             condition: product.condition,
             color: product.color,
             inStock: inStockValue,
+            reservation_status: product.reservation_status || 'available',
+            reserved_by_order_id: product.reserved_by_order_id || null,
             material: product.material,
             measurements: product.measurements || {},
             careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
