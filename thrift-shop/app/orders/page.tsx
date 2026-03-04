@@ -450,17 +450,35 @@ export default function OrdersPage() {
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Ordered items</h4>
                   <div className="space-y-3">
                     {order.items?.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-shrink-0 w-16 h-16">
+                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg relative">
+                        <div className="flex-shrink-0 w-16 h-16 relative">
                           <img 
                             src={item.product_images?.[0] || 'https://via.placeholder.com/64'} 
                             alt={item.product_name}
                             className="w-full h-full object-cover rounded border border-gray-200"
                           />
+                          {/* Status Badge on Image */}
+                          {item.product_reservation_status === 'reserved' && (
+                            <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-orange-500 text-white text-[9px] font-bold rounded">
+                              RESERVED
+                            </div>
+                          )}
+                          {(item.product_reservation_status === 'sold' || item.product_in_stock === 0) && item.product_reservation_status !== 'reserved' && (
+                            <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded">
+                              SOLD
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h5 className="text-sm font-medium text-gray-900 truncate">{item.product_name}</h5>
                           <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                          {/* Status Text */}
+                          {item.product_reservation_status === 'reserved' && (
+                            <p className="text-xs text-orange-600 font-medium mt-1">• Reserved</p>
+                          )}
+                          {(item.product_reservation_status === 'sold' || item.product_in_stock === 0) && item.product_reservation_status !== 'reserved' && (
+                            <p className="text-xs text-red-600 font-medium mt-1">• Sold Out</p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-gray-900">{Number(item.price || 0).toFixed(2)} DT</p>

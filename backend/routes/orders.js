@@ -21,7 +21,9 @@ router.get('/', authenticateToken, async (req, res) => {
         SELECT oi.*, 
                COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
                COALESCE(p.images, '[]') as product_images,
-               COALESCE(p.description, '') as product_description
+               COALESCE(p.description, '') as product_description,
+               COALESCE(p.in_stock, 0) as product_in_stock,
+               COALESCE(p.reservation_status, 'unknown') as product_reservation_status
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = ?
@@ -34,7 +36,9 @@ router.get('/', authenticateToken, async (req, res) => {
         items: items.map(item => ({
           ...item,
           product_images: item.product_images ? JSON.parse(item.product_images) : [],
-          product_name: item.product_name || `Product #${item.product_id}`
+          product_name: item.product_name || `Product #${item.product_id}`,
+          product_in_stock: item.product_in_stock,
+          product_reservation_status: item.product_reservation_status
         }))
       });
     }
@@ -174,7 +178,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
       SELECT oi.*, 
              COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
              COALESCE(p.images, '[]') as product_images,
-             COALESCE(p.description, '') as product_description
+             COALESCE(p.description, '') as product_description,
+             COALESCE(p.in_stock, 0) as product_in_stock,
+             COALESCE(p.reservation_status, 'unknown') as product_reservation_status
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
@@ -187,7 +193,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
       items: orderItems.map(item => ({
         ...item,
         product_images: item.product_images ? JSON.parse(item.product_images) : [],
-        product_name: item.product_name || `Product #${item.product_id}`
+        product_name: item.product_name || `Product #${item.product_id}`,
+        product_in_stock: item.product_in_stock,
+        product_reservation_status: item.product_reservation_status
       }))
     });
   } catch (error) {
