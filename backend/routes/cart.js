@@ -6,12 +6,14 @@ const { authenticateToken } = require('../middleware/auth');
 // Get user's cart
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Clean up cart items that are no longer available (out of stock or deleted)
+    // Clean up cart items that are no longer available (out of stock, reserved, or deleted)
     await db.run(`
       DELETE FROM cart 
       WHERE user_id = ? 
       AND product_id NOT IN (
-        SELECT id FROM products WHERE in_stock = TRUE
+        SELECT id FROM products 
+        WHERE in_stock = TRUE 
+        AND (reservation_status IS NULL OR reservation_status = 'available')
       )
     `, [req.user.id]);
 
@@ -23,7 +25,9 @@ router.get('/', authenticateToken, async (req, res) => {
         p.*
       FROM cart c
       JOIN products p ON c.product_id = p.id
-      WHERE c.user_id = ? AND p.in_stock = TRUE
+      WHERE c.user_id = ? 
+      AND p.in_stock = TRUE
+      AND (p.reservation_status IS NULL OR p.reservation_status = 'available')
       ORDER BY c.created_at DESC
     `, [req.user.id]);
 
@@ -62,13 +66,18 @@ router.post('/add', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Product ID is required' });
     }
 
-    // Check if product exists and is in stock
-    const product = await db.get('SELECT * FROM products WHERE id = ? AND in_stock = TRUE', [product_id]);
-    console.log('Product found:', product ? `${product.name} (in_stock: ${product.in_stock})` : 'Not found');
+    // Check if product exists and is in stock and available (not reserved or sold)
+    const product = await db.get(`
+      SELECT * FROM products 
+      WHERE id = ? 
+      AND in_stock = TRUE 
+      AND (reservation_status IS NULL OR reservation_status = 'available')
+    `, [product_id]);
+    console.log('Product found:', product ? `${product.name} (in_stock: ${product.in_stock}, status: ${product.reservation_status || 'available'})` : 'Not found');
     
     if (!product) {
-      console.log('Error: Product not found or out of stock');
-      return res.status(404).json({ error: 'Product not found or out of stock' });
+      console.log('Error: Product not found, out of stock, reserved, or sold');
+      return res.status(404).json({ error: 'Product not available' });
     }
 
     // Check if item already exists in cart
