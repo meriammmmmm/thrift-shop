@@ -982,4 +982,128 @@ router.post('/ai/generate-description', requireAdmin, async (req, res) => {
   }
 });
 
+// Fix inventory for cancelled orders (admin utility)
+router.post('/fix-inventory', requireAdmin, async (req, res) => {
+  try {
+    const results = {
+      cancelledOrdersFixed: 0,
+      confirmedOrdersFixed: 0,
+      productsFixed: []
+    };
+
+    // Fix cancelled/refunded orders
+    const cancelledOrders = await db.all(`
+      SELECT id FROM orders WHERE status IN ('CANCELLED', 'REFUNDED')
+    `);
+
+    for (const order of cancelledOrders) {
+      const orderItems = await db.all(`
+        SELECT oi.product_id, p.name, p.in_stock
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+
+      for (const item of orderItems) {
+        if (item.product_id && item.in_stock === 0) {
+          await db.run('UPDATE products SET in_stock = true WHERE id = ?', [item.product_id]);
+          results.cancelledOrdersFixed++;
+          results.productsFixed.push({
+            productId: item.product_id,
+            productName: item.name,
+            orderId: order.id,
+            reason: 'Order cancelled/refunded'
+          });
+        }
+      }
+    }
+
+    // Fix confirmed orders (payment not confirmed)
+    const confirmedOrders = await db.all(`
+      SELECT id FROM orders WHERE status = 'CONFIRMED'
+    `);
+
+    for (const order of confirmedOrders) {
+      const orderItems = await db.all(`
+        SELECT oi.product_id, p.name, p.in_stock
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+
+      for (const item of orderItems) {
+        if (item.product_id && item.in_stock === 0) {
+          await db.run('UPDATE products SET in_stock = true WHERE id = ?', [item.product_id]);
+          results.confirmedOrdersFixed++;
+          results.productsFixed.push({
+            productId: item.product_id,
+            productName: item.name,
+            orderId: order.id,
+            reason: 'Payment not confirmed'
+          });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Fixed ${results.cancelledOrdersFixed + results.confirmedOrdersFixed} products`,
+      details: results
+    });
+  } catch (error) {
+    console.error('Error fixing inventory:', error);
+    res.status(500).json({ error: 'Failed to fix inventory' });
+  }
+});
+
+// PUBLIC endpoint to add reservation columns and fix inventory (run once)
+router.post('/setup-reservation-system', async (req, res) => {
+  try {
+    console.log('Setting up reservation system...');
+    
+    // Add columns if they don't exist (PostgreSQL)
+    try {
+      await db.run(`ALTER TABLE products ADD COLUMN IF NOT EXISTS reservation_status TEXT DEFAULT 'available'`);
+      await db.run(`ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_by_order_id INTEGER`);
+      console.log('✅ Columns added');
+    } catch (err) {
+      console.log('Columns might already exist:', err.message);
+    }
+    
+    // Fix cancelled/refunded orders
+    const result1 = await db.run(`
+      UPDATE products 
+      SET in_stock = true, reservation_status = 'available', reserved_by_order_id = NULL
+      WHERE id IN (
+        SELECT DISTINCT oi.product_id
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.status IN ('CANCELLED', 'REFUNDED')
+      )
+    `);
+    
+    // Fix undelivered orders
+    const result2 = await db.run(`
+      UPDATE products 
+      SET in_stock = true, reservation_status = 'available', reserved_by_order_id = NULL
+      WHERE id IN (
+        SELECT DISTINCT oi.product_id
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.status IN ('CONFIRMED', 'PENDING', 'PROCESSING', 'SHIPPED')
+      )
+    `);
+    
+    res.json({
+      success: true,
+      message: 'Reservation system setup complete',
+      cancelledFixed: result1.changes || 0,
+      undeliveredFixed: result2.changes || 0
+    });
+  } catch (error) {
+    console.error('Setup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

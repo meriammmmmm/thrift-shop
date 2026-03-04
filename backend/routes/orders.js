@@ -109,18 +109,26 @@ router.post('/', authenticateToken, async (req, res) => {
       JSON.stringify(shipping_address), JSON.stringify(billing_address), primaryCompanyId
     ]);
 
-    // Create order items
+    // Create order items and mark products as RESERVED
     for (const item of orderItems) {
       await db.run(`
         INSERT INTO order_items (order_id, product_id, quantity, price)
         VALUES (?, ?, ?, ?)
       `, [orderResult.id, item.product_id, item.quantity, item.price]);
+      
+      // Mark product as RESERVED (not sold yet)
+      await db.run(`
+        UPDATE products 
+        SET reservation_status = 'reserved', 
+            reserved_by_order_id = ?,
+            in_stock = 1
+        WHERE id = ?
+      `, [orderResult.id, item.product_id]);
     }
 
-    // Update product stock (mark as sold for thrift items)
-    for (const item of items) {
-      await db.run('UPDATE products SET in_stock = false WHERE id = ?', [item.product_id]);
-    }
+    // NOTE: Products are marked as RESERVED when order is created
+    // They will be marked as SOLD only when order is DELIVERED
+    // This allows orders to be cancelled without affecting inventory
 
     // Get complete order
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderResult.id]);
@@ -194,19 +202,137 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    const result = await db.run(
-      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      [status, req.params.id, req.user.id]
-    );
-
-    if (result.changes === 0) {
+    const order = await db.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    
+    if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
-    res.json(order);
+    const oldStatus = order.status;
+
+    // Update order status
+    await db.run(
+      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [status, req.params.id]
+    );
+
+    // Handle inventory changes based on status transitions
+    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
+
+    // If changing to CANCELLED or REFUNDED, make products available again
+    if ((status === 'CANCELLED' || status === 'REFUNDED') && !['CANCELLED', 'REFUNDED'].includes(oldStatus)) {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 1, 
+              reservation_status = 'available',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+      }
+    }
+
+    // If changing to DELIVERED, mark products as SOLD OUT
+    if (status === 'DELIVERED' && oldStatus !== 'DELIVERED') {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 0,
+              reservation_status = 'sold',
+              reserved_by_order_id = NULL
+          WHERE id = ?
+        `, [item.product_id]);
+      }
+    }
+
+    // If changing to CONFIRMED/PROCESSING/SHIPPED, keep as RESERVED
+    if (['CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(status) && !['CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(oldStatus)) {
+      for (const item of orderItems) {
+        await db.run(`
+          UPDATE products 
+          SET in_stock = 1,
+              reservation_status = 'reserved',
+              reserved_by_order_id = ?
+          WHERE id = ?
+        `, [req.params.id, item.product_id]);
+      }
+    }
+
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json(updatedOrder);
   } catch (error) {
     console.error('Order status update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Confirm payment and mark products as sold
+router.post('/:id/confirm-payment', authenticateToken, async (req, res) => {
+  try {
+    const order = await db.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Get order items and mark products as sold
+    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
+    
+    for (const item of orderItems) {
+      await db.run('UPDATE products SET in_stock = false WHERE id = ?', [item.product_id]);
+    }
+
+    // Update order status to PROCESSING (payment confirmed)
+    await db.run(
+      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['PROCESSING', req.params.id]
+    );
+
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Payment confirmed, products marked as sold', order: updatedOrder });
+  } catch (error) {
+    console.error('Payment confirmation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Cancel order and make products available again
+router.post('/:id/cancel', authenticateToken, async (req, res) => {
+  try {
+    const order = await db.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Only allow cancellation if order is not yet delivered
+    if (['DELIVERED'].includes(order.status)) {
+      return res.status(400).json({ error: 'Cannot cancel order that has been delivered' });
+    }
+
+    // Get order items and make products available again
+    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
+    
+    for (const item of orderItems) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = 1,
+            reservation_status = 'available',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
+    }
+
+    // Update order status to CANCELLED
+    await db.run(
+      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['CANCELLED', req.params.id]
+    );
+
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Order cancelled, products are available again', order: updatedOrder });
+  } catch (error) {
+    console.error('Order cancellation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -214,17 +340,33 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 // Mark order as delivered (for testing/demo)
 router.post('/:id/deliver', authenticateToken, async (req, res) => {
   try {
-    const result = await db.run(
-      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      ['DELIVERED', req.params.id, req.user.id]
-    );
-
-    if (result.changes === 0) {
+    const order = await db.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    
+    if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Order marked as delivered', order });
+    // Mark products as SOLD when delivered
+    const orderItems = await db.all('SELECT product_id FROM order_items WHERE order_id = ?', [req.params.id]);
+    
+    for (const item of orderItems) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = 0,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
+    }
+
+    // Update order status
+    await db.run(
+      'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['DELIVERED', req.params.id]
+    );
+
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Order marked as delivered, products marked as sold', order: updatedOrder });
   } catch (error) {
     console.error('Order delivery update error:', error);
     res.status(500).json({ error: 'Internal server error' });

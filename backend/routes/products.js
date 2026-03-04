@@ -99,6 +99,8 @@ router.get('/', async (req, res) => {
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
       tags: product.tags ? JSON.parse(product.tags) : [],
+      reservation_status: product.reservation_status || 'available',
+      reserved_by_order_id: product.reserved_by_order_id || null,
       company: product.company_name ? {
         id: product.company_id,
         name: product.company_name,
@@ -145,6 +147,8 @@ router.get('/:id', async (req, res) => {
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
       tags: product.tags ? JSON.parse(product.tags) : [],
+      reservation_status: product.reservation_status || 'available',
+      reserved_by_order_id: product.reserved_by_order_id || null,
       company: product.company_name ? {
         id: product.company_id,
         name: product.company_name,
@@ -566,6 +570,8 @@ router.get('/company/:companyId', async (req, res) => {
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
       tags: product.tags ? JSON.parse(product.tags) : [],
+      reservation_status: product.reservation_status || 'available',
+      reserved_by_order_id: product.reserved_by_order_id || null,
       company: {
         id: product.company_id,
         name: product.company_name,

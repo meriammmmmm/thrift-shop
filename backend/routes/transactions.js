@@ -208,6 +208,13 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
     
+    // Get the transaction before updating
+    const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [id]);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
     const result = await db.run(`
       UPDATE transactions 
       SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
@@ -216,6 +223,28 @@ router.patch('/:id/status', async (req, res) => {
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    // If payment is completed, mark products as sold
+    if (status === 'completed' && transaction.order_id) {
+      const orderItems = await db.all(`
+        SELECT product_id FROM order_items WHERE order_id = ?
+      `, [transaction.order_id]);
+      
+      for (const item of orderItems) {
+        await db.run('UPDATE products SET in_stock = false WHERE id = ?', [item.product_id]);
+      }
+    }
+    
+    // If payment is cancelled or failed, ensure products are available again
+    if ((status === 'cancelled' || status === 'failed') && transaction.order_id) {
+      const orderItems = await db.all(`
+        SELECT product_id FROM order_items WHERE order_id = ?
+      `, [transaction.order_id]);
+      
+      for (const item of orderItems) {
+        await db.run('UPDATE products SET in_stock = true WHERE id = ?', [item.product_id]);
+      }
     }
     
     const updatedTransaction = await db.get(`
