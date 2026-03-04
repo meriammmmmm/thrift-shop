@@ -232,8 +232,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
-    // If changing to CONFIRMED, mark products as SOLD OUT
-    if (status === 'CONFIRMED' && oldStatus !== 'CONFIRMED') {
+    // If changing to CONFIRMED, SHIPPED, or DELIVERED, mark products as SOLD OUT
+    if (['CONFIRMED', 'SHIPPED', 'DELIVERED'].includes(status) && !['CONFIRMED', 'SHIPPED', 'DELIVERED'].includes(oldStatus)) {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
@@ -245,8 +245,8 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       }
     }
 
-    // If changing to PROCESSING, mark as RESERVED
-    if (status === 'PROCESSING' && oldStatus !== 'PROCESSING') {
+    // If changing to PROCESSING (and not from a final state), mark as RESERVED
+    if (status === 'PROCESSING' && !['CONFIRMED', 'SHIPPED', 'DELIVERED', 'PROCESSING'].includes(oldStatus)) {
       for (const item of orderItems) {
         await db.run(`
           UPDATE products 
@@ -255,19 +255,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
               reserved_by_order_id = ?
           WHERE id = ?
         `, [req.params.id, item.product_id]);
-      }
-    }
-
-    // If changing to SHIPPED or DELIVERED, keep as SOLD
-    if (['SHIPPED', 'DELIVERED'].includes(status) && !['CONFIRMED', 'SHIPPED', 'DELIVERED'].includes(oldStatus)) {
-      for (const item of orderItems) {
-        await db.run(`
-          UPDATE products 
-          SET in_stock = 0,
-              reservation_status = 'sold',
-              reserved_by_order_id = NULL
-          WHERE id = ?
-        `, [item.product_id]);
       }
     }
 
