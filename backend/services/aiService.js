@@ -36,24 +36,56 @@ class AIService {
                       this.geminiApiKey !== 'your-gemini-key-here' &&
                       this.geminiApiKey.startsWith('AIza');
 
-    if (!hasGemini) {
+    const hasHuggingFace = this.huggingFaceApiKey && 
+                           this.huggingFaceApiKey !== 'your-huggingface-key-here' &&
+                           this.huggingFaceApiKey.startsWith('hf_');
+
+    if (!hasGemini && !hasHuggingFace) {
       return {
         success: false,
-        error: 'No valid Gemini API key found. Real AI analysis requires Google Gemini API key.'
+        error: 'No valid AI API key found. Real AI analysis requires Google Gemini or Hugging Face API key.'
       };
     }
 
-    // Use Google Gemini - REAL AI vision that actually sees the image!
-    try {
-      console.log('🔍 Using Google Gemini REAL AI Vision - actually looking at your image!');
-      return await this.generateWithGemini(imageBase64, productName, category, brand);
-    } catch (error) {
-      console.error('Gemini AI failed:', error.message);
-      return {
-        success: false,
-        error: 'Real AI vision failed: ' + error.message,
-        details: 'Gemini API error - the AI could not see your image'
-      };
+    // Try Google Gemini first
+    if (hasGemini) {
+      try {
+        console.log('🔍 Using Google Gemini REAL AI Vision - actually looking at your image!');
+        return await this.generateWithGemini(imageBase64, productName, category, brand);
+      } catch (error) {
+        console.error('Gemini AI failed:', error.message);
+        
+        // If Gemini fails due to rate limiting and we have Hugging Face, try it
+        if (error.message.includes('rate limit') && hasHuggingFace) {
+          console.log('⚠️ Gemini rate limited, falling back to Hugging Face AI...');
+          try {
+            return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+          } catch (hfError) {
+            console.error('Hugging Face also failed:', hfError.message);
+          }
+        }
+        
+        return {
+          success: false,
+          error: 'Real AI vision failed: ' + error.message,
+          details: 'Gemini API error - the AI could not see your image'
+        };
+      }
+    }
+
+    // Use Hugging Face if Gemini not available
+    if (hasHuggingFace) {
+      try {
+        console.log('🔍 Using Hugging Face REAL AI Vision');
+        return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+      } catch (error) {
+        console.error('Hugging Face AI failed:', error.message);
+        return {
+          success: false,
+          error: 'Real AI vision failed: ' + error.message,
+          details: 'Hugging Face API error - the AI could not see your image'
+        };
+      }
     }
   }
 
@@ -361,7 +393,7 @@ Be specific about what you actually see in the image.`;
     };
   }
 
-  async generateWithGemini(imageBase64, productName = '', category = '', brand = '') {
+  async generateWithGemini(imageBase64, productName = '', category = '', brand = '', retryCount = 0) {
     try {
       console.log('🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!');
 
@@ -502,7 +534,21 @@ CRITICAL: Keep description under 200 characters. Be specific but BRIEF. Example:
       };
 
     } catch (error) {
-      console.error('Gemini Vision API Error:', error.response?.data || error.message);
+      console.error('Gemini Vision API Error:', error.response?.status, error.response?.data || error.message);
+      
+      // Handle rate limiting with retry
+      if (error.response?.status === 429 && retryCount < 3) {
+        const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`⏳ Rate limited. Retrying in ${waitTime/1000} seconds... (attempt ${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return this.generateWithGemini(imageBase64, productName, category, brand, retryCount + 1);
+      }
+      
+      // If rate limited and out of retries, provide helpful error
+      if (error.response?.status === 429) {
+        throw new Error(`Google Gemini API rate limit exceeded. Please wait a few minutes and try again. You can also try using a different API key or upgrade your Gemini API quota at https://aistudio.google.com/`);
+      }
+      
       throw new Error(`Google Gemini AI failed: ${error.message}. The AI could not analyze your image.`);
     }
   }
