@@ -65,15 +65,21 @@ class AIService {
                            this.huggingFaceApiKey !== 'your-huggingface-key-here' &&
                            this.huggingFaceApiKey.startsWith('hf_');
 
+    console.log(`🔑 Available AI services: Gemini=${hasGemini} (${this.geminiApiKeys.length} keys), HuggingFace=${hasHuggingFace}`);
+
     // PRIORITY 1: Try Hugging Face FIRST (more reliable, higher limits)
     if (hasHuggingFace) {
       try {
         console.log('🔍 Using Hugging Face REAL AI Vision (Priority 1)');
-        return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+        const result = await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+        console.log('✅ Hugging Face SUCCESS!');
+        return result;
       } catch (error) {
-        console.error('Hugging Face failed:', error.message);
+        console.error('❌ Hugging Face failed:', error.message);
         // Continue to try Gemini
       }
+    } else {
+      console.log('⚠️ Hugging Face API key not available');
     }
 
     // PRIORITY 2: Try Google Gemini (with key rotation if multiple keys available)
@@ -82,9 +88,11 @@ class AIService {
         try {
           const currentKey = this.geminiApiKeys[this.currentGeminiKeyIndex];
           console.log(`🔍 Using Google Gemini AI Vision (Key #${this.currentGeminiKeyIndex + 1}/${this.geminiApiKeys.length})`);
-          return await this.generateWithGemini(imageBase64, productName, category, brand, currentKey);
+          const result = await this.generateWithGemini(imageBase64, productName, category, brand, currentKey);
+          console.log('✅ Gemini SUCCESS!');
+          return result;
         } catch (error) {
-          console.error(`Gemini AI failed with key #${this.currentGeminiKeyIndex + 1}:`, error.message);
+          console.error(`❌ Gemini AI failed with key #${this.currentGeminiKeyIndex + 1}:`, error.message);
           
           // If rate limited and we have more keys, try next key
           if (error.message.includes('rate limit') && this.geminiApiKeys.length > 1 && keyAttempt < this.geminiApiKeys.length - 1) {
@@ -94,10 +102,13 @@ class AIService {
           }
         }
       }
+    } else {
+      console.log('⚠️ Gemini API keys not available');
     }
 
     // FALLBACK: Use temporary smart description
-    console.log('⚠️ All AI services unavailable - using temporary smart analysis mode');
+    console.log('⚠️ ALL AI services failed or unavailable - using temporary mode');
+    console.log(`Debug: hasGemini=${hasGemini}, hasHuggingFace=${hasHuggingFace}`);
     return this.generateTemporaryDescription(imageBase64, productName, category, brand);
   }
 
