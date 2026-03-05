@@ -11,8 +11,19 @@ class AIService {
       apiKey: process.env.OPENAI_API_KEY
     }) : null;
     
-    // Google Gemini setup - BACKUP
-    this.geminiApiKey = process.env.GEMINI_API_KEY;
+    // Google Gemini setup - BACKUP with multiple keys support
+    this.geminiApiKeys = [];
+    if (process.env.GEMINI_API_KEY) {
+      this.geminiApiKeys.push(process.env.GEMINI_API_KEY);
+    }
+    if (process.env.GEMINI_API_KEY_2) {
+      this.geminiApiKeys.push(process.env.GEMINI_API_KEY_2);
+    }
+    if (process.env.GEMINI_API_KEY_3) {
+      this.geminiApiKeys.push(process.env.GEMINI_API_KEY_3);
+    }
+    this.currentGeminiKeyIndex = 0;
+    this.geminiApiKey = this.geminiApiKeys[0]; // Keep for backward compatibility
     this.geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
     
     // Ollama local AI setup (completely free)
@@ -27,14 +38,24 @@ class AIService {
     this.huggingFaceImageGenEndpoint = 'https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0';
     this.dalleEndpoint = 'https://api.openai.com/v1/images/generations';
   }
+  
+  // Rotate to next Gemini API key if multiple are available
+  rotateGeminiKey() {
+    if (this.geminiApiKeys.length > 1) {
+      this.currentGeminiKeyIndex = (this.currentGeminiKeyIndex + 1) % this.geminiApiKeys.length;
+      console.log(`🔄 Rotating to Gemini API key #${this.currentGeminiKeyIndex + 1}`);
+      return this.geminiApiKeys[this.currentGeminiKeyIndex];
+    }
+    return this.geminiApiKeys[0];
+  }
 
   async generateProductDescription(imageBase64, productName = '', category = '', brand = '') {
     console.log('🤖 Starting REAL AI vision analysis - using Google Gemini!');
     
     // Check if we have Gemini API key
-    const hasGemini = this.geminiApiKey && 
-                      this.geminiApiKey !== 'your-gemini-key-here' &&
-                      this.geminiApiKey.startsWith('AIza');
+    const hasGemini = this.geminiApiKeys.length > 0 && 
+                      this.geminiApiKeys[0] !== 'your-gemini-key-here' &&
+                      this.geminiApiKeys[0].startsWith('AIza');
 
     const hasHuggingFace = this.huggingFaceApiKey && 
                            this.huggingFaceApiKey !== 'your-huggingface-key-here' &&
@@ -47,29 +68,39 @@ class AIService {
       };
     }
 
-    // Try Google Gemini first
+    // Try Google Gemini first (with key rotation if multiple keys available)
     if (hasGemini) {
-      try {
-        console.log('🔍 Using Google Gemini REAL AI Vision - actually looking at your image!');
-        return await this.generateWithGemini(imageBase64, productName, category, brand);
-      } catch (error) {
-        console.error('Gemini AI failed:', error.message);
-        
-        // If Gemini fails due to rate limiting and we have Hugging Face, try it
-        if (error.message.includes('rate limit') && hasHuggingFace) {
-          console.log('⚠️ Gemini rate limited, falling back to Hugging Face AI...');
-          try {
-            return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
-          } catch (hfError) {
-            console.error('Hugging Face also failed:', hfError.message);
+      for (let keyAttempt = 0; keyAttempt < this.geminiApiKeys.length; keyAttempt++) {
+        try {
+          const currentKey = this.geminiApiKeys[this.currentGeminiKeyIndex];
+          console.log(`🔍 Using Google Gemini REAL AI Vision (Key #${this.currentGeminiKeyIndex + 1}/${this.geminiApiKeys.length})`);
+          return await this.generateWithGemini(imageBase64, productName, category, brand, currentKey);
+        } catch (error) {
+          console.error(`Gemini AI failed with key #${this.currentGeminiKeyIndex + 1}:`, error.message);
+          
+          // If rate limited and we have more keys, try next key
+          if (error.message.includes('rate limit') && this.geminiApiKeys.length > 1) {
+            console.log('⚠️ Rate limited, trying next Gemini API key...');
+            this.rotateGeminiKey();
+            continue;
           }
+          
+          // If rate limited and we have Hugging Face, try it
+          if (error.message.includes('rate limit') && hasHuggingFace) {
+            console.log('⚠️ All Gemini keys rate limited, falling back to Hugging Face AI...');
+            try {
+              return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+            } catch (hfError) {
+              console.error('Hugging Face also failed:', hfError.message);
+            }
+          }
+          
+          return {
+            success: false,
+            error: 'Real AI vision failed: ' + error.message,
+            details: 'Gemini API error - the AI could not see your image'
+          };
         }
-        
-        return {
-          success: false,
-          error: 'Real AI vision failed: ' + error.message,
-          details: 'Gemini API error - the AI could not see your image'
-        };
       }
     }
 
@@ -393,9 +424,12 @@ Be specific about what you actually see in the image.`;
     };
   }
 
-  async generateWithGemini(imageBase64, productName = '', category = '', brand = '', retryCount = 0) {
+  async generateWithGemini(imageBase64, productName = '', category = '', brand = '', retryCount = 0, apiKey = null) {
     try {
       console.log('🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!');
+
+      // Use provided key or current key
+      const keyToUse = apiKey || this.geminiApiKeys[this.currentGeminiKeyIndex];
 
       // Convert base64 to proper format for Gemini
       const imageData = imageBase64.replace(/^data:image\/[^;]+;base64,/, '');
@@ -444,7 +478,7 @@ CRITICAL: Keep description under 200 characters. Be specific but BRIEF. Example:
 
       console.log('🔍 Sending your image to Google Gemini Vision API...');
 
-      const response = await axios.post(`${this.geminiEndpoint}?key=${this.geminiApiKey}`, requestBody, {
+      const response = await axios.post(`${this.geminiEndpoint}?key=${keyToUse}`, requestBody, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -536,15 +570,15 @@ CRITICAL: Keep description under 200 characters. Be specific but BRIEF. Example:
     } catch (error) {
       console.error('Gemini Vision API Error:', error.response?.status, error.response?.data || error.message);
       
-      // Handle rate limiting with retry
-      if (error.response?.status === 429 && retryCount < 3) {
-        const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
-        console.log(`⏳ Rate limited. Retrying in ${waitTime/1000} seconds... (attempt ${retryCount + 1}/3)`);
+      // Handle rate limiting with retry (only for same key)
+      if (error.response?.status === 429 && retryCount < 2) {
+        const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s
+        console.log(`⏳ Rate limited. Retrying in ${waitTime/1000} seconds... (attempt ${retryCount + 1}/2)`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
-        return this.generateWithGemini(imageBase64, productName, category, brand, retryCount + 1);
+        return this.generateWithGemini(imageBase64, productName, category, brand, retryCount + 1, apiKey);
       }
       
-      // If rate limited and out of retries, provide helpful error
+      // If rate limited, throw error to trigger key rotation
       if (error.response?.status === 429) {
         throw new Error(`Google Gemini API rate limit exceeded. Please wait a few minutes and try again. You can also try using a different API key or upgrade your Gemini API quota at https://aistudio.google.com/`);
       }
