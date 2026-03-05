@@ -14,14 +14,18 @@ class AIService {
     // Google Gemini setup - BACKUP with multiple keys support
     this.geminiApiKeys = [];
     if (process.env.GEMINI_API_KEY) {
+      console.log('✅ Loaded GEMINI_API_KEY');
       this.geminiApiKeys.push(process.env.GEMINI_API_KEY);
     }
     if (process.env.GEMINI_API_KEY_2) {
+      console.log('✅ Loaded GEMINI_API_KEY_2');
       this.geminiApiKeys.push(process.env.GEMINI_API_KEY_2);
     }
     if (process.env.GEMINI_API_KEY_3) {
+      console.log('✅ Loaded GEMINI_API_KEY_3');
       this.geminiApiKeys.push(process.env.GEMINI_API_KEY_3);
     }
+    console.log(`🔑 Total Gemini API keys loaded: ${this.geminiApiKeys.length}`);
     this.currentGeminiKeyIndex = 0;
     this.geminiApiKey = this.geminiApiKeys[0]; // Keep for backward compatibility
     this.geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
