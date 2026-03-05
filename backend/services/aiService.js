@@ -54,9 +54,9 @@ class AIService {
   }
 
   async generateProductDescription(imageBase64, productName = '', category = '', brand = '') {
-    console.log('🤖 Starting REAL AI vision analysis - using Google Gemini!');
+    console.log('🤖 Starting AI vision analysis');
     
-    // Check if we have Gemini API key
+    // Check available AI services
     const hasGemini = this.geminiApiKeys.length > 0 && 
                       this.geminiApiKeys[0] !== 'your-gemini-key-here' &&
                       this.geminiApiKeys[0].startsWith('AIza');
@@ -65,19 +65,23 @@ class AIService {
                            this.huggingFaceApiKey !== 'your-huggingface-key-here' &&
                            this.huggingFaceApiKey.startsWith('hf_');
 
-    if (!hasGemini && !hasHuggingFace) {
-      return {
-        success: false,
-        error: 'No valid AI API key found. Real AI analysis requires Google Gemini or Hugging Face API key.'
-      };
+    // PRIORITY 1: Try Hugging Face FIRST (more reliable, higher limits)
+    if (hasHuggingFace) {
+      try {
+        console.log('🔍 Using Hugging Face REAL AI Vision (Priority 1)');
+        return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
+      } catch (error) {
+        console.error('Hugging Face failed:', error.message);
+        // Continue to try Gemini
+      }
     }
 
-    // Try Google Gemini first (with key rotation if multiple keys available)
+    // PRIORITY 2: Try Google Gemini (with key rotation if multiple keys available)
     if (hasGemini) {
       for (let keyAttempt = 0; keyAttempt < this.geminiApiKeys.length; keyAttempt++) {
         try {
           const currentKey = this.geminiApiKeys[this.currentGeminiKeyIndex];
-          console.log(`🔍 Using Google Gemini REAL AI Vision (Key #${this.currentGeminiKeyIndex + 1}/${this.geminiApiKeys.length})`);
+          console.log(`🔍 Using Google Gemini AI Vision (Key #${this.currentGeminiKeyIndex + 1}/${this.geminiApiKeys.length})`);
           return await this.generateWithGemini(imageBase64, productName, category, brand, currentKey);
         } catch (error) {
           console.error(`Gemini AI failed with key #${this.currentGeminiKeyIndex + 1}:`, error.message);
@@ -88,54 +92,13 @@ class AIService {
             this.rotateGeminiKey();
             continue;
           }
-          
-          // If all Gemini keys exhausted, try Hugging Face
-          if (error.message.includes('rate limit') && hasHuggingFace) {
-            console.log('⚠️ All Gemini keys rate limited, falling back to Hugging Face AI...');
-            try {
-              return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
-            } catch (hfError) {
-              console.error('Hugging Face also failed:', hfError.message);
-              // Fall through to temporary mode
-            }
-          }
-          
-          // TEMPORARY: If all AI services are rate limited, use intelligent fallback
-          if (error.message.includes('rate limit')) {
-            console.log('⚠️ All AI services rate limited - using temporary smart analysis mode');
-            return this.generateTemporaryDescription(imageBase64, productName, category, brand);
-          }
-          
-          return {
-            success: false,
-            error: 'Real AI vision failed: ' + error.message,
-            details: 'Gemini API error - the AI could not see your image'
-          };
         }
       }
     }
 
-    // Use Hugging Face if Gemini not available
-    if (hasHuggingFace) {
-      try {
-        console.log('🔍 Using Hugging Face REAL AI Vision');
-        return await this.generateWithHuggingFace(imageBase64, productName, category, brand);
-      } catch (error) {
-        console.error('Hugging Face AI failed:', error.message);
-        
-        // TEMPORARY: Use intelligent fallback if rate limited
-        if (error.message.includes('rate limit') || error.message.includes('429')) {
-          console.log('⚠️ Hugging Face rate limited - using temporary smart analysis mode');
-          return this.generateTemporaryDescription(imageBase64, productName, category, brand);
-        }
-        
-        return {
-          success: false,
-          error: 'Real AI vision failed: ' + error.message,
-          details: 'Hugging Face API error - the AI could not see your image'
-        };
-      }
-    }
+    // FALLBACK: Use temporary smart description
+    console.log('⚠️ All AI services unavailable - using temporary smart analysis mode');
+    return this.generateTemporaryDescription(imageBase64, productName, category, brand);
   }
 
   // TEMPORARY fallback when APIs are rate limited
@@ -311,67 +274,78 @@ Be specific about what you actually see in the image.`;
 
   async generateWithHuggingFace(imageBase64, productName = '', category = '', brand = '') {
     try {
-      console.log('🔍 Using Hugging Face REAL AI - NO FALLBACKS!');
+      console.log('🔍 Using Hugging Face REAL AI - Analyzing your image...');
       
       // Convert base64 to buffer for Hugging Face
       const imageBuffer = Buffer.from(imageBase64.replace(/^data:image\/[a-z]+;base64,/, ''), 'base64');
       
-      // Use a working Hugging Face model
-      console.log('🔍 Trying nlpconnect/vit-gpt2-image-captioning model...');
+      // Use a working Hugging Face model - try multiple models for reliability
+      const models = [
+        'nlpconnect/vit-gpt2-image-captioning',
+        'Salesforce/blip-image-captioning-large',
+        'Salesforce/blip-image-captioning-base'
+      ];
       
-      const response = await axios.post(`https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning`, imageBuffer, {
-        headers: {
-          'Authorization': `Bearer ${this.huggingFaceApiKey}`,
-          'Content-Type': 'application/octet-stream'
-        },
-        timeout: 30000
-      });
-
-      console.log('🤖 Raw Hugging Face Response:', response.data);
-
-      // Handle different response formats
       let aiDescription = '';
-      if (response.data && Array.isArray(response.data) && response.data[0]) {
-        aiDescription = response.data[0].generated_text || response.data[0].caption || '';
-      } else if (response.data && response.data.generated_text) {
-        aiDescription = response.data.generated_text;
-      } else if (response.data && typeof response.data === 'string') {
-        aiDescription = response.data;
+      let modelUsed = '';
+      
+      for (const model of models) {
+        try {
+          console.log(`🔍 Trying Hugging Face model: ${model}`);
+          
+          const response = await axios.post(`https://api-inference.huggingface.co/models/${model}`, imageBuffer, {
+            headers: {
+              'Authorization': `Bearer ${this.huggingFaceApiKey}`,
+              'Content-Type': 'application/octet-stream'
+            },
+            timeout: 30000
+          });
+
+          console.log('🤖 Hugging Face Response:', response.data);
+
+          // Handle different response formats
+          if (response.data && Array.isArray(response.data) && response.data[0]) {
+            aiDescription = response.data[0].generated_text || response.data[0].caption || '';
+          } else if (response.data && response.data.generated_text) {
+            aiDescription = response.data.generated_text;
+          } else if (response.data && typeof response.data === 'string') {
+            aiDescription = response.data;
+          }
+
+          if (aiDescription && aiDescription.length > 3) {
+            modelUsed = model;
+            break; // Success! Exit loop
+          }
+        } catch (modelError) {
+          console.log(`Model ${model} failed, trying next...`);
+          continue;
+        }
       }
 
       if (!aiDescription || aiDescription.length < 3) {
         throw new Error('No valid description generated from Hugging Face AI');
       }
 
-      console.log('🤖 REAL Hugging Face AI Description:', aiDescription);
+      console.log('✅ REAL Hugging Face AI Description:', aiDescription);
+      
+      // Parse the AI description intelligently
+      const parsedData = this.parseAIDescription(aiDescription, productName, category, brand);
       
       // Create response based on REAL AI description
       return {
         success: true,
         data: {
-          title: `AI Detected: ${aiDescription}`,
-          description: `Real AI Analysis: ${aiDescription}\n\nThis item was analyzed using Hugging Face Vision Transformer AI. The description above is what the AI actually sees in your image - no demo responses or fallbacks used.`,
-          features: ['Real AI analyzed', 'Hugging Face Vision Transformer', 'No demo mode'],
-          condition: 'AI Detected',
-          style_notes: `Based on AI analysis: ${aiDescription}`,
-          suggested_price_min: 15,
-          suggested_price_max: 85,
-          category_suggestion: 'AI Detected Category',
-          brand_suggestion: 'AI Analysis',
-          size_suggestion: 'Various',
-          color: 'AI Detected',
-          material: 'AI Detected',
-          ai_model: 'nlpconnect/vit-gpt2-image-captioning',
+          ...parsedData,
+          description: `${aiDescription}\n\n${parsedData.description}`,
+          ai_model: `Hugging Face: ${modelUsed}`,
           ai_description_raw: aiDescription,
-          analysis_method: 'REAL Hugging Face AI - No Fallbacks'
+          analysis_method: 'REAL Hugging Face AI Vision - Actually Sees Your Image'
         }
       };
       
     } catch (error) {
       console.error('Hugging Face API Error:', error.response?.status, error.response?.data || error.message);
-      
-      // NO FALLBACKS - return error instead
-      throw new Error(`Real AI failed: ${error.message}. Status: ${error.response?.status}. No fallback used.`);
+      throw new Error(`Hugging Face AI failed: ${error.message}`);
     }
   }
 
