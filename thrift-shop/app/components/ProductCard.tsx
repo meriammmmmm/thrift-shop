@@ -81,14 +81,14 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
 
       {/* Image Container */}
       <div 
-        className="relative h-72 cursor-pointer overflow-hidden bg-gray-50"
+        className="relative h-[500px] cursor-pointer overflow-hidden bg-white"
         onClick={() => onViewDetails(product)}
       >
         <Image 
           src={product.images && product.images.length > 0 && product.images[0] ? product.images[0] : 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop'} 
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
         />
       </div>
       

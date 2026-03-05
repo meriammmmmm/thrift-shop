@@ -47,20 +47,20 @@ export default function ProductDetails({
       >
         <div className="grid md:grid-cols-2 gap-0">
           {/* Image Gallery */}
-          <div className="relative bg-gray-100">
-            <div className="relative h-[500px] overflow-hidden">
+          <div className="relative bg-white">
+            <div className="relative h-[617px] overflow-hidden bg-white">
               {/* Main Image */}
               <div 
                 className="flex transition-transform duration-500 ease-out h-full"
                 style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
               >
                 {product.images.map((image, index) => (
-                  <div key={index} className="flex-shrink-0 w-full h-full relative">
+                  <div key={index} className="flex-shrink-0 w-full h-full relative bg-white">
                     <Image
                       src={image}
                       alt={`${product.name} ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                     />
                   </div>
                 ))}
