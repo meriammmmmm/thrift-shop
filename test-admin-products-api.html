@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Products API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .error {
+            color: red;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+        input {
+            padding: 8px;
+            width: 400px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Admin Products API</h1>
+    
+    <div class="test-section">
+        <h2>1. Enter Admin Token</h2>
+        <input type="text" id="authToken" placeholder="Paste your admin token here">
+        <button onclick="saveToken()">Save Token</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Endpoints</h2>
+        <button onclick="testAdminProducts()">Test Admin Products</button>
+        <button onclick="testPublicProducts()">Test Public Products</button>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://thrift-shop-backend-production.up.railway.app/api';
+        let token = localStorage.getItem('admin-token') || '';
+        
+        if (token) {
+            document.getElementById('authToken').value = token;
+        }
+
+        function saveToken() {
+            token = document.getElementById('authToken').value;
+            localStorage.setItem('admin-token', token);
+            showResult('Token saved!', 'success');
+        }
+
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        async function testHealthCheck() {
+            showResult('Testing health check...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                showResult(`
+                    <div class="success">
+                        <strong>✅ Health Check Passed</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `, 'success');
+            } catch (error) {
+                showResult(`
+                    <div class="error">
+                        <strong>❌ Health Check Failed</strong>
+                        <pre>${error.message}</pre>
+                    </div>
+                `, 'error');
+            }
+        }
+
+        async function testPublicProducts() {
+            showResult('Testing public products endpoint...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/products?limit=5`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`
+                        <div class="success">
+                            <strong>✅ Public Products Endpoint Working</strong>
+                            <p>Found ${data.products?.length || 0} products</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `, 'success');
+                } else {
+                    showResult(`
+                        <div class="error">
+                            <strong>❌ Public Products Failed</strong>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `, 'error');
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error">
+                        <strong>❌ Request Failed</strong>
+                        <pre>${error.message}</pre>
+                    </div>
+                `, 'error');
+            }
+        }
+
+        async function testAdminProducts() {
+            if (!token) {
+                showResult('Please enter and save your admin token first!', 'error');
+                return;
+            }
+
+            showResult('Testing admin products endpoint...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/products/admin/products?limit=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`
+                        <div class="success">
+                            <strong>✅ Admin Products Endpoint Working</strong>
+                            <p>Found ${data.products?.length || 0} products</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `, 'success');
+                } else {
+                    showResult(`
+                        <div class="error">
+                            <strong>❌ Admin Products Failed</strong>
+                            <p>Status: ${response.status}</p>
+                            <p>Error: ${data.error || 'Unknown error'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `, 'error');
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error">
+                        <strong>❌ Request Failed</strong>
+                        <pre>${error.message}\n${error.stack}</pre>
+                    </div>
+                `, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

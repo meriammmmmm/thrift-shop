@@ -30,6 +30,72 @@ export default function ProductDetails({
   const [activeTab, setActiveTab] = useState<'details' | 'measurements' | 'care'>('details');
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && product) {
+      // Swipe left - next image
+      setSelectedImageIndex(prev => (prev + 1) % product.images.length);
+      setIsAutoPlaying(false);
+    }
+    
+    if (isRightSwipe && product) {
+      // Swipe right - previous image
+      setSelectedImageIndex(prev => prev === 0 ? product.images.length - 1 : prev - 1);
+      setIsAutoPlaying(false);
+    }
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.clientX);
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (touchStart === null) return;
+    setTouchEnd(e.clientX);
+  };
+
+  const onMouseUp = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && product) {
+      setSelectedImageIndex(prev => (prev + 1) % product.images.length);
+      setIsAutoPlaying(false);
+    }
+    
+    if (isRightSwipe && product) {
+      setSelectedImageIndex(prev => prev === 0 ? product.images.length - 1 : prev - 1);
+      setIsAutoPlaying(false);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   if (!isOpen || !product) return null;
 
   const discountPercentage = product.originalPrice 
@@ -48,23 +114,44 @@ export default function ProductDetails({
         <div className="grid md:grid-cols-2 gap-0">
           {/* Image Gallery */}
           <div className="relative bg-white">
-            <div className="relative h-[617px] overflow-hidden bg-white">
+            <div 
+              className="relative h-[617px] overflow-hidden bg-white cursor-grab active:cursor-grabbing select-none"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={() => {
+                setTouchStart(null);
+                setTouchEnd(null);
+              }}
+            >
               {/* Main Image */}
               <div 
                 className="flex transition-transform duration-500 ease-out h-full"
                 style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
               >
                 {product.images.map((image, index) => (
-                  <div key={index} className="flex-shrink-0 w-full h-full relative bg-white">
+                  <div key={index} className="flex-shrink-0 w-full h-full relative bg-white pointer-events-none">
                     <Image
                       src={image}
                       alt={`${product.name} ${index + 1}`}
                       fill
                       className="object-cover object-top"
+                      draggable={false}
                     />
                   </div>
                 ))}
               </div>
+              
+              {/* Swipe Indicator */}
+              {product.images.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  <i className="fas fa-hand-pointer mr-1"></i>
+                  Swipe or drag to view more
+                </div>
+              )}
               
               {/* Navigation Arrows */}
               {product.images.length > 1 && (

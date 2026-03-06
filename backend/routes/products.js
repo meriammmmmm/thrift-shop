@@ -444,7 +444,15 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Admin products fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      companyId: req.user?.admin_company_id
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
