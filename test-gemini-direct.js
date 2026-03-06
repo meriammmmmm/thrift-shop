@@ -2,7 +2,7 @@ const axios = require('axios');
 
 async function testGeminiDirect() {
     const apiKey = 'AIzaSyBOu6JrIypefqgJejh3PZ5vaUVtpYjg_Lw';
-    const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent';
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     
     console.log('🔍 Testing Gemini API directly...');
     

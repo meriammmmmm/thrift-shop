@@ -1,30 +1,24 @@
 # Gemini Vision API Fix - 404 Error Resolution
 
 ## Problem
-The Google Gemini Vision API was returning a 404 error:
-```
-models/gemini-1.5-flash is not found for API version v1beta
-```
+The Google Gemini Vision API was returning a 404 error with various model/version combinations.
 
 ## Root Cause
-The API endpoint was using:
-- API version: `v1beta` (beta version)
-- Model name: `gemini-1.5-flash` (without `-latest` suffix)
-
-This combination is not supported by the current Gemini API.
+The Gemini API has specific model names that work with specific API versions:
+- `v1beta` works with: `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-pro-vision`
+- `v1` has limited model support and may not include all vision models
 
 ## Solution Applied
 
-### 1. Updated Model Name
-Changed from `gemini-1.5-flash` to `gemini-1.5-flash-latest`
+### Configuration
+Using the stable and well-supported combination:
+- API version: `v1beta`
+- Model name: `gemini-1.5-flash`
 
-### 2. Updated API Version
-Changed from `v1beta` to `v1` (stable version)
-
-### 3. Made Configuration Flexible
+### Flexible Environment Variables
 Added environment variables for easy customization:
-- `GEMINI_MODEL` - Specify which model to use (default: gemini-1.5-flash-latest)
-- `GEMINI_API_VERSION` - Specify API version (default: v1)
+- `GEMINI_MODEL` - Specify which model to use (default: gemini-1.5-flash)
+- `GEMINI_API_VERSION` - Specify API version (default: v1beta)
 
 ## Files Updated
 
@@ -35,15 +29,15 @@ Added environment variables for easy customization:
 5. `test-gemini-direct.js` - Test file
 6. `test-gemini-real.js` - Test file
 
-## New Endpoint Format
+## Current Endpoint Format
 ```
-https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent
+https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
 ```
 
 ## How to Use
 
 ### Default Configuration (Recommended)
-No changes needed - the fix uses stable defaults:
+No changes needed - uses stable v1beta with gemini-1.5-flash:
 ```env
 GEMINI_API_KEY=your-api-key-here
 ```
@@ -52,8 +46,8 @@ GEMINI_API_KEY=your-api-key-here
 Add to `.env` file if you want to use different settings:
 ```env
 GEMINI_API_KEY=your-api-key-here
-GEMINI_MODEL=gemini-1.5-pro-latest
-GEMINI_API_VERSION=v1
+GEMINI_MODEL=gemini-1.5-pro
+GEMINI_API_VERSION=v1beta
 ```
 
 ## Testing
@@ -65,17 +59,18 @@ npm start
 
 The Gemini Vision API should now work correctly for image analysis.
 
-## Alternative Models
+## Available Models (v1beta)
 You can try these models by setting `GEMINI_MODEL`:
-- `gemini-1.5-flash-latest` (default, fast and efficient)
-- `gemini-1.5-pro-latest` (more powerful, slower)
-- `gemini-pro-vision` (older model)
+- `gemini-1.5-flash` (default, fast and efficient)
+- `gemini-1.5-pro` (more powerful, slower)
+- `gemini-pro-vision` (older vision model)
 
-## API Version Options
-- `v1` (default, stable)
-- `v1beta` (beta features, may be unstable)
+## API Version
+- `v1beta` (recommended for vision features)
+- `v1` (stable but limited model support)
 
 ## Notes
-- The v1 API is more stable and recommended for production
-- The `-latest` suffix ensures you get the most recent version of the model
+- The v1beta API provides the best support for vision models
 - Multiple Gemini API keys are supported for rate limit handling
+- If you get API key errors, verify your key at https://aistudio.google.com/app/apikey
+
