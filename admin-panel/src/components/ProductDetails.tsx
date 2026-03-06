@@ -165,6 +165,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
   const { showSuccess, showError } = useNotifications();
 
@@ -387,6 +388,35 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleImageDragStart = (index: number) => {
+    setDraggedImageIndex(index);
+  };
+
+  const handleImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedImageIndex === null || draggedImageIndex === index) return;
+
+    const newPreviews = [...imagePreviews];
+    const newFiles = [...selectedImages];
+    
+    const draggedPreview = newPreviews[draggedImageIndex];
+    const draggedFile = newFiles[draggedImageIndex];
+    
+    newPreviews.splice(draggedImageIndex, 1);
+    newPreviews.splice(index, 0, draggedPreview);
+    
+    newFiles.splice(draggedImageIndex, 1);
+    newFiles.splice(index, 0, draggedFile);
+
+    setImagePreviews(newPreviews);
+    setSelectedImages(newFiles);
+    setDraggedImageIndex(index);
+  };
+
+  const handleImageDragEnd = () => {
+    setDraggedImageIndex(null);
   };
 
   const generateAIDescriptionFromImage = async (imageBase64: string) => {
@@ -1058,12 +1088,23 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
+                  <div 
+                    key={index} 
+                    className="relative group cursor-move"
+                    draggable
+                    onDragStart={() => handleImageDragStart(index)}
+                    onDragOver={(e) => handleImageDragOver(e, index)}
+                    onDragEnd={handleImageDragEnd}
+                  >
                     <img
                       src={preview}
                       alt={`New Preview ${index + 1}`}
                       className="w-full h-24 object-cover rounded-lg border-2 border-green-300 transition-all duration-200"
                     />
+                    {/* Drag handle indicator */}
+                    <div className="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i className="fas fa-grip-vertical mr-1"></i>Drag
+                    </div>
                     {/* Red overlay when hovering to delete */}
                     <div className="absolute inset-0 bg-red-500 bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 pointer-events-none"></div>
                     
@@ -1089,7 +1130,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 <i className="fas fa-info-circle mr-1"></i>
-                Click the upload area again to add even more images. These will be added to existing images.
+                Drag images to reorder them. Click the upload area again to add even more images.
               </p>
             </div>
           )}
