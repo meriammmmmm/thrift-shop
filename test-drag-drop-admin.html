@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Drag & Drop - Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .image-item {
+            position: relative;
+            aspect-ratio: 1;
+            background: #f5f5f5;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: move;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .image-item:hover {
+            border-color: #2196F3;
+            transform: scale(1.05);
+        }
+        .image-item.dragging {
+            opacity: 0.5;
+        }
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .drag-indicator {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .image-item:hover .drag-indicator {
+            opacity: 1;
+        }
+        .image-number {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: #2196F3;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Drag & Drop Functionality</h1>
+    
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Try dragging the images below to reorder them</li>
+            <li>If this works, the drag-and-drop code is correct</li>
+            <li>If it works here but not in admin panel, you need to hard refresh (Cmd+Shift+R or Ctrl+Shift+R)</li>
+        </ol>
+    </div>
+
+    <h3>Product Images (Drag to Reorder)</h3>
+    <div class="image-grid" id="imageGrid">
+        <!-- Images will be added here -->
+    </div>
+
+    <button onclick="showOrder()">Show Current Order</button>
+    <div class="success" id="result"></div>
+
+    <script>
+        // Sample images
+        const images = [
+            'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400',
+            'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=400',
+            'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400',
+            'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400'
+        ];
+
+        let draggedIndex = null;
+
+        function createImageGrid() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            
+            images.forEach((src, index) => {
+                const div = document.createElement('div');
+                div.className = 'image-item';
+                div.draggable = true;
+                div.innerHTML = `
+                    <img src="${src}" alt="Image ${index + 1}">
+                    <div class="drag-indicator">
+                        <i>⋮⋮</i> Drag
+                    </div>
+                    <div class="image-number">#${index + 1}</div>
+                `;
+                
+                div.addEventListener('dragstart', () => handleDragStart(index));
+                div.addEventListener('dragover', (e) => handleDragOver(e, index));
+                div.addEventListener('dragend', handleDragEnd);
+                
+                grid.appendChild(div);
+            });
+        }
+
+        function handleDragStart(index) {
+            draggedIndex = index;
+            event.target.classList.add('dragging');
+            console.log('Drag started:', index);
+        }
+
+        function handleDragOver(e, index) {
+            e.preventDefault();
+            if (draggedIndex === null || draggedIndex === index) return;
+
+            console.log('Dragging over:', index);
+
+            // Reorder array
+            const draggedImage = images[draggedIndex];
+            images.splice(draggedIndex, 1);
+            images.splice(index, 0, draggedImage);
+
+            draggedIndex = index;
+            createImageGrid();
+        }
+
+        function handleDragEnd() {
+            draggedIndex = null;
+            document.querySelectorAll('.image-item').forEach(item => {
+                item.classList.remove('dragging');
+            });
+            console.log('Drag ended');
+        }
+
+        function showOrder() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML = `
+                <strong>✅ Current Order:</strong><br>
+                ${images.map((img, i) => `#${i + 1}: ${img.split('/').pop().split('?')[0]}`).join('<br>')}
+            `;
+        }
+
+        // Initialize
+        createImageGrid();
+    </script>
+</body>
+</html>
