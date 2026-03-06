@@ -166,6 +166,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   const [imageUrls, setImageUrls] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const [draggedExistingImageIndex, setDraggedExistingImageIndex] = useState<number | null>(null);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
   const { showSuccess, showError } = useNotifications();
 
@@ -417,6 +418,31 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
 
   const handleImageDragEnd = () => {
     setDraggedImageIndex(null);
+  };
+
+  const handleExistingImageDragStart = (index: number) => {
+    setDraggedExistingImageIndex(index);
+  };
+
+  const handleExistingImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedExistingImageIndex === null || draggedExistingImageIndex === index) return;
+
+    if (!product || !product.images) return;
+
+    const newImages = [...product.images];
+    const draggedImage = newImages[draggedExistingImageIndex];
+    
+    newImages.splice(draggedExistingImageIndex, 1);
+    newImages.splice(index, 0, draggedImage);
+
+    setProduct(prev => prev ? { ...prev, images: newImages } : null);
+    setImageUrls(newImages.join('\n'));
+    setDraggedExistingImageIndex(index);
+  };
+
+  const handleExistingImageDragEnd = () => {
+    setDraggedExistingImageIndex(null);
   };
 
   const generateAIDescriptionFromImage = async (imageBase64: string) => {
@@ -1159,11 +1185,34 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
       {/* Images */}
       {product.images && product.images.length > 0 && (
         <div className="modern-card p-6">
-          <h4 className="text-xl font-semibold text-gray-900 mb-6">Product Images</h4>
+          <h4 className="text-xl font-semibold text-gray-900 mb-6">
+            <i className="fas fa-images mr-2 text-blue-500"></i>
+            Product Images
+            {isEditing && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                <i className="fas fa-grip-vertical mr-1"></i>
+                Drag to reorder
+              </span>
+            )}
+          </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {product.images.map((image, index) => (
-              <div key={index} className="relative group aspect-square bg-gray-200 rounded-xl overflow-hidden">
+              <div 
+                key={index} 
+                className={`relative group aspect-square bg-gray-200 rounded-xl overflow-hidden ${isEditing ? 'cursor-move' : ''}`}
+                draggable={isEditing}
+                onDragStart={() => isEditing && handleExistingImageDragStart(index)}
+                onDragOver={(e) => isEditing && handleExistingImageDragOver(e, index)}
+                onDragEnd={() => isEditing && handleExistingImageDragEnd()}
+              >
                 <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                
+                {/* Drag handle indicator */}
+                {isEditing && (
+                  <div className="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i className="fas fa-grip-vertical mr-1"></i>Drag
+                  </div>
+                )}
                 
                 {/* Show delete functionality only in edit mode */}
                 {isEditing && (
@@ -1186,15 +1235,16 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                           setProduct(prev => prev ? { ...prev, images: updatedImages } : null);
                         }
                       }}
-                      className="absolute -top-2 -right-2 w-8 h-8 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
+                      className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
                       title="Delete this image"
                     >
-                      <i className="fas fa-trash text-xs text-red-500"></i>
+                      <i className="fas fa-times text-sm"></i>
                     </button>
                     
                     {/* Image number */}
-                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
-                      {index + 1}
+                    <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-2 py-1 rounded z-10">
+                      #{index + 1}
+                      {index === 0 && <i className="fas fa-star ml-1" title="Main image"></i>}
                     </div>
                   </>
                 )}
@@ -1202,7 +1252,8 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                 {/* Show image number in view mode too */}
                 {!isEditing && (
                   <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
-                    {index + 1}
+                    #{index + 1}
+                    {index === 0 && <i className="fas fa-star ml-1" title="Main image"></i>}
                   </div>
                 )}
               </div>
