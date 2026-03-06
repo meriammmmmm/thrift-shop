@@ -3,7 +3,7 @@ require('dotenv').config({ path: './backend/.env' });
 
 async function testGeminiImageAnalysis() {
   const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  const geminiEndpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent';
   
   console.log('🧪 Testing REAL Gemini AI image analysis...');
   

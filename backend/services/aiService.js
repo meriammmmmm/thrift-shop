@@ -29,9 +29,10 @@ class AIService {
     this.currentGeminiKeyIndex = 0;
     this.geminiApiKey = this.geminiApiKeys[0]; // Keep for backward compatibility
     // Use Gemini Pro for better image analysis (or set GEMINI_MODEL env var)
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-    this.geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
-    console.log(`🤖 Using Gemini model: ${geminiModel}`);
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest';
+    const geminiApiVersion = process.env.GEMINI_API_VERSION || 'v1';
+    this.geminiEndpoint = `https://generativelanguage.googleapis.com/${geminiApiVersion}/models/${geminiModel}:generateContent`;
+    console.log(`🤖 Using Gemini model: ${geminiModel} (API version: ${geminiApiVersion})`);
     
     // Ollama local AI setup (completely free)
     this.ollamaEnabled = process.env.OLLAMA_ENABLED === 'true';
