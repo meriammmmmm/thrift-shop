@@ -29,7 +29,7 @@ class AIService {
     this.currentGeminiKeyIndex = 0;
     this.geminiApiKey = this.geminiApiKeys[0]; // Keep for backward compatibility
     // Use Gemini Pro for better image analysis (or set GEMINI_MODEL env var)
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-pro-vision';
     const geminiApiVersion = process.env.GEMINI_API_VERSION || 'v1beta';
     this.geminiEndpoint = `https://generativelanguage.googleapis.com/${geminiApiVersion}/models/${geminiModel}:generateContent`;
     console.log(`🤖 Using Gemini model: ${geminiModel} (API version: ${geminiApiVersion})`);
@@ -308,7 +308,8 @@ Be specific about what you actually see in the image.`;
         try {
           console.log(`🔍 Trying Hugging Face model: ${model}`);
           
-          const response = await axios.post(`https://api-inference.huggingface.co/models/${model}`, imageBuffer, {
+          // Use the new router endpoint instead of api-inference
+          const response = await axios.post(`https://router.huggingface.co/models/${model}`, imageBuffer, {
             headers: {
               'Authorization': `Bearer ${this.huggingFaceApiKey}`,
               'Content-Type': 'application/octet-stream'
