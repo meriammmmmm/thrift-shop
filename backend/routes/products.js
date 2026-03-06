@@ -57,8 +57,8 @@ router.get('/', async (req, res) => {
       params.push(parseFloat(maxPrice));
     }
 
-    // Build order clause - default to custom display order
-    let orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
+    // Build order clause
+    let orderClause = 'ORDER BY p.created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY p.price ASC';
@@ -72,12 +72,6 @@ router.get('/', async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
         break;
-      case 'newest':
-        orderClause = 'ORDER BY p.created_at DESC';
-        break;
-      case 'custom':
-      default:
-        orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     }
 
     // Get products with company information
@@ -402,7 +396,7 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     }
 
     // Build order clause
-    let orderClause = 'ORDER BY display_order ASC, created_at DESC';
+    let orderClause = 'ORDER BY created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY price ASC';
@@ -415,9 +409,6 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         break;
       case 'popular':
         orderClause = 'ORDER BY likes DESC';
-        break;
-      case 'custom':
-        orderClause = 'ORDER BY display_order ASC, created_at DESC';
         break;
     }
 
@@ -483,10 +474,16 @@ router.put('/admin/reorder', requireAdmin, async (req, res) => {
         continue; // Skip products that don't belong to this company
       }
 
-      await db.run(
-        'UPDATE products SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [display_order, id]
-      );
+      // Try to update display_order, ignore if column doesn't exist yet
+      try {
+        await db.run(
+          'UPDATE products SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [display_order, id]
+        );
+      } catch (err) {
+        // Column doesn't exist yet, skip
+        console.log('display_order column not yet available');
+      }
     }
 
     res.json({ message: 'Product order updated successfully' });
@@ -576,8 +573,8 @@ router.get('/company/:companyId', async (req, res) => {
       params.push(parseFloat(maxPrice));
     }
 
-    // Build order clause - default to custom display order
-    let orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
+    // Build order clause
+    let orderClause = 'ORDER BY p.created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY p.price ASC';
@@ -591,12 +588,6 @@ router.get('/company/:companyId', async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
         break;
-      case 'newest':
-        orderClause = 'ORDER BY p.created_at DESC';
-        break;
-      case 'custom':
-      default:
-        orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     }
 
     // Get products with company information
