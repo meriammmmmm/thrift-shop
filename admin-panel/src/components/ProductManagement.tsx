@@ -29,6 +29,8 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{ id: number; name: string } | null>(null);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<string>('custom');
   const { showSuccess, showError } = useNotifications();
 
   // Country to currency mapping
@@ -108,7 +110,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=100`, {
+      const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=100&sortBy=${sortBy}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -182,6 +184,65 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
     loadProducts();
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newProducts = [...products];
+    const draggedProduct = newProducts[draggedIndex];
+    newProducts.splice(draggedIndex, 1);
+    newProducts.splice(index, 0, draggedProduct);
+
+    setProducts(newProducts);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = async () => {
+    if (draggedIndex === null) return;
+
+    // Update display order on backend
+    const productOrders = products.map((product, index) => ({
+      id: product.id,
+      display_order: index
+    }));
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/products/admin/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productOrders })
+      });
+
+      if (response.ok) {
+        showSuccess('Success', 'Product order updated successfully!');
+      } else {
+        showError('Error', 'Failed to update product order');
+        loadProducts(); // Reload to reset order
+      }
+    } catch (error) {
+      console.error('Reorder error:', error);
+      showError('Error', 'Failed to update product order');
+      loadProducts(); // Reload to reset order
+    }
+
+    setDraggedIndex(null);
+  };
+
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy);
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, [sortBy]);
+
   // Show AddProduct component if requested
   if (showAddProduct) {
     return (
@@ -244,10 +305,38 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
         </div>
       </div>
 
+      {/* Sort Options */}
+      <div className="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-md">
+        <label className="text-sm font-medium text-gray-700">Sort by:</label>
+        <select
+          value={sortBy}
+          onChange={(e) => handleSortChange(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+        >
+          <option value="custom">Custom Order (Drag & Drop)</option>
+          <option value="newest">Newest First</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="brand">Brand A-Z</option>
+          <option value="popular">Most Popular</option>
+        </select>
+        {sortBy === 'custom' && (
+          <span className="text-sm text-gray-500 italic">
+            <i className="fas fa-grip-vertical mr-1"></i>
+            Drag rows to reorder
+          </span>
+        )}
+      </div>
+
       <div className="modern-table">
         <table className="min-w-full">
           <thead className="bg-gradient-to-r from-[var(--color-primary-light)] to-[var(--color-primary)] text-white">
             <tr>
+              {sortBy === 'custom' && (
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider w-12">
+                  <i className="fas fa-grip-vertical"></i>
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Product</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Brand</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Price</th>
@@ -259,7 +348,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
           <tbody className="divide-y divide-gray-200">
             {products.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={sortBy === 'custom' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <i className="fas fa-box-open text-4xl mb-4 text-gray-300"></i>
                     <p className="text-lg font-medium">No products found</p>
@@ -268,8 +357,20 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                 </td>
               </tr>
             ) : (
-              products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-all duration-200">
+              products.map((product, index) => (
+                <tr 
+                  key={product.id} 
+                  className={`hover:bg-gray-50 transition-all duration-200 ${sortBy === 'custom' ? 'cursor-move' : ''}`}
+                  draggable={sortBy === 'custom'}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                >
+                  {sortBy === 'custom' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-400">
+                      <i className="fas fa-grip-vertical text-lg"></i>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-12 w-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">

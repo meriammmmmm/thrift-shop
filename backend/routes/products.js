@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
       category,
       brand,
       search,
-      sortBy = 'newest',
+      sortBy = 'custom',
       minPrice,
       maxPrice,
       companyId
@@ -57,8 +57,8 @@ router.get('/', async (req, res) => {
       params.push(parseFloat(maxPrice));
     }
 
-    // Build order clause
-    let orderClause = 'ORDER BY p.created_at DESC';
+    // Build order clause - default to custom display order
+    let orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY p.price ASC';
@@ -72,6 +72,12 @@ router.get('/', async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
         break;
+      case 'newest':
+        orderClause = 'ORDER BY p.created_at DESC';
+        break;
+      case 'custom':
+      default:
+        orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     }
 
     // Get products with company information
@@ -396,7 +402,7 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     }
 
     // Build order clause
-    let orderClause = 'ORDER BY created_at DESC';
+    let orderClause = 'ORDER BY display_order ASC, created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY price ASC';
@@ -409,6 +415,9 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         break;
       case 'popular':
         orderClause = 'ORDER BY likes DESC';
+        break;
+      case 'custom':
+        orderClause = 'ORDER BY display_order ASC, created_at DESC';
         break;
     }
 
@@ -448,6 +457,45 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
   }
 });
 
+// Update product display order (Admin only)
+router.put('/admin/reorder', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const { productOrders } = req.body; // Array of { id, display_order }
+
+    if (!Array.isArray(productOrders)) {
+      return res.status(400).json({ error: 'productOrders must be an array' });
+    }
+
+    // Update each product's display order
+    for (const item of productOrders) {
+      const { id, display_order } = item;
+      
+      // Verify product belongs to admin's company
+      const product = await db.get('SELECT company_id FROM products WHERE id = ?', [id]);
+      if (!product || product.company_id !== companyId) {
+        continue; // Skip products that don't belong to this company
+      }
+
+      await db.run(
+        'UPDATE products SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [display_order, id]
+      );
+    }
+
+    res.json({ message: 'Product order updated successfully' });
+  } catch (error) {
+    console.error('Product reorder error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get products for a specific company storefront
 router.get('/company/:companyId', async (req, res) => {
   try {
@@ -460,7 +508,7 @@ router.get('/company/:companyId', async (req, res) => {
       category,
       brand,
       search,
-      sortBy = 'newest',
+      sortBy = 'custom',
       minPrice,
       maxPrice
     } = req.query;
@@ -528,8 +576,8 @@ router.get('/company/:companyId', async (req, res) => {
       params.push(parseFloat(maxPrice));
     }
 
-    // Build order clause
-    let orderClause = 'ORDER BY p.created_at DESC';
+    // Build order clause - default to custom display order
+    let orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     switch (sortBy) {
       case 'price-low':
         orderClause = 'ORDER BY p.price ASC';
@@ -543,6 +591,12 @@ router.get('/company/:companyId', async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
         break;
+      case 'newest':
+        orderClause = 'ORDER BY p.created_at DESC';
+        break;
+      case 'custom':
+      default:
+        orderClause = 'ORDER BY p.display_order ASC, p.created_at DESC';
     }
 
     // Get products with company information

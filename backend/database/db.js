@@ -392,6 +392,33 @@ class DatabaseWrapper {
         console.error('Error adding show_testimonials to companies:', err.message);
       }
     }
+
+    // Add display_order column to products table
+    try {
+      this.db.exec(`ALTER TABLE products ADD COLUMN display_order INTEGER DEFAULT 0`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Error adding display_order to products:', err.message);
+      }
+    }
+
+    // Add reservation_status column to products table
+    try {
+      this.db.exec(`ALTER TABLE products ADD COLUMN reservation_status TEXT DEFAULT 'available'`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Error adding reservation_status to products:', err.message);
+      }
+    }
+
+    // Add reserved_by_order_id column to products table
+    try {
+      this.db.exec(`ALTER TABLE products ADD COLUMN reserved_by_order_id INTEGER`);
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Error adding reserved_by_order_id to products:', err.message);
+      }
+    }
   }
 
   // Helper methods - wrapped in promises for compatibility with existing async/await code
