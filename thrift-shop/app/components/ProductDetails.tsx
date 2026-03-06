@@ -39,6 +39,7 @@ export default function ProductDetails({
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    console.log('Touch start:', e.targetTouches[0].clientX);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
@@ -51,6 +52,8 @@ export default function ProductDetails({
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
+
+    console.log('Touch end - distance:', distance, 'left:', isLeftSwipe, 'right:', isRightSwipe);
 
     if (isLeftSwipe && product) {
       // Swipe left - next image
@@ -68,6 +71,7 @@ export default function ProductDetails({
   const onMouseDown = (e: React.MouseEvent) => {
     setTouchEnd(null);
     setTouchStart(e.clientX);
+    console.log('Mouse down:', e.clientX);
   };
 
   const onMouseMove = (e: React.MouseEvent) => {
@@ -81,6 +85,8 @@ export default function ProductDetails({
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
+
+    console.log('Mouse up - distance:', distance, 'left:', isLeftSwipe, 'right:', isRightSwipe);
 
     if (isLeftSwipe && product) {
       setSelectedImageIndex(prev => (prev + 1) % product.images.length);
