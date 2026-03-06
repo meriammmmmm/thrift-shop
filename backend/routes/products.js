@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
       category,
       brand,
       search,
-      sortBy = 'custom',
+      sortBy = 'newest',
       minPrice,
       maxPrice,
       companyId
@@ -508,7 +508,7 @@ router.get('/company/:companyId', async (req, res) => {
       category,
       brand,
       search,
-      sortBy = 'custom',
+      sortBy = 'newest',
       minPrice,
       maxPrice
     } = req.query;
