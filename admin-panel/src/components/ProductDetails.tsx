@@ -732,7 +732,52 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
             </h3>
             <p className="text-gray-600 text-lg">{product.brand || 'No Brand'}</p>
             <div className="flex items-center space-x-3 mt-2">
-              <span className="text-2xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</span>
+              {isEditing ? (
+                <>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Original Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                        {getCurrentCurrencySymbol()}
+                      </span>
+                      <input
+                        type="number"
+                        name="original_price"
+                        value={editForm.original_price || ''}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className="w-32 pl-6 pr-2 py-1 border-2 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Current Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                        {getCurrentCurrencySymbol()}
+                      </span>
+                      <input
+                        type="number"
+                        name="price"
+                        value={editForm.price || 0}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        min="0"
+                        className="w-32 pl-6 pr-2 py-1 border-2 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {product.original_price && parseFloat(product.original_price as any) > 0 && (
+                    <span className="text-lg text-gray-400 line-through">{getCurrentCurrencySymbol()}{(parseFloat(product.original_price as any) || 0).toFixed(2)}</span>
+                  )}
+                  <span className="text-2xl font-bold text-green-600">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</span>
+                </>
+              )}
               <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                 product.in_stock !== false 
                   ? 'bg-green-100 text-green-800' 
