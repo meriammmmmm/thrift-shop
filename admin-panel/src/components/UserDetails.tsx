@@ -28,16 +28,36 @@ interface UserDetails {
   country?: string;
 }
 
+interface Order {
+  id: number;
+  total: number;
+  status: string;
+  created_at: string;
+  item_count: number;
+}
+
+interface OrderItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_image: string;
+  quantity: number;
+  price: number;
+  size?: string;
+}
+
 const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserDetails>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>('');
+  const [showProducts, setShowProducts] = useState(false);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
   const { showSuccess, showError } = useNotifications();
 
@@ -129,6 +149,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) 
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setOrders(data.orders || []);
         setEditForm(data.user);
       } else {
         showError('Error', 'Failed to load user details');
@@ -495,6 +516,67 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) 
             <div className="text-gray-600 font-medium">Member Since</div>
           </div>
         </div>
+      </div>
+
+      {/* Products Toggle and Display */}
+      <div className="modern-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h4 className="text-xl font-semibold text-gray-900">Order History & Products</h4>
+          <label className="flex items-center cursor-pointer">
+            <span className="mr-3 text-sm font-medium text-gray-700">Show Products</span>
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={showProducts}
+                onChange={(e) => setShowProducts(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`block w-14 h-8 rounded-full transition-colors ${showProducts ? 'bg-[var(--color-primary)]' : 'bg-gray-300'}`}></div>
+              <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${showProducts ? 'transform translate-x-6' : ''}`}></div>
+            </div>
+          </label>
+        </div>
+
+        {showProducts && (
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <i className="fas fa-shopping-bag text-4xl mb-4 text-gray-300"></i>
+                <p>No orders found</p>
+              </div>
+            ) : (
+              orders.map((order) => (
+                <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-sm font-semibold text-gray-900">Order #{order.id}</span>
+                      <span className="ml-3 text-xs text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {order.status}
+                      </span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {getCurrentCurrencySymbol()}{parseFloat(order.total as any).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    <i className="fas fa-box mr-1"></i>
+                    {order.item_count} {order.item_count === 1 ? 'item' : 'items'}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}
