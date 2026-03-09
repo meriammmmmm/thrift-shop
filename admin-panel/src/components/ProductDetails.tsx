@@ -876,6 +876,34 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
               <p className="text-xs text-gray-500 mt-1">Currency: {companyCurrency.currency}</p>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Original Price ({getCurrentCurrencySymbol()}) <span className="text-gray-400 text-xs">(Optional)</span></label>
+              {isEditing ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                    {getCurrentCurrencySymbol()}
+                  </span>
+                  <input
+                    type="number"
+                    name="original_price"
+                    value={editForm.original_price || ''}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    min="0"
+                    placeholder="Leave empty if no discount"
+                    className="modern-input w-full pl-8"
+                  />
+                </div>
+              ) : (
+                <p className="text-gray-900 text-lg">
+                  {product.original_price ? (
+                    <span className="line-through text-gray-500">{getCurrentCurrencySymbol()}{(parseFloat(product.original_price as any) || 0).toFixed(2)}</span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </p>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status</label>
               {isEditing ? (
                 <CustomSelect
