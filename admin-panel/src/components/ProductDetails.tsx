@@ -13,6 +13,7 @@ interface ProductDetails {
   name: string;
   brand: string;
   price: number;
+  original_price?: number;
   category: string;
   in_stock: boolean;
   images?: string[];
