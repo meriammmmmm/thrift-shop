@@ -340,6 +340,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Product</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Brand</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Original Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
@@ -390,6 +391,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.brand || 'No Brand'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getCurrentCurrencySymbol()}{(parseFloat(product.price as any) || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {product.original_price ? (
+                      <span className="line-through">{getCurrentCurrencySymbol()}{(parseFloat(product.original_price as any) || 0).toFixed(2)}</span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category || 'Uncategorized'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${
