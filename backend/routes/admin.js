@@ -5,6 +5,27 @@ const aiService = require('../services/aiService');
 
 const router = express.Router();
 
+// Diagnostic endpoint to check database tables
+router.get('/debug/tables', requireAdmin, async (req, res) => {
+  try {
+    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'", []);
+    const categoryProductsExists = tables.some(t => t.name === 'category_products');
+    
+    let sampleData = null;
+    if (categoryProductsExists) {
+      sampleData = await db.all('SELECT * FROM category_products LIMIT 5', []);
+    }
+    
+    res.json({ 
+      tables: tables.map(t => t.name),
+      categoryProductsExists,
+      sampleData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // Dashboard analytics
 router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
@@ -1287,4 +1308,303 @@ router.get('/fix-inventory-now', async (req, res) => {
   }
 });
 
-module.exports = router;module.exports = router;
+// ============================================
+// CATEGORY MANAGEMENT ROUTES
+// ============================================
+
+// Get all categories for a company (PUBLIC - no auth required)
+router.get('/categories/public/:companyId', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+
+    const categories = await db.all(
+      'SELECT id, name, description, icon FROM categories WHERE company_id = ? ORDER BY created_at DESC',
+      [companyId]
+    );
+
+    res.json({ categories });
+  } catch (error) {
+    console.error('Get public categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all categories for admin's company
+router.get('/categories', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const categories = await db.all(
+      'SELECT * FROM categories WHERE company_id = ? ORDER BY created_at DESC',
+      [companyId]
+    );
+
+    res.json({ categories });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new category
+router.post('/categories', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const { name, description, icon, parent_id } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    // Check if category with same name already exists for this company
+    const existing = await db.get(
+      'SELECT id FROM categories WHERE company_id = ? AND name = ?',
+      [companyId, name]
+    );
+
+    if (existing) {
+      return res.status(400).json({ error: 'Category with this name already exists' });
+    }
+
+    const result = await db.run(
+      `INSERT INTO categories (company_id, name, description, icon, parent_id) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [companyId, name, description || null, icon || null, parent_id || null]
+    );
+
+    const category = await db.get('SELECT * FROM categories WHERE id = ?', [result.id]);
+
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
+    });
+  } catch (error) {
+    console.error('Create category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update category
+router.put('/categories/:id', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+    const categoryId = req.params.id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    // Check if category belongs to admin's company
+    const category = await db.get(
+      'SELECT * FROM categories WHERE id = ? AND company_id = ?',
+      [categoryId, companyId]
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const { name, description, icon, parent_id } = req.body;
+
+    // Check if new name conflicts with existing category
+    if (name && name !== category.name) {
+      const existing = await db.get(
+        'SELECT id FROM categories WHERE company_id = ? AND name = ? AND id != ?',
+        [companyId, name, categoryId]
+      );
+
+      if (existing) {
+        return res.status(400).json({ error: 'Category with this name already exists' });
+      }
+    }
+
+    await db.run(
+      `UPDATE categories 
+       SET name = ?, description = ?, icon = ?, parent_id = ?, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [
+        name || category.name,
+        description !== undefined ? description : category.description,
+        icon !== undefined ? icon : category.icon,
+        parent_id !== undefined ? parent_id : category.parent_id,
+        categoryId
+      ]
+    );
+
+    const updatedCategory = await db.get('SELECT * FROM categories WHERE id = ?', [categoryId]);
+
+    res.json({
+      message: 'Category updated successfully',
+      category: updatedCategory
+    });
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete category
+router.delete('/categories/:id', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+    const categoryId = req.params.id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    // Check if category belongs to admin's company
+    const category = await db.get(
+      'SELECT * FROM categories WHERE id = ? AND company_id = ?',
+      [categoryId, companyId]
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Delete category-product relationships first
+    await db.run('DELETE FROM category_products WHERE category_id = ?', [categoryId]);
+
+    // Delete the category
+    await db.run('DELETE FROM categories WHERE id = ?', [categoryId]);
+
+    res.json({
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// CATEGORY-PRODUCT RELATIONSHIP ROUTES
+// ============================================
+
+// Get products for a category
+router.get('/categories/:id/products', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+    const categoryId = req.params.id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    // Check if category belongs to admin's company
+    const category = await db.get(
+      'SELECT * FROM categories WHERE id = ? AND company_id = ?',
+      [categoryId, companyId]
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Get all products assigned to this category
+    const products = await db.all(`
+      SELECT p.* 
+      FROM products p
+      INNER JOIN category_products cp ON p.id = cp.product_id
+      WHERE cp.category_id = ? AND p.company_id = ?
+      ORDER BY p.created_at DESC
+    `, [categoryId, companyId]);
+
+    res.json({ products });
+  } catch (error) {
+    console.error('Get category products error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Assign products to a category
+router.post('/categories/:id/products', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = req.user;
+    const companyId = adminUser.admin_company_id;
+    const categoryId = req.params.id;
+    const { productIds } = req.body;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    if (!Array.isArray(productIds)) {
+      return res.status(400).json({ error: 'productIds must be an array' });
+    }
+
+    // Check if category belongs to admin's company
+    const category = await db.get(
+      'SELECT * FROM categories WHERE id = ? AND company_id = ?',
+      [categoryId, companyId]
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Remove all existing product assignments for this category
+    await db.run('DELETE FROM category_products WHERE category_id = ?', [categoryId]);
+
+    // Add new product assignments
+    for (const productId of productIds) {
+      // Verify product belongs to the same company
+      const product = await db.get(
+        'SELECT id FROM products WHERE id = ? AND company_id = ?',
+        [productId, companyId]
+      );
+
+      if (product) {
+        await db.run(
+          'INSERT OR IGNORE INTO category_products (category_id, product_id) VALUES (?, ?)',
+          [categoryId, productId]
+        );
+      }
+    }
+
+    res.json({
+      message: 'Products assigned to category successfully',
+      assignedCount: productIds.length
+    });
+  } catch (error) {
+    console.error('Assign products to category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get categories for a product (PUBLIC - for frontend)
+router.get('/products/:productId/categories', async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const categories = await db.all(`
+      SELECT c.id, c.name, c.description, c.icon
+      FROM categories c
+      INNER JOIN category_products cp ON c.id = cp.category_id
+      WHERE cp.product_id = ?
+      ORDER BY c.name ASC
+    `, [productId]);
+
+    res.json({ categories });
+  } catch (error) {
+    console.error('Get product categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+module.exports = router;
