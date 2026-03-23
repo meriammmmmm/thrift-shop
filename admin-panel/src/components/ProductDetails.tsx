@@ -15,6 +15,7 @@ interface ProductDetails {
   price: number;
   original_price?: number;
   category: string;
+  occasions?: string[]; // Array of occasion names
   in_stock: boolean;
   images?: string[];
   description?: string;
@@ -163,12 +164,15 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   const [editForm, setEditForm] = useState<Partial<ProductDetails>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [customCategories, setCustomCategories] = useState<Array<{name: string, description?: string, icon?: string}>>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [draggedExistingImageIndex, setDraggedExistingImageIndex] = useState<number | null>(null);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
+  const [occasions, setOccasions] = useState<Array<{id: number, name: string, icon?: string}>>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<number[]>([]);
   const { showSuccess, showError } = useNotifications();
 
   // Country to currency mapping
@@ -246,8 +250,27 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   useEffect(() => {
     if (productId) {
       loadProductDetails();
+      loadCustomCategories();
+      loadOccasions();
+      loadProductOccasions();
     }
   }, [productId]);
+
+  const loadCustomCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCustomCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to load custom categories:', error);
+    }
+  };
 
   const loadProductDetails = async () => {
     setLoading(true);
@@ -278,6 +301,45 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
       showError('Error', 'Failed to load product details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOccasions = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const companyId = data.user.admin_company_id;
+        
+        const categoriesResponse = await fetch(`${API_BASE_URL}/admin/categories/public/${companyId}`);
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          setOccasions(categoriesData.categories || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load occasions:', error);
+    }
+  };
+
+  const loadProductOccasions = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/products/${productId}/categories`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const categoryIds = data.categories.map((cat: any) => cat.id);
+        setSelectedOccasions(categoryIds);
+      }
+    } catch (error) {
+      console.error('Failed to load product occasions:', error);
     }
   };
 
@@ -598,7 +660,107 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
       });
 
       if (response.ok) {
-        showSuccess('Success', 'Product updated successfully!');
+        // Get current occasions for this product
+        const currentOccasionsResponse = await fetch(`${API_BASE_URL}/admin/products/${productId}/categories`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        const currentOccasionsData = await currentOccasionsResponse.json();
+        const currentOccasionIds = currentOccasionsData.categories?.map((c: any) => c.id) || [];
+        
+        // Determine which occasions to add and which to remove
+        const occasionsToAdd = selectedOccasions.filter(id => !currentOccasionIds.includes(id));
+        const occasionsToRemove = currentOccasionIds.filter((id: number) => !selectedOccasions.includes(id));
+        
+        let occasionsSaved = 0;
+        let occasionsFailed = 0;
+        
+        // Add product to new occasions
+        for (const occasionId of occasionsToAdd) {
+          try {
+            // Get current products in this occasion
+            const categoryResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}`, {
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            
+            if (categoryResponse.ok) {
+              const categoryData = await categoryResponse.json();
+              const currentProductIds = categoryData.category?.product_ids || [];
+              
+              // Add this product to the list
+              const updatedProductIds = [...currentProductIds, Number(productId)];
+              
+              // Update the category with the new product list
+              const assignResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}/products`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ productIds: updatedProductIds })
+              });
+
+              if (assignResponse.ok) {
+                occasionsSaved++;
+              } else {
+                occasionsFailed++;
+                console.error(`Failed to assign product to occasion ${occasionId}`);
+              }
+            }
+          } catch (err) {
+            occasionsFailed++;
+            console.error(`Error assigning product to occasion ${occasionId}:`, err);
+          }
+        }
+        
+        // Remove product from unselected occasions
+        for (const occasionId of occasionsToRemove) {
+          try {
+            // Get current products in this occasion
+            const categoryResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}`, {
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            
+            if (categoryResponse.ok) {
+              const categoryData = await categoryResponse.json();
+              const currentProductIds = categoryData.category?.product_ids || [];
+              
+              // Remove this product from the list
+              const updatedProductIds = currentProductIds.filter((id: number) => id !== Number(productId));
+              
+              // Update the category with the new product list
+              const assignResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}/products`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ productIds: updatedProductIds })
+              });
+
+              if (!assignResponse.ok) {
+                console.error(`Failed to remove product from occasion ${occasionId}`);
+              }
+            }
+          } catch (err) {
+            console.error(`Error removing product from occasion ${occasionId}:`, err);
+          }
+        }
+
+        if (occasionsFailed > 0) {
+          showSuccess('Partial Success', `Product updated! ${occasionsSaved} occasions assigned, ${occasionsFailed} failed.`);
+        } else if (occasionsToAdd.length > 0 || occasionsToRemove.length > 0) {
+          showSuccess('Success', `Product updated! Occasions updated successfully.`);
+        } else {
+          showSuccess('Success', 'Product updated successfully!');
+        }
+        
         setIsEditing(false);
         // Clear upload states
         setSelectedImages([]);
@@ -890,6 +1052,69 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                 />
               ) : (
                 <p className="text-gray-900 text-lg">{product.category || 'Not categorized'}</p>
+              )}
+            </div>
+
+            {/* Occasions/Categories Multi-Select */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Occasions (Select all that apply)
+              </label>
+              {isEditing ? (
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50 max-h-64 overflow-y-auto">
+                  {occasions.length > 0 ? (
+                    <div className="space-y-2">
+                      {occasions.map((occasion) => (
+                        <label
+                          key={occasion.id}
+                          className="flex items-center p-3 bg-white rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-gray-200"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedOccasions.includes(occasion.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedOccasions(prev => [...prev, occasion.id]);
+                              } else {
+                                setSelectedOccasions(prev => prev.filter(id => id !== occasion.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-[var(--color-primary)] border-gray-300 rounded focus:ring-[var(--color-primary)]"
+                          />
+                          <div className="ml-3 flex items-center">
+                            {occasion.icon && <span className="text-lg mr-2">{occasion.icon}</span>}
+                            <span className="text-sm font-medium text-gray-900">{occasion.name}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No occasions available. Create occasions in Category Management first.
+                    </p>
+                  )}
+                  {occasions.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        {selectedOccasions.length} occasion(s) selected
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {selectedOccasions.length > 0 ? (
+                    occasions
+                      .filter(occ => selectedOccasions.includes(occ.id))
+                      .map(occ => (
+                        <span key={occ.id} className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-sm font-medium">
+                          {occ.icon} {occ.name}
+                        </span>
+                      ))
+                  ) : (
+                    <p className="text-gray-500">No occasions assigned</p>
+                  )}
+                </div>
               )}
             </div>
           </div>

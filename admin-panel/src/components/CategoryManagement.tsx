@@ -15,10 +15,21 @@ interface Category {
   updated_at: string;
 }
 
+interface Product {
+  id: number;
+  name: string;
+  brand?: string;
+  price: number;
+  images?: string[];
+  category?: string;
+}
+
 const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -48,6 +59,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
 
   useEffect(() => {
     loadCategories();
+    loadProducts();
   }, []);
 
   const loadCategories = async () => {
@@ -70,6 +82,67 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
       showError('Error', 'Failed to load categories');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      console.log('🔍 Loading products for category assignment...');
+      let allProducts: Product[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+
+      // Fetch all pages of products with authentication
+      while (hasMorePages) {
+        const response = await fetch(`${API_BASE_URL}/products?page=${currentPage}&limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const products = data.products || [];
+          allProducts = [...allProducts, ...products];
+          
+          // Check if there are more pages
+          const pagination = data.pagination || {};
+          hasMorePages = pagination.page < pagination.pages;
+          currentPage++;
+          
+          console.log(`📦 Loaded page ${pagination.page}/${pagination.pages} (${products.length} products)`);
+        } else {
+          console.error('Failed to load products page', currentPage);
+          break;
+        }
+      }
+
+      // Filter to only show products that actually exist
+      const validProducts = allProducts.filter((p: any) => p && p.id && p.name);
+      setProducts(validProducts);
+      console.log('✅ Loaded all products for category assignment:', validProducts.length);
+      console.log('📋 Product names:', validProducts.map((p: any) => p.name).join(', '));
+    } catch (error) {
+      console.error('Load products error:', error);
+    }
+  };
+
+  const loadCategoryProducts = async (categoryId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/categories/${categoryId}/products`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const productIds = data.products.map((p: Product) => p.id);
+        setSelectedProducts(productIds);
+      }
+    } catch (error) {
+      console.error('Load category products error:', error);
     }
   };
 
@@ -106,7 +179,32 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
       });
 
       if (response.ok) {
-        showSuccess('Success', `Category ${editingCategory ? 'updated' : 'created'} successfully!`);
+        const result = await response.json();
+        const categoryId = editingCategory ? editingCategory.id : result.category.id;
+
+        // Save product assignments
+        console.log('📦 Assigning products to category:', categoryId, selectedProducts);
+        const assignResponse = await fetch(`${API_BASE_URL}/admin/categories/${categoryId}/products`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            productIds: selectedProducts
+          })
+        });
+
+        if (assignResponse.ok) {
+          const assignResult = await assignResponse.json();
+          console.log('✅ Products assigned successfully:', assignResult);
+          showSuccess('Success', `Category ${editingCategory ? 'updated' : 'created'} successfully! ${assignResult.assignedCount} products assigned.`);
+        } else {
+          const assignError = await assignResponse.json();
+          console.error('❌ Failed to assign products:', assignError);
+          showError('Warning', `Category saved but failed to assign products: ${assignError.error}`);
+        }
+
         resetForm();
         loadCategories();
       } else {
@@ -127,6 +225,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
       icon: category.icon || '',
       parent_id: category.parent_id ? category.parent_id.toString() : ''
     });
+    loadCategoryProducts(category.id);
     setShowAddForm(true);
   };
 
@@ -163,6 +262,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
       icon: '',
       parent_id: ''
     });
+    setSelectedProducts([]);
     setEditingCategory(null);
     setShowAddForm(false);
   };
@@ -283,6 +383,66 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
                 className="modern-input w-full"
                 placeholder="Describe what products belong in this category..."
               />
+            </div>
+
+            {/* Product Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assign Products to this Category
+              </label>
+              <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                {products.length > 0 ? (
+                  <div className="space-y-2">
+                    {products.map((product) => (
+                      <label
+                        key={product.id}
+                        className="flex items-center p-3 bg-white rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-gray-200"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProducts(prev => [...prev, product.id]);
+                            } else {
+                              setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-[var(--color-primary)] border-gray-300 rounded focus:ring-[var(--color-primary)]"
+                        />
+                        <div className="ml-3 flex items-center flex-1">
+                          {product.images && product.images.length > 0 && (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              className="w-12 h-12 object-cover rounded-lg mr-3"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {product.brand && `${product.brand} • `}
+                              ${product.price.toFixed(2)}
+                              {product.category && ` • ${product.category}`}
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No products available. Add products first to assign them to categories.
+                  </p>
+                )}
+                {products.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      {selectedProducts.length} product(s) selected
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3">
