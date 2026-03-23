@@ -183,8 +183,6 @@ router.get('/public/:companyId', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Get products for a category
 router.get('/:id/products', requireAdmin, async (req, res) => {
   try {
@@ -276,3 +274,5 @@ router.post('/:id/products', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+module.exports = router;
