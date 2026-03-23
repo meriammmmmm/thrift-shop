@@ -26,6 +26,32 @@ router.get('/debug/tables', requireAdmin, async (req, res) => {
   }
 });
 
+// Create category_products table if it doesn't exist
+router.post('/debug/create-category-products-table', requireAdmin, async (req, res) => {
+  try {
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS category_products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        UNIQUE(category_id, product_id)
+      )
+    `);
+    
+    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'", []);
+    res.json({ 
+      success: true,
+      message: 'Table created successfully',
+      tables: tables.map(t => t.name)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // Dashboard analytics
 router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
