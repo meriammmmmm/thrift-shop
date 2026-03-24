@@ -291,6 +291,31 @@ class DatabaseWrapper {
         expires_at DATETIME NOT NULL,
         verified BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+
+      // Categories table for custom product categories
+      `CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        icon TEXT,
+        parent_id INTEGER,
+        company_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies (id),
+        FOREIGN KEY (parent_id) REFERENCES categories (id)
+      )`,
+
+      // Category-Product relationship table
+      `CREATE TABLE IF NOT EXISTS category_products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+        UNIQUE(category_id, product_id)
       )`
     ];
 

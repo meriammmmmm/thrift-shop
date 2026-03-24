@@ -60,6 +60,9 @@ class PostgresDatabase {
           views INTEGER DEFAULT 0,
           likes INTEGER DEFAULT 0,
           company_id INTEGER,
+          display_order INTEGER DEFAULT 0,
+          reservation_status TEXT DEFAULT 'available',
+          reserved_by_order_id INTEGER,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -250,6 +253,18 @@ class PostgresDatabase {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (company_id) REFERENCES companies (id),
           FOREIGN KEY (parent_id) REFERENCES categories (id)
+        )
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS category_products (
+          id SERIAL PRIMARY KEY,
+          category_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+          UNIQUE(category_id, product_id)
         )
       `);
 

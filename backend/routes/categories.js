@@ -188,7 +188,12 @@ router.get('/:id/products', requireAdmin, async (req, res) => {
   try {
     const adminUser = req.user;
     const companyId = adminUser.admin_company_id;
-    const categoryId = req.params.id;
+    const categoryId = parseInt(req.params.id);
+
+    // Validate category ID
+    if (!categoryId || categoryId <= 0 || isNaN(categoryId)) {
+      return res.status(400).json({ error: 'Invalid category ID', products: [] });
+    }
 
     if (!companyId) {
       return res.status(403).json({ error: 'Admin not associated with any company' });
@@ -201,7 +206,7 @@ router.get('/:id/products', requireAdmin, async (req, res) => {
     );
 
     if (!category) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: 'Category not found', products: [] });
     }
 
     // Get all products assigned to this category
@@ -216,7 +221,7 @@ router.get('/:id/products', requireAdmin, async (req, res) => {
     res.json({ products });
   } catch (error) {
     console.error('Get category products error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

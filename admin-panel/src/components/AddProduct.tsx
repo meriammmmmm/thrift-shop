@@ -157,6 +157,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
   const [customCategories, setCustomCategories] = useState<Array<{name: string, description?: string, icon?: string}>>([]);
+  const [occasions, setOccasions] = useState<Array<{id: number, name: string, description?: string, icon?: string}>>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<number[]>([]);
   const { showSuccess, showError } = useNotifications();
 
   // Country to currency mapping
@@ -229,8 +231,28 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
       }
     };
     
+    const fetchOccasions = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📋 Loaded occasions/categories:', data.categories);
+          setOccasions(data.categories || []);
+        } else {
+          console.error('Failed to fetch occasions:', response.status);
+        }
+      } catch (error) {
+        console.error('Failed to fetch occasions:', error);
+      }
+    };
+    
     fetchCompanyCurrency();
     fetchCustomCategories();
+    fetchOccasions();
     
     // Add event listener for profile updates
     const handleProfileUpdate = () => {
@@ -399,6 +421,7 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         additionalInfo: ''
       };
 
+      console.log('🤖 Sending image to AI for analysis...');
       const response = await fetch(`${API_BASE_URL}/admin/ai/generate-description`, {
         method: 'POST',
         headers: {
@@ -408,14 +431,31 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         body: JSON.stringify(requestData)
       });
 
+      console.log('📡 AI Response status:', response.status);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('✅ AI Result:', result);
         const aiData = result.data;
+
+        if (!aiData) {
+          console.error('❌ No data in AI response');
+          showError('Error', 'AI returned no data');
+          return;
+        }
 
         // Update form with AI-generated data (image analyser output)
         const desc = aiData.style_notes
           ? `${aiData.description || ''}\n\nStyle notes: ${aiData.style_notes}`.trim()
           : (aiData.description || '');
+        
+        console.log('📝 Setting form data with AI results:', {
+          name: aiData.title,
+          category: aiData.category_suggestion,
+          brand: aiData.brand_suggestion,
+          price: aiData.suggested_price_min
+        });
+
         setFormData(prev => ({
           ...prev,
           name: aiData.title || prev.name,
@@ -433,10 +473,11 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         showSuccess('Success', '🤖 Image analyser: AI analyzed your photo and generated product details!');
       } else {
         const error = await response.json();
+        console.error('❌ AI Error:', error);
         showError('Error', `Failed to analyze image: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('AI image analysis error:', error);
+      console.error('❌ AI image analysis error:', error);
       showError('Error', 'Failed to analyze image with AI');
     } finally {
       setAiLoading(false);
@@ -603,6 +644,7 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     });
     setSelectedImages([]);
     setImagePreviews([]);
+    setSelectedOccasions([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -658,7 +700,74 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
       });
 
       if (response.ok) {
-        showSuccess('Success', 'Product added successfully!');
+        const result = await response.json();
+        const newProductId = result.id;
+        
+        // Assign product to selected occasions
+        let occasionAssignmentSuccess = 0;
+        let occasionAssignmentFailed = 0;
+        
+        if (selectedOccasions.length > 0) {
+          for (const occasionId of selectedOccasions) {
+            // Skip invalid occasion IDs
+            if (!occasionId || occasionId <= 0) {
+              console.warn('Skipping invalid occasion ID:', occasionId);
+              occasionAssignmentFailed++;
+              continue;
+            }
+            
+            try {
+              // Get current products in this occasion
+              const categoryResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}/products`, {
+                headers: {
+                  'Authorization': `Bearer ${authToken}`
+                }
+              });
+              
+              if (categoryResponse.ok) {
+                const categoryData = await categoryResponse.json();
+                const currentProductIds = categoryData.products?.map((p: any) => p.id) || [];
+                
+                // Add the new product to the list
+                const updatedProductIds = [...currentProductIds, newProductId];
+                
+                // Update the category with the new product list
+                const assignResponse = await fetch(`${API_BASE_URL}/admin/categories/${occasionId}/products`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ productIds: updatedProductIds })
+                });
+                
+                if (assignResponse.ok) {
+                  occasionAssignmentSuccess++;
+                } else {
+                  occasionAssignmentFailed++;
+                  console.error(`Failed to assign product to occasion ${occasionId}`);
+                }
+              } else {
+                occasionAssignmentFailed++;
+              }
+            } catch (err) {
+              console.error(`Error assigning product to occasion ${occasionId}:`, err);
+              occasionAssignmentFailed++;
+            }
+          }
+        }
+        
+        // Show appropriate success message
+        if (occasionAssignmentFailed > 0 && occasionAssignmentSuccess === 0) {
+          showSuccess('Product Added', `Product created successfully! However, occasion assignment failed. Please assign occasions manually in the Categories section.`);
+        } else if (occasionAssignmentFailed > 0) {
+          showSuccess('Partial Success', `Product added! ${occasionAssignmentSuccess} occasion(s) assigned, ${occasionAssignmentFailed} failed.`);
+        } else if (selectedOccasions.length > 0) {
+          showSuccess('Success', `Product added and assigned to ${occasionAssignmentSuccess} occasion(s)!`);
+        } else {
+          showSuccess('Success', 'Product added successfully!');
+        }
+        
         clearForm();
       } else {
         const error = await response.json();
@@ -829,6 +938,92 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
                 <strong>Pro Tips:</strong> You can mix uploaded images, URLs, and AI-generated images! All will be saved together.
               </p>
             </div>
+          </div>
+
+          {/* Occasions Selector - PROMINENT POSITION */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border-2 border-purple-200">
+            <label className="block text-lg font-bold text-gray-800 mb-2">
+              <i className="fas fa-calendar-star mr-2 text-purple-600"></i>
+              Select Occasions for This Product
+            </label>
+            <p className="text-sm text-gray-600 mb-4">
+              Choose which occasions this product is perfect for. Customers can browse by occasion to find the right outfit!
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {occasions.map((occasion) => (
+                <button
+                  key={occasion.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedOccasions(prev => 
+                      prev.includes(occasion.id) 
+                        ? prev.filter(id => id !== occasion.id)
+                        : [...prev, occasion.id]
+                    );
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                    selectedOccasions.includes(occasion.id)
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600 shadow-lg transform scale-105'
+                      : 'bg-white hover:bg-purple-100 border-gray-300 hover:border-purple-400 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {occasion.icon && (
+                      <div 
+                        className={`w-6 h-6 flex-shrink-0 ${selectedOccasions.includes(occasion.id) ? 'text-white' : 'text-purple-600'}`}
+                        dangerouslySetInnerHTML={{ __html: occasion.icon }}
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">{occasion.name}</div>
+                      {occasion.description && (
+                        <div className={`text-xs mt-1 ${selectedOccasions.includes(occasion.id) ? 'opacity-90' : 'text-gray-500'}`}>
+                          {occasion.description}
+                        </div>
+                      )}
+                    </div>
+                    {selectedOccasions.includes(occasion.id) && (
+                      <i className="fas fa-check-circle text-lg"></i>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {occasions.length === 0 && (
+              <div className="text-center py-8 bg-white rounded-xl border-2 border-dashed border-purple-300">
+                <i className="fas fa-calendar-plus text-4xl text-purple-400 mb-3"></i>
+                <p className="text-gray-700 font-semibold mb-1">No occasions created yet</p>
+                <p className="text-gray-500 text-sm mb-3">Create occasions in the Categories section first</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Navigate to categories section
+                    const sidebar = document.querySelector('[data-section="categories"]') as HTMLElement;
+                    if (sidebar) sidebar.click();
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                >
+                  <i className="fas fa-arrow-right mr-2"></i>
+                  Go to Categories
+                </button>
+              </div>
+            )}
+            {selectedOccasions.length > 0 && (
+              <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-300 shadow-sm">
+                <p className="text-sm text-purple-800 font-medium">
+                  <i className="fas fa-check-circle mr-2 text-green-500"></i>
+                  <strong>{selectedOccasions.length} occasion(s) selected:</strong>
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {occasions.filter(o => selectedOccasions.includes(o.id)).map(o => (
+                    <span key={o.id} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      {o.icon && <span dangerouslySetInnerHTML={{ __html: o.icon }} className="w-4 h-4 inline-block mr-1" />}
+                      {o.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
