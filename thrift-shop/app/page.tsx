@@ -82,7 +82,7 @@ export default function Home() {
     try {
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/admin/categories/public/${companyId}`);
+      const response = await fetch(`${apiUrl}/api/categories/public/${companyId}`);
       
       if (response.ok) {
         const data = await response.json();
