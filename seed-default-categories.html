@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Default Categories</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .category-preview {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .category-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .category-card svg {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 10px;
+      color: #666;
+    }
+    .category-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    .category-desc {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+    }
+    button {
+      background: #8B1538;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #6d0f2a;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .input-group {
+      margin: 20px 0;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Seed Default Categories</h1>
+    <p class="subtitle">This will create 6 default occasion categories for your store</p>
+    
+    <div class="category-preview">
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <div class="category-name">Night Out</div>
+        <div class="category-desc">Glamorous outfits</div>
+      </div>
+      
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <div class="category-name">Casual</div>
+        <div class="category-desc">Daily wear</div>
+      </div>
+      
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <div class="category-name">Work</div>
+        <div class="category-desc">Professional attire</div>
+      </div>
+      
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
+        <div class="category-name">Date Night</div>
+        <div class="category-desc">Romantic looks</div>
+      </div>
+      
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="category-name">Weekend</div>
+        <div class="category-desc">Relaxed styles</div>
+      </div>
+      
+      <div class="category-card">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <div class="category-name">Events</div>
+        <div class="category-desc">Special occasions</div>
+      </div>
+    </div>
+    
+    <div class="input-group">
+      <label>Admin Token:</label>
+      <input type="text" id="authToken" placeholder="Paste your admin auth token here">
+      <button onclick="getTokenFromStorage()" style="margin-top: 10px; background: #2196F3; padding: 8px 15px; width: auto;">
+        Get Token from Storage
+      </button>
+    </div>
+    
+    <button onclick="seedCategories()" id="seedBtn">
+      🌱 Create Default Categories
+    </button>
+    
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+    
+    function getTokenFromStorage() {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        document.getElementById('authToken').value = token;
+        showResult('Token loaded from localStorage!', 'success');
+      } else {
+        showResult('No token found in localStorage. Please login to admin panel first.', 'error');
+      }
+    }
+    
+    function showResult(message, type = 'info') {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = `result ${type}`;
+      resultDiv.textContent = message;
+    }
+    
+    async function seedCategories() {
+      const token = document.getElementById('authToken').value;
+      const btn = document.getElementById('seedBtn');
+      
+      if (!token) {
+        showResult('Please provide an admin auth token!', 'error');
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ Creating categories...';
+      showResult('Creating default categories...', 'info');
+      
+      const categories = [
+        {
+          name: 'Night Out',
+          description: 'Glamorous outfits for parties and nightlife',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>'
+        },
+        {
+          name: 'Casual',
+          description: 'Comfortable daily wear and casual outfits',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>'
+        },
+        {
+          name: 'Work',
+          description: 'Professional attire for the workplace',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
+        },
+        {
+          name: 'Date Night',
+          description: 'Romantic and elegant looks for special evenings',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>'
+        },
+        {
+          name: 'Weekend',
+          description: 'Relaxed styles for leisure time',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+        },
+        {
+          name: 'Events',
+          description: 'Special occasion and formal event wear',
+          icon: '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'
+        }
+      ];
+      
+      let created = 0;
+      let skipped = 0;
+      let failed = 0;
+      let results = [];
+      
+      for (const category of categories) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(category)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            created++;
+            results.push(`✅ Created: ${category.name}`);
+          } else if (response.status === 400 && data.error.includes('already exists')) {
+            skipped++;
+            results.push(`⏭️  Skipped: ${category.name} (already exists)`);
+          } else {
+            failed++;
+            results.push(`❌ Failed: ${category.name} - ${data.error}`);
+          }
+        } catch (error) {
+          failed++;
+          results.push(`❌ Error: ${category.name} - ${error.message}`);
+        }
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🌱 Create Default Categories';
+      
+      const summary = `
+✨ Seeding Complete!
+
+Created: ${created}
+Skipped: ${skipped}
+Failed: ${failed}
+
+Details:
+${results.join('\n')}
+      `;
+      
+      showResult(summary, failed > 0 ? 'error' : 'success');
+    }
+    
+    // Auto-load token on page load
+    window.addEventListener('load', () => {
+      getTokenFromStorage();
+    });
+  </script>
+</body>
+</html>
