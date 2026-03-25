@@ -264,7 +264,7 @@ router.post('/:id/products', requireAdmin, async (req, res) => {
 
       if (product) {
         await db.run(
-          'INSERT OR IGNORE INTO category_products (category_id, product_id) VALUES (?, ?)',
+          'INSERT INTO category_products (category_id, product_id) VALUES (?, ?) ON CONFLICT (category_id, product_id) DO NOTHING',
           [categoryId, productId]
         );
       }
@@ -276,7 +276,12 @@ router.post('/:id/products', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Assign products to category error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message,
+      hint: 'Check server logs for more details'
+    });
   }
 });
 
