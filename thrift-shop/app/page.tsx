@@ -81,7 +81,8 @@ export default function Home() {
   const loadCustomCategories = async () => {
     try {
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/categories/public/${companyId}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/admin/categories/public/${companyId}`);
       
       if (response.ok) {
         const data = await response.json();
