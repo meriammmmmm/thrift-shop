@@ -171,7 +171,7 @@ router.get('/public/:companyId', async (req, res) => {
     const { companyId } = req.params;
 
     const categories = await db.all(`
-      SELECT name, description, icon FROM categories 
+      SELECT id, name, description, icon FROM categories 
       WHERE company_id = ? 
       ORDER BY name ASC
     `, [companyId]);
@@ -179,6 +179,37 @@ router.get('/public/:companyId', async (req, res) => {
     res.json({ categories });
   } catch (error) {
     console.error('Public categories fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get products for a specific category (public endpoint)
+router.get('/public/:companyId/:categoryId/products', async (req, res) => {
+  try {
+    const { companyId, categoryId } = req.params;
+
+    // Get category info
+    const category = await db.get(
+      'SELECT id, name, description, icon FROM categories WHERE id = ? AND company_id = ?',
+      [categoryId, companyId]
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found', products: [] });
+    }
+
+    // Get products in this category
+    const products = await db.all(`
+      SELECT p.* 
+      FROM products p
+      INNER JOIN category_products cp ON p.id = cp.product_id
+      WHERE cp.category_id = ? AND p.company_id = ?
+      ORDER BY p.created_at DESC
+    `, [categoryId, companyId]);
+
+    res.json({ category, products });
+  } catch (error) {
+    console.error('Public category products fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -66,12 +66,30 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Custom categories (occasions)
+  const [customCategories, setCustomCategories] = useState<Array<{id: number, name: string, description?: string, icon?: string}>>([]);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setNotification({ message, type, isVisible: true });
     setTimeout(() => {
       setNotification(prev => ({ ...prev, isVisible: false }));
     }, 3000);
+  };
+
+  // Load custom categories
+  const loadCustomCategories = async () => {
+    try {
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/categories/public/${companyId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCustomCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to load custom categories:', error);
+    }
   };
 
   // Load products from API
@@ -198,6 +216,7 @@ export default function Home() {
     }
     loadProducts();
     loadProfilePicture();
+    loadCustomCategories();
   }, []);
 
   const loadProfilePicture = () => {
@@ -715,119 +734,80 @@ export default function Home() {
       </section>
 
       {/* Featured Categories - Elegant Mery Rose Style */}
-      <section className="relative py-6 sm:py-16 md:py-20 bg-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-          {/* Header */}
-          <div className="text-center mb-4 sm:mb-8">
-            <h2 className="text-lg sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 sm:mb-2 tracking-tight px-4">
-              Shop by <span className="font-serif italic" style={{ color: '#8B1538' }}>Occasion</span>
-            </h2>
-            <p className="text-gray-500 text-[10px] sm:text-sm max-w-xl mx-auto px-4">
-              Find the perfect look for every moment
-            </p>
-          </div>
-          
-          {/* Cards Grid - Small on mobile, bigger on desktop */}
-          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-4 md:gap-8 mb-6 sm:mb-12">
-            {[
-              { 
-                name: 'Night Out', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                  </svg>
-                )
-              },
-              { 
-                name: 'Casual', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                  </svg>
-                )
-              },
-              { 
-                name: 'Work', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                )
-              },
-              { 
-                name: 'Date Night', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                  </svg>
-                )
-              },
-              { 
-                name: 'Weekend', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                )
-              },
-              { 
-                name: 'Events', 
-                icon: (
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                )
-              }
-            ].map((category, index) => (
-              <div 
-                key={category.name} 
-                className="group cursor-pointer"
-                onClick={() => window.location.href = `/products?occasion=${encodeURIComponent(category.name.toUpperCase())}`}
-              >
-                {/* White card with border and theme colored shadow on hover */}
+      {customCategories.length > 0 && (
+        <section className="relative py-6 sm:py-16 md:py-20 bg-white overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+            {/* Header */}
+            <div className="text-center mb-4 sm:mb-8">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 sm:mb-2 tracking-tight px-4">
+                Shop by <span className="font-serif italic" style={{ color: theme.primary }}>Occasion</span>
+              </h2>
+              <p className="text-gray-500 text-[10px] sm:text-sm max-w-xl mx-auto px-4">
+                Find the perfect look for every moment
+              </p>
+            </div>
+            
+            {/* Cards Grid - Small on mobile, bigger on desktop */}
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-4 md:gap-8 mb-6 sm:mb-12">
+              {customCategories.map((category) => (
                 <div 
-                  className="bg-white rounded-lg p-2 sm:p-5 md:p-8 border-2 border-gray-200 hover:-translate-y-1 transition-all duration-300"
-                  style={{
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 10px 25px ${theme.primary}40`;
-                    e.currentTarget.style.borderColor = theme.primary;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                  }}
+                  key={category.id} 
+                  className="group cursor-pointer"
+                  onClick={() => window.location.href = `/products?categoryId=${category.id}`}
                 >
-                  {/* Icon without background - gray color - smaller on mobile */}
-                  <div className="mx-auto mb-1 sm:mb-3 md:mb-6 flex items-center justify-center text-gray-600 group-hover:scale-110 transition-transform duration-300 scale-75 sm:scale-100">
-                    {category.icon}
+                  {/* White card with border and theme colored shadow on hover */}
+                  <div 
+                    className="bg-white rounded-lg p-2 sm:p-5 md:p-8 border-2 border-gray-200 hover:-translate-y-1 transition-all duration-300"
+                    style={{
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `0 10px 25px ${theme.primary}40`;
+                      e.currentTarget.style.borderColor = theme.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                    }}
+                  >
+                    {/* Icon without background - gray color - smaller on mobile */}
+                    <div 
+                      className="mx-auto mb-1 sm:mb-3 md:mb-6 flex items-center justify-center text-gray-600 group-hover:scale-110 transition-transform duration-300 scale-75 sm:scale-100"
+                      dangerouslySetInnerHTML={{ __html: category.icon || '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>' }}
+                    />
+                    
+                    {/* Category name - smaller on mobile */}
+                    <p className="text-center text-[8px] sm:text-[10px] md:text-sm tracking-tight text-gray-700 leading-tight">
+                      {category.name}
+                    </p>
+                    
+                    {/* Description - hidden on mobile */}
+                    {category.description && (
+                      <p className="text-center text-[7px] sm:text-[8px] text-gray-500 mt-1 hidden sm:block">
+                        {category.description}
+                      </p>
+                    )}
                   </div>
-                  
-                  {/* Category name - smaller on mobile */}
-                  <p className="text-center text-[8px] sm:text-[10px] md:text-sm tracking-tight text-gray-700 leading-tight">
-                    {category.name}
-                  </p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            
+            {/* Bottom CTA */}
+            <div className="text-center">
+              <button 
+                onClick={() => window.location.href = '/products'}
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-10 py-2 sm:py-3.5 text-white font-semibold text-[10px] sm:text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
+                style={{ backgroundColor: theme.primary }}
+              >
+                <span>Explore All Collections</span>
+                <svg className="w-2.5 h-2.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </button>
+            </div>
           </div>
-          
-          {/* Bottom CTA */}
-          <div className="text-center">
-            <button 
-              onClick={() => window.location.href = '/products'}
-              className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-10 py-2 sm:py-3.5 text-white font-semibold text-[10px] sm:text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
-              style={{ backgroundColor: '#8B1538' }}
-            >
-              <span>Explore All Collections</span>
-              <svg className="w-2.5 h-2.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Trending Now Section */}
       <section className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
