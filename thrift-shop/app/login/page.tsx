@@ -51,7 +51,7 @@ export default function LoginPage() {
     try {
       const emailToUse = userInfo.email || formData.email;
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/send-verification-code`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/send-verification-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,7 +85,7 @@ export default function LoginPage() {
     try {
       const emailToUse = userInfo.email || formData.email;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-code`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
