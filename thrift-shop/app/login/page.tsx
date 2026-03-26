@@ -177,8 +177,16 @@ export default function LoginPage() {
           }
         }, 1500);
       } else {
-        // Signup flow - send verification code
-        await handleSendVerificationCode();
+        // Signup flow - try to send verification code
+        try {
+          await handleSendVerificationCode();
+        } catch (err) {
+          // If verification fails, allow signup without it
+          setError('Email verification unavailable. Proceeding with signup...');
+          setTimeout(async () => {
+            await handleRegister();
+          }, 1000);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

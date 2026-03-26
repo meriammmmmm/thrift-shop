@@ -132,24 +132,22 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // REQUIRE verification code
-    if (!verificationCode) {
-      return res.status(400).json({ error: 'Please verify your email first' });
-    }
+    // Make verification OPTIONAL for now (until email is configured)
+    if (verificationCode) {
+      // Verify the code if provided
+      const verification = await db.get(
+        'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 1 ORDER BY created_at DESC LIMIT 1',
+        [email, verificationCode, 'registration']
+      );
 
-    // Verify the code
-    const verification = await db.get(
-      'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 1 ORDER BY created_at DESC LIMIT 1',
-      [email, verificationCode, 'registration']
-    );
+      if (!verification) {
+        return res.status(400).json({ error: 'Invalid or unverified verification code' });
+      }
 
-    if (!verification) {
-      return res.status(400).json({ error: 'Invalid or unverified verification code' });
-    }
-
-    // Check if expired
-    if (new Date(verification.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Verification code has expired' });
+      // Check if expired
+      if (new Date(verification.expires_at) < new Date()) {
+        return res.status(400).json({ error: 'Verification code has expired' });
+      }
     }
 
     // Check if user exists
