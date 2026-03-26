@@ -20,8 +20,8 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    // Filter products
-    let whereClause = 'WHERE 1=1';
+    // Filter products by visibility (show only visible products, treat NULL as visible)
+    let whereClause = 'WHERE (p.visible = true OR p.visible IS NULL)';
     let params = [];
 
     // Filter by company if specified
@@ -592,9 +592,13 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    // Filter by company
+    // Filter by company and visibility
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
+    
+    // Add visibility filter (show only visible products, treat NULL as visible)
+    whereClause += ' AND (p.visible = true OR p.visible IS NULL)';
+    
 
     // Build where clause
     if (category && category !== 'All') {
