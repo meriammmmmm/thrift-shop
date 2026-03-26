@@ -114,6 +114,7 @@ export default function LoginPage() {
 
   // Register after verification
   const handleRegister = async () => {
+    setLoading(true);
     try {
       const emailToUse = userInfo.email || formData.email;
       const data = await api.register({
@@ -121,7 +122,7 @@ export default function LoginPage() {
         password: formData.password,
         name: userInfo.fullName || formData.name,
         companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
-        verificationCode: verificationCode,
+        // Don't send verification code - it's optional now
         userInfo: {
           fullName: userInfo.fullName,
           email: emailToUse,
@@ -147,7 +148,9 @@ export default function LoginPage() {
       }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
-      setStep('form'); // Go back to form if registration fails
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,16 +180,9 @@ export default function LoginPage() {
           }
         }, 1500);
       } else {
-        // Signup flow - try to send verification code
-        try {
-          await handleSendVerificationCode();
-        } catch (err) {
-          // If verification fails, allow signup without it
-          setError('Email verification unavailable. Proceeding with signup...');
-          setTimeout(async () => {
-            await handleRegister();
-          }, 1000);
-        }
+        // Signup flow - SKIP VERIFICATION FOR NOW
+        // Just register directly without verification
+        await handleRegister();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
