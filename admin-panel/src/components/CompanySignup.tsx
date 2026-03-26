@@ -129,6 +129,7 @@ const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackTo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Country to currency mapping
   const countryToCurrency: Record<string, { currency: string; symbol: string }> = {
@@ -585,15 +586,24 @@ const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackTo
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Admin Password *</label>
-                    <input
-                      type="password"
-                      name="admin_password"
-                      value={formData.admin_password}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
-                      placeholder="Strong password"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="admin_password"
+                        value={formData.admin_password}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+                        placeholder="Strong password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      >
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
                   </div>
 
                   <div>

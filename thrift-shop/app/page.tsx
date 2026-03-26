@@ -199,13 +199,10 @@ export default function Home() {
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
   const brands = ['All', ...Array.from(new Set(products.map(p => p.brand)))];
 
-  // Weekly products for Daily Edit
-  const weeklyProducts = products.filter(product => {
-    const productDate = new Date(product.dateAdded);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return productDate >= oneWeekAgo;
-  });
+  // Get newest products (last 2 weeks) for New Arrivals section
+  const newArrivals = products
+    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+    .slice(0, 10); // Show top 10 newest products
 
   useEffect(() => {
     const token = localStorage.getItem('auth-token');
@@ -302,7 +299,7 @@ export default function Home() {
     animateElements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [products, testimonials]);
+  }, [products, testimonials, customCategories]);
 
   // Auto-rotate hero
   useEffect(() => {
@@ -531,10 +528,11 @@ export default function Home() {
   if (themeLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading theme...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -542,10 +540,11 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: theme.primary }}></div>
-          <p className="text-gray-600">Loading {company?.name || 'company'} products...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -589,12 +588,6 @@ export default function Home() {
                   className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
                 >
                   SHOP
-                </button>
-                <button 
-                  onClick={() => window.location.href = '/daily-edit'}
-                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
-                >
-                  DAILY
                 </button>
               </div>
 
@@ -736,10 +729,10 @@ export default function Home() {
 
       {/* Featured Categories - Elegant Mery Rose Style */}
       {customCategories.length > 0 && (
-        <section className="relative py-6 sm:py-16 md:py-20 bg-white overflow-hidden">
+        <section className="relative py-6 sm:py-16 md:py-20 bg-white overflow-hidden scroll-animate scroll-fadeInUp">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
             {/* Header */}
-            <div className="text-center mb-4 sm:mb-8">
+            <div className="text-center mb-4 sm:mb-8 scroll-animate scroll-fadeInDown">
               <h2 className="text-lg sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 sm:mb-2 tracking-tight px-4">
                 Shop by <span className="font-serif italic" style={{ color: theme.primary }}>Occasion</span>
               </h2>
@@ -750,10 +743,10 @@ export default function Home() {
             
             {/* Cards Grid - Small on mobile, bigger on desktop */}
             <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-4 md:gap-8 mb-6 sm:mb-12">
-              {customCategories.map((category) => (
+              {customCategories.map((category, index) => (
                 <div 
                   key={category.id} 
-                  className="group cursor-pointer"
+                  className={`group cursor-pointer scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)}`}
                   onClick={() => window.location.href = `/products?categoryId=${category.id}`}
                 >
                   {/* White card with border and theme colored shadow on hover */}
@@ -794,7 +787,7 @@ export default function Home() {
             </div>
             
             {/* Bottom CTA */}
-            <div className="text-center">
+            <div className="text-center scroll-animate scroll-fadeInUp">
               <button 
                 onClick={() => window.location.href = '/products'}
                 className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-10 py-2 sm:py-3.5 text-white font-semibold text-[10px] sm:text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
@@ -810,8 +803,148 @@ export default function Home() {
         </section>
       )}
 
+      {/* Featured Brands Section */}
+      {(() => {
+        // List of well-known fashion brands to display
+        const famousBrands = [
+          'Zara', 'H&M', 'Mango', 'Nike', 'Adidas', 'Gucci', 'Prada', 'Chanel', 
+          'Dior', 'Louis Vuitton', 'Versace', 'Armani', 'Burberry', 'Fendi',
+          'Balenciaga', 'Givenchy', 'Valentino', 'Saint Laurent', 'Hermès',
+          'Celine', 'Loewe', 'Bottega Veneta', 'Alexander McQueen', 'Dolce & Gabbana',
+          'Ralph Lauren', 'Tommy Hilfiger', 'Calvin Klein', 'Michael Kors',
+          'Coach', 'Kate Spade', 'Tory Burch', 'Marc Jacobs', 'Diane von Furstenberg',
+          'Stella McCartney', 'Isabel Marant', 'Acne Studios', 'Ganni', 'Reformation',
+          'Rag & Bone', 'Theory', 'Vince', 'Equipment', 'Frame', 'Paige',
+          'AG Jeans', 'Citizens of Humanity', '7 For All Mankind', 'J Brand',
+          'Levi\'s', 'Wrangler', 'Lee', 'Diesel', 'G-Star', 'True Religion',
+          'Massimo Dutti', 'COS', 'Arket', '& Other Stories', 'Monki',
+          'Uniqlo', 'Muji', 'Everlane', 'Madewell', 'J.Crew', 'Banana Republic',
+          'Gap', 'Old Navy', 'American Eagle', 'Abercrombie & Fitch', 'Hollister',
+          'Urban Outfitters', 'Free People', 'Anthropologie', 'Topshop', 'ASOS',
+          'Boohoo', 'PrettyLittleThing', 'Missguided', 'Nasty Gal', 'Revolve',
+          'Zimmermann', 'Ulla Johnson', 'Staud', 'Réalisation Par', 'Faithfull',
+          'For Love & Lemons', 'Lovers + Friends', 'NBD', 'Superdown', 'Song of Style',
+          'House of CB', 'Oh Polly', 'Meshki', 'Sabo Skirt', 'Princess Polly',
+          'Showpo', 'Tiger Mist', 'Beginning Boutique', 'White Fox', 'Peppermayo',
+          'Bershka', 'Pull&Bear', 'Stradivarius', 'Oysho', 'Lefties',
+          'Reserved', 'Sinsay', 'Cropp', 'House', 'Mohito',
+          'New Look', 'River Island', 'Dorothy Perkins', 'Miss Selfridge', 'Warehouse',
+          'Karen Millen', 'Coast', 'Oasis', 'Whistles', 'Reiss',
+          'Ted Baker', 'AllSaints', 'French Connection', 'Superdry', 'Jack Wills',
+          'Hollister Co.', 'Gilly Hicks', 'Aerie', 'Victoria\'s Secret', 'PINK',
+          'La Senza', 'Intimissimi', 'Calzedonia', 'Tezenis', 'Yamamay',
+          'Triumph', 'Wonderbra', 'Playtex', 'Maidenform', 'Wacoal',
+          'Natori', 'Hanky Panky', 'Cosabella', 'Eberjey', 'Only Hearts',
+          'Fleur du Mal', 'Agent Provocateur', 'La Perla', 'Coco de Mer', 'Bordelle',
+          'Kiki de Montparnasse', 'Journelle', 'Lonely', 'Negative Underwear', 'ThirdLove',
+          'Savage X Fenty', 'Skims', 'Yitty', 'Good American', 'Fabletics',
+          'Outdoor Voices', 'Alo Yoga', 'Lululemon', 'Athleta', 'Sweaty Betty',
+          'Gymshark', 'Beyond Yoga', 'Varley', 'Year of Ours', 'Set Active',
+          'Girlfriend Collective', 'Outdoor Voices', 'P.E Nation', 'The Upside', 'Splits59',
+          'Koral', 'Alala', 'Bandier', 'Carbon38', 'Ultracor',
+          'Puma', 'Reebok', 'New Balance', 'Asics', 'Under Armour',
+          'Columbia', 'The North Face', 'Patagonia', 'Arc\'teryx', 'Canada Goose',
+          'Moncler', 'Stone Island', 'CP Company', 'Barbour', 'Belstaff',
+          'Mackage', 'Moose Knuckles', 'Nobis', 'Rudsak', 'Soia & Kyo',
+          'Aritzia', 'Wilfred', 'Babaton', 'TNA', 'Sunday Best',
+          'Dynamite', 'Garage', 'Ardene', 'Sirens', 'Smart Set',
+          'Ricki\'s', 'Cleo', 'Addition Elle', 'Penningtons', 'Reitmans',
+          'Shein', 'Romwe', 'Zaful', 'Cupshe', 'Chicwish',
+          'Lulus', 'Tobi', 'Shop Bop', 'Net-a-Porter', 'Farfetch',
+          'Mytheresa', 'MatchesFashion', 'Ssense', 'Luisaviaroma', 'Browns',
+          'Selfridges', 'Harrods', 'Harvey Nichols', 'Liberty', 'Fortnum & Mason',
+          'Nordstrom', 'Bloomingdale\'s', 'Neiman Marcus', 'Saks Fifth Avenue', 'Bergdorf Goodman',
+          'Barneys', 'Intermix', 'Scoop', 'Kirna Zabête', 'Fivestory'
+        ];
+        
+        // Filter brands to only show famous ones
+        const displayBrands = brands
+          .filter(brand => brand !== 'All')
+          .filter(brand => famousBrands.some(famous => 
+            brand.toLowerCase() === famous.toLowerCase()
+          ))
+          .slice(0, 12);
+        
+        // Only show section if there are famous brands
+        if (displayBrands.length === 0) return null;
+        
+        return (
+          <section className="relative py-6 sm:py-16 md:py-20 bg-gray-50 overflow-hidden scroll-animate scroll-fadeInUp">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+              {/* Header */}
+              <div className="text-center mb-4 sm:mb-8 scroll-animate scroll-fadeInDown">
+                <h2 className="text-lg sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 sm:mb-2 tracking-tight px-4">
+                  Shop by <span className="font-serif italic" style={{ color: theme.primary }}>Brand</span>
+                </h2>
+                <p className="text-gray-500 text-[10px] sm:text-sm max-w-xl mx-auto px-4">
+                  Discover your favorite designers
+                </p>
+              </div>
+              
+              {/* Brands Grid */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-4 md:gap-6 mb-4 sm:mb-8">
+                {displayBrands.map((brand, index) => (
+                  <div 
+                    key={brand} 
+                    className={`group cursor-pointer scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)} w-[120px] sm:w-[140px] md:w-[160px]`}
+                    onClick={() => {
+                      window.location.href = `/products?brand=${encodeURIComponent(brand)}`;
+                    }}
+                  >
+                    {/* White card with border and theme colored shadow on hover */}
+                    <div 
+                      className="bg-white rounded-lg p-2 sm:p-5 md:p-8 border-2 border-gray-200 hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center min-h-[60px] sm:min-h-[100px] gap-1 sm:gap-2"
+                      style={{
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = `0 10px 25px ${theme.primary}40`;
+                        e.currentTarget.style.borderColor = theme.primary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                      }}
+                    >
+                      {/* Pretty brand icon */}
+                      <div 
+                        className="flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform duration-300"
+                        style={{ color: theme.primary }}
+                      >
+                        <svg className="w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                      </div>
+                      
+                      {/* Brand name */}
+                      <p className="text-center text-[8px] sm:text-[10px] md:text-sm font-medium tracking-tight text-gray-700 leading-tight uppercase">
+                        {brand}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Bottom CTA */}
+              <div className="text-center scroll-animate scroll-fadeInUp">
+                <button 
+                  onClick={() => window.location.href = '/products'}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-10 py-2 sm:py-3.5 text-white font-semibold text-[10px] sm:text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
+                  style={{ backgroundColor: theme.primary }}
+                >
+                  <span>View All Products</span>
+                  <svg className="w-2.5 h-2.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Trending Now Section */}
-      <section className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
+      <section id="products-section" className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5" style={{ 
           backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
           backgroundSize: '40px 40px',
@@ -974,12 +1107,12 @@ export default function Home() {
       {/* Clean Out Service Section */}
      
 
-      {/* Daily Edit Section - Overlapping Circles Carousel */}
+      {/* New Arrivals Section - Overlapping Circles Carousel */}
       <section className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&h=500&fit=crop" 
-            alt="Daily Edit background"
+            alt="New Arrivals background"
             className="w-full h-full object-cover opacity-50"
           />
           <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${theme.primary}99, ${theme.primary}aa)` }}></div>
@@ -991,10 +1124,9 @@ export default function Home() {
             {/* Left Arrow */}
             <button 
               onClick={() => {
-                const products = weeklyProducts.length > 0 ? weeklyProducts : sortedProducts;
                 setCurrentDailyEditIndex(prev => {
                   const newIndex = prev - 1;
-                  return newIndex < 0 ? products.length - 1 : newIndex;
+                  return newIndex < 0 ? newArrivals.length - 1 : newIndex;
                 });
               }}
               className="p-2 sm:p-3 text-white/60 hover:text-white transition-all flex-shrink-0"
@@ -1008,8 +1140,7 @@ export default function Home() {
             {/* Circles Container - Centered with overlapping circles */}
             <div className="flex items-center justify-center mx-1 sm:mx-2">
               {(() => {
-                const products = weeklyProducts.length > 0 ? weeklyProducts : sortedProducts;
-                if (products.length === 0) return null;
+                if (newArrivals.length === 0) return null;
                 
                 const displayProducts = [];
                 
@@ -1018,8 +1149,8 @@ export default function Home() {
                 const range = isMobile ? 1 : 2;
                 
                 for (let i = -range; i <= range; i++) {
-                  let index = (currentDailyEditIndex + i + products.length) % products.length;
-                  const product = products[index];
+                  let index = (currentDailyEditIndex + i + newArrivals.length) % newArrivals.length;
+                  const product = newArrivals[index];
                   if (product) {
                     displayProducts.push({ product, position: i });
                   }
@@ -1075,10 +1206,9 @@ export default function Home() {
             {/* Right Arrow */}
             <button 
               onClick={() => {
-                const products = weeklyProducts.length > 0 ? weeklyProducts : sortedProducts;
                 setCurrentDailyEditIndex(prev => {
                   const newIndex = prev + 1;
-                  return newIndex >= products.length ? 0 : newIndex;
+                  return newIndex >= newArrivals.length ? 0 : newIndex;
                 });
               }}
               className="p-2 sm:p-3 text-white/60 hover:text-white transition-all flex-shrink-0"
@@ -1092,79 +1222,94 @@ export default function Home() {
 
           {/* Content */}
           <div className="text-center animate-fadeIn px-4">
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-light mb-1.5 sm:mb-3 tracking-tight">Daily Edit</h2>
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-light mb-1.5 sm:mb-3 tracking-tight">New Arrivals</h2>
             <p className="text-[9px] sm:text-xs mb-4 sm:mb-8 opacity-80 tracking-wide">
-              Shop {weeklyProducts.length > 0 ? weeklyProducts.length : sortedProducts.length} finds curated just for you, refreshed daily.
+              Discover {newArrivals.length} fresh finds just added to our collection.
             </p>
             
             <button 
-              onClick={() => window.location.href = '/daily-edit'}
+              onClick={() => window.location.href = '/products'}
               className="px-4 sm:px-9 py-1.5 sm:py-3 border border-white/80 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase hover:bg-white hover:text-gray-900 transition-all duration-300"
             >
-              Shop Your Edit
+              Shop New Arrivals
             </button>
           </div>
         </div>
       </section>
 
-      {/* Why Thrift Section */}
+      {/* Why Mery Rose Section */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16 reveal-on-scroll">
             <p className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: theme.primary }}>
-              WHY THRIFT?
+              WHY MERY ROSE?
             </p>
             <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-6">
-              Fashion That <span className="italic font-serif">Matters</span>
+              Luxury Meets <span className="italic font-serif">Sustainability</span>
             </h2>
             <p className="text-gray-600 text-base max-w-3xl mx-auto leading-relaxed">
-              We believe the most sustainable garment is the one already made. Our mission is to make secondhand shopping effortless, stylish, and accessible.
+              Every piece in our collection is carefully curated to bring you designer quality at accessible prices, while making a positive impact on our planet.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            {/* Circular Fashion */}
-            <div className="bg-gray-50 rounded-2xl p-10 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInLeft stagger-1 card-hover-enhanced">
-              <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15` }}>
-                <svg className="w-8 h-8" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
+            {/* Hand-Selected Quality */}
+            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInLeft stagger-1 card-hover-enhanced">
+              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15` }}>
+                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-medium text-gray-900 text-center mb-4">
-                Circular Fashion
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+                Hand-Selected
               </h3>
               <p className="text-gray-600 text-sm text-center leading-relaxed">
-                Every piece we sell extends the life of a garment, keeping it out of landfills and in your wardrobe.
+                Every item is personally chosen and inspected for quality, authenticity, and style.
               </p>
             </div>
 
-            {/* Curated with Care */}
-            <div className="bg-gray-50 rounded-2xl p-10 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInUp stagger-2 card-hover-enhanced">
-              <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.5s' }}>
-                <svg className="w-8 h-8" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            {/* Like-New Condition */}
+            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInUp stagger-2 card-hover-enhanced">
+              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.3s' }}>
+                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-medium text-gray-900 text-center mb-4">
-                Curated with Care
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+                Like-New Quality
               </h3>
               <p className="text-gray-600 text-sm text-center leading-relaxed">
-                Each item is hand-selected, inspected, and styled by our team of vintage fashion experts.
+                Premium pieces in excellent condition that look and feel brand new.
               </p>
             </div>
 
-            {/* Planet First */}
-            <div className="bg-gray-50 rounded-2xl p-10 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInRight stagger-3 card-hover-enhanced">
-              <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '1s' }}>
-                <svg className="w-8 h-8" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Sustainable Fashion */}
+            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInUp stagger-3 card-hover-enhanced">
+              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.6s' }}>
+                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-medium text-gray-900 text-center mb-4">
-                Planet First
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+                Eco-Friendly
               </h3>
               <p className="text-gray-600 text-sm text-center leading-relaxed">
-                Buying secondhand saves an average of 700 gallons of water per garment compared to buying new.
+                Reduce fashion waste and your carbon footprint with every purchase.
+              </p>
+            </div>
+
+            {/* Designer Brands */}
+            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInRight stagger-4 card-hover-enhanced">
+              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.9s' }}>
+                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+                Designer Brands
+              </h3>
+              <p className="text-gray-600 text-sm text-center leading-relaxed">
+                Access luxury fashion at a fraction of the original price.
               </p>
             </div>
           </div>
@@ -1346,8 +1491,7 @@ export default function Home() {
               <h4 className="text-sm font-bold mb-4 tracking-wider">SHOP</h4>
               <ul className="space-y-3 text-sm">
                 <li><button onClick={() => window.location.href = '/products'} className="text-gray-400 hover:text-white transition-colors">All Products</button></li>
-                <li><button onClick={() => window.location.href = '/daily-edit'} className="text-gray-400 hover:text-white transition-colors">Daily Edit</button></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">New Arrivals</a></li>
+                <li><button onClick={() => window.location.href = '/products?sort=newest'} className="text-gray-400 hover:text-white transition-colors">New Arrivals</button></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Sale</a></li>
               </ul>
             </div>

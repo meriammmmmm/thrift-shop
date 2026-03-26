@@ -424,10 +424,11 @@ export default function DailyEditPage() {
   if (themeLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading theme...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -436,10 +437,11 @@ export default function DailyEditPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: theme.primary }}></div>
-          <p className="text-gray-600">Loading products...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -484,12 +486,6 @@ export default function DailyEditPage() {
                   className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
                 >
                   SHOP
-                </button>
-                <button 
-                  onClick={() => window.location.href = '/daily-edit'}
-                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
-                >
-                  DAILY
                 </button>
               </div>
 

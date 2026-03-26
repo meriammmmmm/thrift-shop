@@ -25,6 +25,7 @@ export default function ProductsPage() {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedBrand, setSelectedBrand] = useState('All');
   const [selectedOccasion, setSelectedOccasion] = useState('All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -265,6 +266,7 @@ export default function ProductsPage() {
       }
       
       const matchesCondition = selectedCondition === 'All' || product.condition === selectedCondition;
+      const matchesBrand = selectedBrand === 'All' || product.brand === selectedBrand;
       const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(product.size);
       
       // Price range filter
@@ -280,9 +282,9 @@ export default function ProductsPage() {
         }
       }
       
-      return matchesSearch && matchesCategory && matchesOccasion && matchesCondition && matchesSize && matchesPrice;
+      return matchesSearch && matchesCategory && matchesBrand && matchesOccasion && matchesCondition && matchesSize && matchesPrice;
     });
-  }, [products, searchQuery, selectedCategory, selectedOccasion, selectedCondition, selectedSizes, priceRange, customPriceMin, customPriceMax, priceRangeMap]);
+  }, [products, searchQuery, selectedCategory, selectedBrand, selectedOccasion, selectedCondition, selectedSizes, priceRange, customPriceMin, customPriceMax, priceRangeMap]);
 
   // Optimized sorting with memoization
   const sortedProducts = useMemo(() => {
@@ -321,6 +323,11 @@ export default function ProductsPage() {
     const occasionParam = urlParams.get('occasion');
     if (occasionParam) {
       setSelectedOccasion(occasionParam);
+    }
+    
+    const brandParam = urlParams.get('brand');
+    if (brandParam) {
+      setSelectedBrand(brandParam);
     }
     
     // Load products from API
@@ -657,10 +664,11 @@ export default function ProductsPage() {
   if (themeLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading theme...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -669,10 +677,11 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: theme.primary }}></div>
-          <p className="text-gray-600">Loading {company?.name || 'company'} products...</p>
-        </div>
+        <img 
+          src="/images/mery-rose-logo.png" 
+          alt="Loading..." 
+          className="w-48 h-auto animate-pulse"
+        />
       </div>
     );
   }
@@ -717,12 +726,6 @@ export default function ProductsPage() {
                   className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
                 >
                   SHOP
-                </button>
-                <button 
-                  onClick={() => window.location.href = '/daily-edit'}
-                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
-                >
-                  DAILY
                 </button>
               </div>
 

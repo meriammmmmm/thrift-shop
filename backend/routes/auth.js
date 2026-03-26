@@ -4,23 +4,41 @@ const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { generateVerificationCode, sendVerificationEmail } = require('../services/emailService');
+const { sendVerificationSMS, sendVerificationWhatsApp } = require('../services/smsService');
 
 const router = express.Router();
 
-// Send verification code
+// Send verification code (Email or Phone)
 router.post('/send-verification-code', async (req, res) => {
   try {
-    const { email, type = 'registration' } = req.body;
+    const { email, phone, method = 'email', type = 'registration' } = req.body;
 
-    if (!email) {
+    // Validate input based on method
+    if (method === 'email' && !email) {
       return res.status(400).json({ error: 'Email is required' });
     }
+    if ((method === 'sms' || method === 'whatsapp') && !phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    const identifier = method === 'email' ? email : phone;
 
     // Only check if user exists for registration type
     if (type === 'registration') {
-      const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
-      if (existingUser) {
-        return res.status(400).json({ error: 'Email already registered' });
+      if (method === 'email') {
+        const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingUser) {
+          return res.status(400).json({ error: 'Email already registered' });
+        }
+      } else {
+        // Check if phone is already registered (if you have phone in users table)
+        const existingUser = await db.get(
+          'SELECT u.id FROM users u JOIN user_info ui ON u.id = ui.user_id WHERE ui.phone = ?', 
+          [phone]
+        );
+        if (existingUser) {
+          return res.status(400).json({ error: 'Phone number already registered' });
+        }
       }
     }
 
@@ -31,36 +49,53 @@ router.post('/send-verification-code', async (req, res) => {
     // Save code to database
     await db.run(
       'INSERT INTO verification_codes (email, code, type, expires_at) VALUES (?, ?, ?, ?)',
-      [email, code, type, expiresAt.toISOString()]
+      [identifier, code, type, expiresAt.toISOString()]
     );
 
-    // Send email
-    const emailResult = await sendVerificationEmail(email, code);
+    // Send verification based on method
+    let result;
+    if (method === 'email') {
+      result = await sendVerificationEmail(email, code);
+    } else if (method === 'sms') {
+      result = await sendVerificationSMS(phone, code);
+    } else if (method === 'whatsapp') {
+      result = await sendVerificationWhatsApp(phone, code);
+    } else {
+      return res.status(400).json({ error: 'Invalid verification method' });
+    }
     
-    if (!emailResult.success) {
-      return res.status(500).json({ error: 'Failed to send verification email' });
+    if (!result.success) {
+      return res.status(500).json({ 
+        error: result.error || 'Failed to send verification code',
+        details: result.dev ? 'Check console for code (development mode)' : undefined
+      });
     }
 
-    res.json({ message: 'Verification code sent to your email' });
+    res.json({ 
+      message: `Verification code sent to your ${method === 'email' ? 'email' : 'phone'}`,
+      dev: result.dev || false
+    });
   } catch (error) {
     console.error('Send verification code error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Verify code
+// Verify code (Email or Phone)
 router.post('/verify-code', async (req, res) => {
   try {
-    const { email, code } = req.body;
+    const { email, phone, code, method = 'email' } = req.body;
 
-    if (!email || !code) {
-      return res.status(400).json({ error: 'Email and code are required' });
+    const identifier = method === 'email' ? email : phone;
+
+    if (!identifier || !code) {
+      return res.status(400).json({ error: `${method === 'email' ? 'Email' : 'Phone'} and code are required` });
     }
 
     // Find verification code
     const verification = await db.get(
       'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1',
-      [email, code, 'registration']
+      [identifier, code, 'registration']
     );
 
     if (!verification) {
@@ -78,7 +113,10 @@ router.post('/verify-code', async (req, res) => {
       [verification.id]
     );
 
-    res.json({ message: 'Email verified successfully' });
+    res.json({ 
+      message: `${method === 'email' ? 'Email' : 'Phone'} verified successfully`,
+      verified: true
+    });
   } catch (error) {
     console.error('Verify code error:', error);
     res.status(500).json({ error: 'Internal server error' });
