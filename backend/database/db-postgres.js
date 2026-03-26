@@ -277,6 +277,10 @@ class PostgresDatabase {
       try {
         await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS visible BOOLEAN DEFAULT true`);
         console.log('✅ Added visible column to products table');
+        
+        // Update existing products to be visible by default
+        const updateResult = await client.query(`UPDATE products SET visible = true WHERE visible IS NULL`);
+        console.log(`✅ Updated ${updateResult.rowCount} products to be visible by default`);
       } catch (err) {
         console.log('⚠️ visible column migration:', err.message);
       }

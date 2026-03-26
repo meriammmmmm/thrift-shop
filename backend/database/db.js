@@ -450,6 +450,10 @@ class DatabaseWrapper {
     try {
       this.db.exec(`ALTER TABLE products ADD COLUMN visible BOOLEAN DEFAULT 1`);
       console.log('✅ Added visible column to products table');
+      
+      // Update existing products to be visible by default
+      this.db.exec(`UPDATE products SET visible = 1 WHERE visible IS NULL`);
+      console.log('✅ Updated existing products to be visible by default');
     } catch (err) {
       if (!err.message.includes('duplicate column name')) {
         console.error('Error adding visible to products:', err.message);

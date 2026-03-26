@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
 
     const offset = (page - 1) * limit;
     // Only show visible products to customers (if column exists)
+    // Use COALESCE to treat NULL as true (visible by default)
     let whereClause = 'WHERE 1=1';
     let params = [];
     
@@ -28,7 +29,8 @@ router.get('/', async (req, res) => {
     try {
       // Check if visible column exists by attempting to query it
       await db.get('SELECT visible FROM products LIMIT 1');
-      whereClause = 'WHERE p.visible = 1';
+      // Use COALESCE to treat NULL and true as visible
+      whereClause = 'WHERE (p.visible = true OR p.visible IS NULL)';
     } catch (err) {
       // Column doesn't exist yet, show all products
       console.log('⚠️ visible column does not exist yet, showing all products');
@@ -603,6 +605,7 @@ router.get('/company/:companyId', async (req, res) => {
 
     const offset = (page - 1) * limit;
     // Only show visible products to customers (if column exists)
+    // Use COALESCE to treat NULL as true (visible by default)
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
     
@@ -610,7 +613,8 @@ router.get('/company/:companyId', async (req, res) => {
     try {
       // Check if visible column exists by attempting to query it
       await db.get('SELECT visible FROM products LIMIT 1');
-      whereClause = 'WHERE p.visible = 1 AND p.company_id = ?';
+      // Use COALESCE to treat NULL and true as visible
+      whereClause = 'WHERE (p.visible = true OR p.visible IS NULL) AND p.company_id = ?';
     } catch (err) {
       // Column doesn't exist yet, show all products
       console.log('⚠️ visible column does not exist yet, showing all products');
