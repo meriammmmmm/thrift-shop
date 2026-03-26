@@ -103,6 +103,7 @@ class ApiClient {
     password: string; 
     name?: string;
     companyId?: number;
+    verificationCode?: string;
     userInfo?: {
       fullName: string;
       email: string;
