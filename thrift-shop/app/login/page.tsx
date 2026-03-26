@@ -18,6 +18,8 @@ interface UserInfo {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState<'form' | 'verify'>('form'); // Add verification step
+  const [verificationCode, setVerificationCode] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -40,6 +42,115 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  // Send verification code
+  const handleSendVerificationCode = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const emailToUse = userInfo.email || formData.email;
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/send-verification-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToUse,
+          method: 'email',
+          type: 'registration'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification code');
+      }
+
+      setSuccess('Verification code sent to your email!');
+      setStep('verify');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify code
+  const handleVerifyCode = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const emailToUse = userInfo.email || formData.email;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToUse,
+          code: verificationCode,
+          method: 'email'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid verification code');
+      }
+
+      setSuccess('Email verified! Creating your account...');
+      
+      // Now register with verified code
+      await handleRegister();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Register after verification
+  const handleRegister = async () => {
+    try {
+      const emailToUse = userInfo.email || formData.email;
+      const data = await api.register({
+        email: emailToUse,
+        password: formData.password,
+        name: userInfo.fullName || formData.name,
+        companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
+        verificationCode: verificationCode,
+        userInfo: {
+          fullName: userInfo.fullName,
+          email: emailToUse,
+          phone: userInfo.phone,
+          optionalPhone: userInfo.optionalPhone,
+          address: userInfo.address,
+          city: userInfo.city,
+          state: userInfo.state,
+          zipCode: userInfo.zipCode,
+          country: userInfo.country
+        }
+      });
+
+      // Store token and user data
+      localStorage.setItem('auth-token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      setSuccess('Account created successfully!');
+
+      // Redirect after success
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+      setStep('form'); // Go back to form if registration fails
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -47,46 +158,28 @@ export default function LoginPage() {
     setSuccess('');
 
     try {
-      let data;
       if (isLogin) {
-        data = await api.login({ email: formData.email, password: formData.password });
+        // Login flow (no verification needed)
+        const data = await api.login({ email: formData.email, password: formData.password });
         setSuccess('Signed in successfully!');
-      } else {
-        // For registration, use email from userInfo or fallback to formData
-        const emailToUse = userInfo.email || formData.email;
-        data = await api.register({
-          email: emailToUse,
-          password: formData.password,
-          name: userInfo.fullName || formData.name,
-          companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
-          userInfo: {
-            fullName: userInfo.fullName,
-            email: emailToUse,
-            phone: userInfo.phone,
-            optionalPhone: userInfo.optionalPhone,
-            address: userInfo.address,
-            city: userInfo.city,
-            state: userInfo.state,
-            zipCode: userInfo.zipCode,
-            country: userInfo.country
+
+        // Store token and user data
+        localStorage.setItem('auth-token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Show success message briefly before redirect
+        setTimeout(() => {
+          // Redirect based on user role
+          if (data.user.role === 'ADMIN') {
+            router.push('/admin');
+          } else {
+            router.push('/');
           }
-        });
-        setSuccess('Account created successfully!');
+        }, 1500);
+      } else {
+        // Signup flow - send verification code
+        await handleSendVerificationCode();
       }
-
-      // Store token and user data
-      localStorage.setItem('auth-token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Show success message briefly before redirect
-      setTimeout(() => {
-        // Redirect based on user role
-        if (data.user.role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/');
-        }
-      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -155,7 +248,83 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          {success && (
+            <div className="mb-6 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded text-sm">
+              {success}
+            </div>
+          )}
+
+          {/* Verification Step */}
+          {!isLogin && step === 'verify' && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="text-5xl mb-4">📧</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Check Your Email
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  We sent a 6-digit verification code to:
+                </p>
+                <p className="text-sm font-medium text-gray-900">
+                  {userInfo.email || formData.email}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Verification Code
+                </label>
+                <input
+                  id="verificationCode"
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  placeholder="123456"
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Code expires in 10 minutes
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleVerifyCode}
+                disabled={loading || verificationCode.length !== 6}
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Verifying...' : 'Verify & Create Account'}
+              </button>
+
+              <div className="text-center space-y-2">
+                <button
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={loading}
+                  className="text-sm text-[var(--color-primary)] hover:underline disabled:opacity-50"
+                >
+                  Didn't receive code? Resend
+                </button>
+                <br />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('form');
+                    setVerificationCode('');
+                    setError('');
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  ← Change email address
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Form Step */}
+          {(isLogin || step === 'form') && (
+            <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <>
                 {/* Personal Information */}
@@ -418,10 +587,11 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Create Account')}
+                {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Continue to Verification')}
               </button>
             </div>
           </form>
+          )}
 
         </div>
       </div>
