@@ -120,6 +120,7 @@ class DatabaseWrapper {
         condition TEXT,
         color TEXT,
         in_stock BOOLEAN DEFAULT 1,
+        visible BOOLEAN DEFAULT 1,
         material TEXT,
         measurements TEXT, -- JSON object
         care_instructions TEXT, -- JSON array
@@ -442,6 +443,16 @@ class DatabaseWrapper {
     } catch (err) {
       if (!err.message.includes('duplicate column name')) {
         console.error('Error adding reserved_by_order_id to products:', err.message);
+      }
+    }
+
+    // Add visible column to products table
+    try {
+      this.db.exec(`ALTER TABLE products ADD COLUMN visible BOOLEAN DEFAULT 1`);
+      console.log('✅ Added visible column to products table');
+    } catch (err) {
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Error adding visible to products:', err.message);
       }
     }
   }

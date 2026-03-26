@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Category Tables</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .container {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Create Category Tables</h1>
+    <p>This will create the missing <code>categories</code> and <code>category_products</code> tables in your database.</p>
+    
+    <div style="margin: 20px 0;">
+      <label>
+        Backend URL:
+        <input type="text" id="backendUrl" value="https://thrift-shop-backend-production.up.railway.app" style="width: 100%; padding: 8px; margin-top: 5px;">
+      </label>
+    </div>
+    
+    <div style="margin: 20px 0;">
+      <label>
+        Admin Token (from localStorage):
+        <input type="text" id="authToken" placeholder="Paste your auth token here" style="width: 100%; padding: 8px; margin-top: 5px;">
+      </label>
+      <button onclick="getTokenFromStorage()" style="margin-top: 10px; background: #2196F3;">
+        Get Token from Storage
+      </button>
+    </div>
+    
+    <button onclick="checkTables()">1. Check Existing Tables</button>
+    <button onclick="createTables()" style="background: #ff9800; margin-left: 10px;">2. Create Tables</button>
+    <button onclick="testEndpoint()" style="background: #9c27b0; margin-left: 10px;">3. Test Endpoint</button>
+    
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function getTokenFromStorage() {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        document.getElementById('authToken').value = token;
+        showResult('Token loaded from localStorage!', 'success');
+      } else {
+        showResult('No token found in localStorage. Please login first.', 'error');
+      }
+    }
+
+    function showResult(message, type = 'info') {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = `result ${type}`;
+      resultDiv.textContent = message;
+    }
+
+    async function checkTables() {
+      const backendUrl = document.getElementById('backendUrl').value;
+      const token = document.getElementById('authToken').value;
+
+      if (!token) {
+        showResult('Please provide an auth token!', 'error');
+        return;
+      }
+
+      showResult('Checking tables...', 'info');
+
+      try {
+        const response = await fetch(`${backendUrl}/api/admin/debug/tables`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          showResult(
+            `✅ Tables Check:\n\n` +
+            `Tables: ${JSON.stringify(data.tables, null, 2)}\n\n` +
+            `category_products exists: ${data.categoryProductsExists}\n\n` +
+            `Sample data: ${JSON.stringify(data.sampleData, null, 2)}`,
+            'success'
+          );
+        } else {
+          showResult(`❌ Error: ${JSON.stringify(data, null, 2)}`, 'error');
+        }
+      } catch (error) {
+        showResult(`❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function createTables() {
+      const backendUrl = document.getElementById('backendUrl').value;
+      const token = document.getElementById('authToken').value;
+
+      if (!token) {
+        showResult('Please provide an auth token!', 'error');
+        return;
+      }
+
+      showResult('Creating tables...', 'info');
+
+      try {
+        const response = await fetch(`${backendUrl}/api/admin/debug/create-category-products-table`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          showResult(
+            `✅ Tables Created Successfully!\n\n` +
+            `Message: ${data.message}\n\n` +
+            `Tables: ${JSON.stringify(data.tables, null, 2)}`,
+            'success'
+          );
+        } else {
+          showResult(`❌ Error: ${JSON.stringify(data, null, 2)}`, 'error');
+        }
+      } catch (error) {
+        showResult(`❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testEndpoint() {
+      const backendUrl = document.getElementById('backendUrl').value;
+      const token = document.getElementById('authToken').value;
+
+      if (!token) {
+        showResult('Please provide an auth token!', 'error');
+        return;
+      }
+
+      showResult('Testing category endpoint with ID 0...', 'info');
+
+      try {
+        const response = await fetch(`${backendUrl}/api/admin/categories/0/products`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        
+        showResult(
+          `Response Status: ${response.status}\n\n` +
+          `Response: ${JSON.stringify(data, null, 2)}`,
+          response.ok ? 'success' : 'error'
+        );
+      } catch (error) {
+        showResult(`❌ Network Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-load token on page load
+    window.addEventListener('load', () => {
+      getTokenFromStorage();
+    });
+  </script>
+</body>
+</html>

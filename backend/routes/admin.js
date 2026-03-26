@@ -1566,11 +1566,15 @@ router.post('/categories/:id/products', requireAdmin, async (req, res) => {
     const categoryId = req.params.id;
     const { productIds } = req.body;
 
+    console.log('📦 Assigning products to category:', { categoryId, companyId, productIds });
+
     if (!companyId) {
+      console.error('❌ No company ID for admin');
       return res.status(403).json({ error: 'Admin not associated with any company' });
     }
 
     if (!Array.isArray(productIds)) {
+      console.error('❌ productIds is not an array:', productIds);
       return res.status(400).json({ error: 'productIds must be an array' });
     }
 
@@ -1581,35 +1585,85 @@ router.post('/categories/:id/products', requireAdmin, async (req, res) => {
     );
 
     if (!category) {
+      console.error('❌ Category not found:', categoryId, companyId);
       return res.status(404).json({ error: 'Category not found' });
     }
 
+    console.log('✅ Category found:', category.name);
+
+    // First, ensure the category_products table exists
+    try {
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS category_products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          UNIQUE(category_id, product_id)
+        )
+      `);
+      console.log('✅ category_products table verified/created');
+    } catch (tableError) {
+      console.error('❌ Failed to create category_products table:', tableError);
+      return res.status(500).json({ 
+        error: 'Database table error', 
+        details: tableError.message 
+      });
+    }
+
     // Remove all existing product assignments for this category
-    await db.run('DELETE FROM category_products WHERE category_id = ?', [categoryId]);
+    try {
+      await db.run('DELETE FROM category_products WHERE category_id = ?', [categoryId]);
+      console.log('✅ Cleared existing assignments for category', categoryId);
+    } catch (deleteError) {
+      console.error('❌ Failed to delete existing assignments:', deleteError);
+      return res.status(500).json({ 
+        error: 'Failed to clear existing assignments', 
+        details: deleteError.message 
+      });
+    }
 
     // Add new product assignments
+    let assignedCount = 0;
     for (const productId of productIds) {
-      // Verify product belongs to the same company
-      const product = await db.get(
-        'SELECT id FROM products WHERE id = ? AND company_id = ?',
-        [productId, companyId]
-      );
-
-      if (product) {
-        await db.run(
-          'INSERT OR IGNORE INTO category_products (category_id, product_id) VALUES (?, ?)',
-          [categoryId, productId]
+      try {
+        // Verify product belongs to the same company
+        const product = await db.get(
+          'SELECT id FROM products WHERE id = ? AND company_id = ?',
+          [productId, companyId]
         );
+
+        if (product) {
+          await db.run(
+            'INSERT OR IGNORE INTO category_products (category_id, product_id) VALUES (?, ?)',
+            [categoryId, productId]
+          );
+          assignedCount++;
+          console.log(`✅ Assigned product ${productId} to category ${categoryId}`);
+        } else {
+          console.warn(`⚠️ Product ${productId} not found or doesn't belong to company ${companyId}`);
+        }
+      } catch (insertError) {
+        console.error(`❌ Failed to assign product ${productId}:`, insertError);
       }
     }
 
+    console.log(`✅ Successfully assigned ${assignedCount} products to category ${categoryId}`);
+
     res.json({
       message: 'Products assigned to category successfully',
-      assignedCount: productIds.length
+      assignedCount: assignedCount
     });
   } catch (error) {
-    console.error('Assign products to category error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Assign products to category error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

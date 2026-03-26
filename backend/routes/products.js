@@ -20,13 +20,23 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    // Show all products including sold out ones
+    // Only show visible products to customers (if column exists)
     let whereClause = 'WHERE 1=1';
     let params = [];
+    
+    // Try to filter by visible, but don't fail if column doesn't exist
+    try {
+      // Check if visible column exists by attempting to query it
+      await db.get('SELECT visible FROM products LIMIT 1');
+      whereClause = 'WHERE p.visible = 1';
+    } catch (err) {
+      // Column doesn't exist yet, show all products
+      console.log('⚠️ visible column does not exist yet, showing all products');
+    }
 
     // Filter by company if specified
     if (companyId) {
-      whereClause += ' AND p.company_id = ?';
+      whereClause += whereClause.includes('WHERE') ? ' AND p.company_id = ?' : ' WHERE p.company_id = ?';
       params.push(parseInt(companyId));
     }
 
@@ -176,7 +186,7 @@ router.post('/', requireAdmin, async (req, res) => {
     const {
       name, description, price, original_price, images, brand, size,
       category, condition, color, material, measurements, care_instructions,
-      tags, seller_name, seller_rating, seller_location
+      tags, seller_name, seller_rating, seller_location, visible
     } = req.body;
 
     if (!name || !price || !brand || !category) {
@@ -201,15 +211,35 @@ router.post('/', requireAdmin, async (req, res) => {
       INSERT INTO products (
         name, description, price, original_price, images, brand, size,
         category, condition, color, material, measurements, care_instructions,
-        tags, seller_name, seller_rating, seller_location, company_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        tags, seller_name, seller_rating, seller_location, company_id, visible
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       name, description, price, original_price,
       JSON.stringify(images || []), brand, size, category, condition, color,
       material, JSON.stringify(measurements || {}),
       JSON.stringify(care_instructions || []), JSON.stringify(tags || []),
-      seller_name, seller_rating, seller_location, companyId
-    ]);
+      seller_name, seller_rating, seller_location, companyId, 
+      visible !== undefined ? visible : true
+    ]).catch(async (insertError) => {
+      // If insert fails due to missing visible column, try without it
+      if (insertError.message && insertError.message.includes('no such column: visible')) {
+        console.log('⚠️ visible column does not exist yet, inserting without it');
+        return await db.run(`
+          INSERT INTO products (
+            name, description, price, original_price, images, brand, size,
+            category, condition, color, material, measurements, care_instructions,
+            tags, seller_name, seller_rating, seller_location, company_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          name, description, price, original_price,
+          JSON.stringify(images || []), brand, size, category, condition, color,
+          material, JSON.stringify(measurements || {}),
+          JSON.stringify(care_instructions || []), JSON.stringify(tags || []),
+          seller_name, seller_rating, seller_location, companyId
+        ]);
+      }
+      throw insertError;
+    });
 
     console.log('Product created with ID:', result.id);
     const product = await db.get('SELECT * FROM products WHERE id = ?', [result.id]);
@@ -286,10 +316,32 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
     const values = Object.values(updates);
 
-    await db.run(
-      `UPDATE products SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [...values, id]
-    );
+    try {
+      await db.run(
+        `UPDATE products SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [...values, id]
+      );
+    } catch (updateError) {
+      // If update fails due to missing column, try without visible field
+      if (updateError.message && updateError.message.includes('no such column: visible')) {
+        console.log('⚠️ visible column does not exist yet, updating without it');
+        delete updates.visible;
+        
+        if (Object.keys(updates).length === 0) {
+          return res.status(400).json({ error: 'No valid fields to update' });
+        }
+        
+        const fieldsWithoutVisible = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+        const valuesWithoutVisible = Object.values(updates);
+        
+        await db.run(
+          `UPDATE products SET ${fieldsWithoutVisible}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [...valuesWithoutVisible, id]
+        );
+      } else {
+        throw updateError;
+      }
+    }
 
     const product = await db.get('SELECT * FROM products WHERE id = ?', [id]);
     res.json(product);
@@ -550,9 +602,19 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    // Show all products including sold out ones
+    // Only show visible products to customers (if column exists)
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
+    
+    // Try to filter by visible, but don't fail if column doesn't exist
+    try {
+      // Check if visible column exists by attempting to query it
+      await db.get('SELECT visible FROM products LIMIT 1');
+      whereClause = 'WHERE p.visible = 1 AND p.company_id = ?';
+    } catch (err) {
+      // Column doesn't exist yet, show all products
+      console.log('⚠️ visible column does not exist yet, showing all products');
+    }
 
     // Build where clause
     if (category && category !== 'All') {

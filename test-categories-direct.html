@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Categories API</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    button { padding: 10px 20px; margin: 5px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+    .result { margin-top: 20px; padding: 15px; background: #f5f5f5; white-space: pre-wrap; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>Test Categories API</h1>
+  
+  <button onclick="test1()">Test GET /api/categories/public/1</button>
+  <button onclick="test2()">Test GET /api/admin/categories (needs token)</button>
+  
+  <div>
+    <input type="text" id="token" placeholder="Admin token" style="width: 400px; padding: 8px; margin: 10px 0;">
+    <button onclick="loadToken()">Load from Storage</button>
+  </div>
+  
+  <div id="result" class="result"></div>
+
+  <script>
+    const BASE = 'https://thrift-shop-backend-production.up.railway.app';
+    
+    function loadToken() {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        document.getElementById('token').value = token;
+        show('Token loaded!');
+      } else {
+        show('No token in storage');
+      }
+    }
+    
+    function show(msg) {
+      document.getElementById('result').textContent = msg;
+    }
+    
+    async function test1() {
+      show('Testing public endpoint...');
+      try {
+        const res = await fetch(`${BASE}/api/categories/public/1`);
+        const data = await res.json();
+        show(`Status: ${res.status}\n\n${JSON.stringify(data, null, 2)}`);
+      } catch (e) {
+        show(`Error: ${e.message}`);
+      }
+    }
+    
+    async function test2() {
+      const token = document.getElementById('token').value;
+      if (!token) {
+        show('Please enter token first!');
+        return;
+      }
+      
+      show('Testing admin endpoint...');
+      try {
+        const res = await fetch(`${BASE}/api/admin/categories`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        show(`Status: ${res.status}\n\n${JSON.stringify(data, null, 2)}`);
+      } catch (e) {
+        show(`Error: ${e.message}`);
+      }
+    }
+    
+    loadToken();
+  </script>
+</body>
+</html>

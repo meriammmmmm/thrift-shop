@@ -50,6 +50,7 @@ class PostgresDatabase {
           condition TEXT,
           color TEXT,
           in_stock BOOLEAN DEFAULT true,
+          visible BOOLEAN DEFAULT true,
           material TEXT,
           measurements TEXT,
           care_instructions TEXT,
@@ -269,6 +270,16 @@ class PostgresDatabase {
       `);
 
       console.log('✅ PostgreSQL tables initialized');
+
+      // Run migrations to add missing columns
+      console.log('🔄 Running migrations...');
+      
+      try {
+        await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS visible BOOLEAN DEFAULT true`);
+        console.log('✅ Added visible column to products table');
+      } catch (err) {
+        console.log('⚠️ visible column migration:', err.message);
+      }
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');
       if (result.rows.length === 0) {

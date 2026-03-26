@@ -271,6 +271,24 @@ app.listen(PORT, '0.0.0.0', async () => {
   console.log(`📁 Database path: ${process.env.DB_PATH || './database/thrift_shop.db'}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
   
+  // Create category_products table if it doesn't exist
+  try {
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS category_products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        UNIQUE(category_id, product_id)
+      )
+    `);
+    console.log('✅ category_products table initialized');
+  } catch (error) {
+    console.error('❌ Failed to create category_products table:', error);
+  }
+  
   // Run inventory fix
   await fixInventoryOnStartup();
 });

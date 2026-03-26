@@ -17,6 +17,7 @@ interface ProductDetails {
   category: string;
   occasions?: string[]; // Array of occasion names
   in_stock: boolean;
+  visible?: boolean;
   images?: string[];
   description?: string;
   created_at?: string;
@@ -1188,6 +1189,47 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                 />
               ) : (
                 <p className="text-gray-900 text-lg">{product.in_stock !== false ? 'In Stock' : 'Out of Stock'}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
+              {isEditing ? (
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditForm(prev => ({ ...prev, visible: !prev.visible }))}
+                    className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      editForm.visible !== false
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 focus:ring-green-500' 
+                        : 'bg-gray-300 focus:ring-gray-400'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        editForm.visible !== false ? 'translate-x-11' : 'translate-x-1'
+                      }`}
+                    >
+                      <i className={`fas ${editForm.visible !== false ? 'fa-check' : 'fa-times'} text-sm flex items-center justify-center h-full ${
+                        editForm.visible !== false ? 'text-green-600' : 'text-gray-400'
+                      }`}></i>
+                    </span>
+                  </button>
+                  <span className="text-gray-700">
+                    {editForm.visible !== false ? (
+                      <><i className="fas fa-eye text-green-600 mr-1"></i>Visible to customers</>
+                    ) : (
+                      <><i className="fas fa-eye-slash text-gray-400 mr-1"></i>Hidden (draft)</>
+                    )}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-gray-900 text-lg">
+                  {product.visible !== false ? (
+                    <><i className="fas fa-eye text-green-600 mr-2"></i>Visible</>
+                  ) : (
+                    <><i className="fas fa-eye-slash text-gray-400 mr-2"></i>Hidden</>
+                  )}
+                </p>
               )}
             </div>
             <div>

@@ -41,20 +41,44 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
   });
   const { showSuccess, showError } = useNotifications();
 
-  // Predefined category suggestions
+  // Predefined category suggestions (matching frontend occasions with SVG icons)
   const categoryPresets = [
-    { name: 'Party & Night Out', icon: '🎉', description: 'Glamorous outfits for parties and nightlife' },
-    { name: 'Casual Everyday', icon: '👕', description: 'Comfortable daily wear and casual outfits' },
-    { name: 'Work & Office', icon: '💼', description: 'Professional attire for workplace' },
-    { name: 'Date Night', icon: '💕', description: 'Romantic and stylish outfits for dates' },
-    { name: 'Weekend Vibes', icon: '🌟', description: 'Relaxed weekend and leisure wear' },
-    { name: 'Special Events', icon: '✨', description: 'Formal wear for special occasions' },
-    { name: 'Trendy', icon: '🔥', description: 'Latest fashion trends and viral styles' },
-    { name: 'Vintage', icon: '🕰️', description: 'Classic and retro fashion pieces' },
-    { name: 'Accessories', icon: '👜', description: 'Bags, jewelry, and fashion accessories' },
-    { name: 'Shoes', icon: '👠', description: 'All types of footwear' },
-    { name: 'Dresses', icon: '👗', description: 'All dress styles and lengths' },
-    { name: 'Tops', icon: '👚', description: 'Shirts, blouses, and upper wear' }
+    { 
+      name: 'Night Out', 
+      icon: '🌙',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>',
+      description: 'Glamorous outfits for parties and nightlife' 
+    },
+    { 
+      name: 'Casual', 
+      icon: '🏠',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>',
+      description: 'Comfortable daily wear and casual outfits' 
+    },
+    { 
+      name: 'Work', 
+      icon: '📋',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+      description: 'Professional attire for workplace' 
+    },
+    { 
+      name: 'Date Night', 
+      icon: '✨',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>',
+      description: 'Romantic and stylish outfits for dates' 
+    },
+    { 
+      name: 'Weekend', 
+      icon: '😊',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      description: 'Relaxed weekend and leisure wear' 
+    },
+    { 
+      name: 'Events', 
+      icon: '📅',
+      svgIcon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+      description: 'Formal wear for special occasions' 
+    }
   ];
 
   useEffect(() => {
@@ -271,9 +295,58 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
     setFormData({
       name: preset.name,
       description: preset.description,
-      icon: preset.icon,
+      icon: preset.svgIcon, // Save the SVG icon
       parent_id: ''
     });
+  };
+
+  const createAllPresets = async () => {
+    try {
+      setLoading(true);
+      let successCount = 0;
+      let skippedCount = 0;
+
+      for (const preset of categoryPresets) {
+        // Check if category already exists
+        const exists = categories.some(cat => cat.name.toLowerCase() === preset.name.toLowerCase());
+        if (exists) {
+          skippedCount++;
+          continue;
+        }
+
+        // Create the category
+        const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            name: preset.name,
+            description: preset.description,
+            icon: preset.svgIcon,
+            parent_id: null
+          })
+        });
+
+        if (response.ok) {
+          successCount++;
+        }
+      }
+
+      await loadCategories();
+      
+      if (successCount > 0) {
+        showSuccess('Success', `Created ${successCount} occasion categories! ${skippedCount > 0 ? `(${skippedCount} already existed)` : ''}`);
+      } else if (skippedCount > 0) {
+        showSuccess('Info', 'All occasion categories already exist!');
+      }
+    } catch (error) {
+      console.error('Create all presets error:', error);
+      showError('Error', 'Failed to create some categories');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -322,18 +395,45 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
 
           {/* Category Presets */}
           <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Presets:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-700">Quick Presets (Click to use):</h4>
+              <button
+                type="button"
+                onClick={createAllPresets}
+                disabled={loading}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-magic mr-2"></i>
+                    Create All 6 Occasions
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {categoryPresets.map((preset, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => usePreset(preset)}
-                  className="p-3 text-left border border-gray-200 rounded-lg hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all duration-200"
+                  className="p-4 text-left border-2 border-gray-200 rounded-lg hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all duration-200"
                 >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{preset.icon}</span>
-                    <span className="text-sm font-medium text-gray-900">{preset.name}</span>
+                  <div className="flex items-center space-x-3">
+                    <div 
+                      className="w-8 h-8 flex-shrink-0"
+                      style={{ color: '#6b7280' }}
+                      dangerouslySetInnerHTML={{ __html: preset.svgIcon }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-900">{preset.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{preset.description}</div>
+                    </div>
                   </div>
                 </button>
               ))}
@@ -358,16 +458,29 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Icon (Emoji)
+                  Icon (Emoji or SVG)
                 </label>
-                <input
-                  type="text"
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleInputChange}
-                  className="modern-input w-full"
-                  placeholder="🎉"
-                />
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="text"
+                    name="icon"
+                    value={formData.icon}
+                    onChange={handleInputChange}
+                    className="modern-input flex-1"
+                    placeholder="🎉 or paste SVG code"
+                  />
+                  {formData.icon && (
+                    <div 
+                      className="w-10 h-10 flex items-center justify-center border-2 border-gray-200 rounded-lg"
+                      dangerouslySetInnerHTML={{ 
+                        __html: formData.icon.startsWith('<svg') 
+                          ? formData.icon 
+                          : `<span style="font-size: 24px">${formData.icon}</span>`
+                      }}
+                    />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Use emoji (🎉) or click a preset to use SVG icons</p>
               </div>
             </div>
 
@@ -464,7 +577,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
         </div>
       )}
 
-      {/* Categories List */}
+      {/* Categories List - Simple List View */}
       <div className="modern-card">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Current Categories</h3>
@@ -493,11 +606,19 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
               <div key={category.id} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-primary)]/20 flex items-center justify-center">
-                      <span className="text-xl">{category.icon || '📁'}</span>
+                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-2xl">
+                      {category.icon && category.icon.startsWith('<svg') ? (
+                        <div 
+                          className="w-6 h-6"
+                          style={{ color: '#6b7280' }}
+                          dangerouslySetInnerHTML={{ __html: category.icon }}
+                        />
+                      ) : (
+                        <span>{category.icon || '📁'}</span>
+                      )}
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900">{category.name}</h4>
+                      <h4 className="text-base font-semibold text-gray-900">{category.name}</h4>
                       {category.description && (
                         <p className="text-sm text-gray-600 mt-1">{category.description}</p>
                       )}

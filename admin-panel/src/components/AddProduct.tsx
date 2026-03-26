@@ -148,7 +148,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     description: '',
     images: '',
     material: '',
-    seller: ''
+    seller: '',
+    visible: true
   });
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -640,7 +641,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
       description: '',
       images: '',
       material: '',
-      seller: ''
+      seller: '',
+      visible: true
     });
     setSelectedImages([]);
     setImagePreviews([]);
@@ -687,7 +689,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         images: allImages,
         material: formData.material,
         seller: formData.seller,
-        in_stock: true
+        in_stock: true,
+        visible: formData.visible
       };
 
       const response = await fetch(`${API_BASE_URL}/products`, {
@@ -1289,6 +1292,48 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
                 className="modern-input w-full"
                 placeholder="Enter seller name"
               />
+            </div>
+          </div>
+
+          {/* Product Visibility Toggle */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="block text-lg font-bold text-gray-800 mb-1">
+                  <i className={`fas ${formData.visible ? 'fa-eye' : 'fa-eye-slash'} mr-2 ${formData.visible ? 'text-green-600' : 'text-gray-400'}`}></i>
+                  Product Visibility
+                </label>
+                <p className="text-sm text-gray-600">
+                  {formData.visible 
+                    ? '✅ This product will be visible to customers in your storefront' 
+                    : '🔒 This product will be hidden from customers (draft mode)'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, visible: !prev.visible }))}
+                className={`relative inline-flex h-12 w-24 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  formData.visible 
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 focus:ring-green-500' 
+                    : 'bg-gray-300 focus:ring-gray-400'
+                }`}
+              >
+                <span
+                  className={`inline-block h-10 w-10 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                    formData.visible ? 'translate-x-12' : 'translate-x-1'
+                  }`}
+                >
+                  <i className={`fas ${formData.visible ? 'fa-check' : 'fa-times'} text-lg flex items-center justify-center h-full ${
+                    formData.visible ? 'text-green-600' : 'text-gray-400'
+                  }`}></i>
+                </span>
+              </button>
+            </div>
+            <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+              <p className="text-xs text-gray-600">
+                <i className="fas fa-info-circle mr-1 text-blue-500"></i>
+                <strong>Tip:</strong> Use this to create draft products or temporarily hide items without deleting them.
+              </p>
             </div>
           </div>
 
