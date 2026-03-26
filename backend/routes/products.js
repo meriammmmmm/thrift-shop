@@ -20,25 +20,13 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    // Only show visible products to customers (if column exists)
-    // Use COALESCE to treat NULL as true (visible by default)
+    // Filter products
     let whereClause = 'WHERE 1=1';
     let params = [];
-    
-    // Try to filter by visible, but don't fail if column doesn't exist
-    try {
-      // Check if visible column exists by attempting to query it
-      await db.get('SELECT visible FROM products LIMIT 1');
-      // Use COALESCE to treat NULL and true as visible
-      whereClause = 'WHERE (p.visible = true OR p.visible IS NULL)';
-    } catch (err) {
-      // Column doesn't exist yet, show all products
-      console.log('⚠️ visible column does not exist yet, showing all products');
-    }
 
     // Filter by company if specified
     if (companyId) {
-      whereClause += whereClause.includes('WHERE') ? ' AND p.company_id = ?' : ' WHERE p.company_id = ?';
+      whereClause += ' AND p.company_id = ?';
       params.push(parseInt(companyId));
     }
 
@@ -604,21 +592,9 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    // Only show visible products to customers (if column exists)
-    // Use COALESCE to treat NULL as true (visible by default)
+    // Filter by company
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
-    
-    // Try to filter by visible, but don't fail if column doesn't exist
-    try {
-      // Check if visible column exists by attempting to query it
-      await db.get('SELECT visible FROM products LIMIT 1');
-      // Use COALESCE to treat NULL and true as visible
-      whereClause = 'WHERE (p.visible = true OR p.visible IS NULL) AND p.company_id = ?';
-    } catch (err) {
-      // Column doesn't exist yet, show all products
-      console.log('⚠️ visible column does not exist yet, showing all products');
-    }
 
     // Build where clause
     if (category && category !== 'All') {
