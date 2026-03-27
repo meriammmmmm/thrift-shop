@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
-  generateEtags: true,
-  reactStrictMode: true,
+  // Remove standalone for now - causes issues on Render
+  // output: 'standalone',
 }
 
 module.exports = nextConfig
