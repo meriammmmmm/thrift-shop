@@ -24,7 +24,7 @@ interface Company {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 const CompanyManagement: React.FC<CompanyManagementProps> = ({ authToken }) => {
   const [companies, setCompanies] = useState<Company[]>([]);

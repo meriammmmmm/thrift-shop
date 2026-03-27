@@ -6,7 +6,7 @@ interface CreateUserProps {
   onBack: () => void;
 }
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 const CreateUser: React.FC<CreateUserProps> = ({ authToken, onBack }) => {
   const [formData, setFormData] = useState({

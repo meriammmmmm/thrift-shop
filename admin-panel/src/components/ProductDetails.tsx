@@ -156,7 +156,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, onBack }) => {
   const [product, setProduct] = useState<ProductDetails | null>(null);

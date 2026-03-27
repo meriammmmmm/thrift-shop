@@ -159,7 +159,7 @@ export default function Home() {
 
   const loadTestimonials = async (companyId: string) => {
     try {
-      const response = await fetch(`https://thrift-shop-backend-production.up.railway.app/api/testimonials/active?companyId=${companyId}`);
+      const response = await fetch(`https://mery-rose-backend.onrender.com/testimonials/active?companyId=${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data.testimonials || []);

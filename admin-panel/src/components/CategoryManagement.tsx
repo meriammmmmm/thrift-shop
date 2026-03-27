@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);

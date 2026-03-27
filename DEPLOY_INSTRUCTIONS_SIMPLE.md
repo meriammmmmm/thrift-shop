@@ -18,7 +18,7 @@ Your backend is already on Railway! Now deploy the frontend:
 ```
 NEXT_PUBLIC_COMPANY_ID = 1
 NEXT_PUBLIC_COMPANY_NAME = Pearl Box
-NEXT_PUBLIC_API_URL = https://thrift-shop-backend-production.up.railway.app/api
+NEXT_PUBLIC_API_URL = https://mery-rose-backend.onrender.com
 ```
 
 ## ✅ STEP 3: Deploy (1 minute)
@@ -47,7 +47,7 @@ If you prefer Railway (where your backend is):
 ## 🆘 Need Help?
 
 ### Backend not responding?
-Check: `https://thrift-shop-backend-production.up.railway.app/api/health`
+Check: `https://mery-rose-backend.onrender.com/health`
 
 Should return: `{"status":"healthy"}`
 

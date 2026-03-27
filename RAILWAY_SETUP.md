@@ -18,7 +18,7 @@ ADMIN_PASSWORD=admin123
 Go to your frontend service → Variables → Add these:
 
 ```
-NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+NEXT_PUBLIC_API_URL=https://mery-rose-backend.onrender.com
 NEXT_PUBLIC_COMPANY_ID=1
 NEXT_PUBLIC_COMPANY_NAME=Pearl Box
 ```

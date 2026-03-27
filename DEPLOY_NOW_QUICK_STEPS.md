@@ -3,7 +3,7 @@
 ## ✅ Backend Status
 Your backend is ALREADY DEPLOYED on Railway:
 - URL: `https://thrift-shop-backend-production.up.railway.app`
-- Status: Check at `https://thrift-shop-backend-production.up.railway.app/api/health`
+- Status: Check at `https://mery-rose-backend.onrender.com/health`
 
 ---
 
@@ -31,7 +31,7 @@ Your backend is ALREADY DEPLOYED on Railway:
    ```
    NEXT_PUBLIC_COMPANY_ID=1
    NEXT_PUBLIC_COMPANY_NAME=Pearl Box
-   NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+   NEXT_PUBLIC_API_URL=https://mery-rose-backend.onrender.com
    ```
 
 5. **Deploy**
@@ -62,7 +62,7 @@ Your backend is ALREADY DEPLOYED on Railway:
    ```
    NEXT_PUBLIC_COMPANY_ID=1
    NEXT_PUBLIC_COMPANY_NAME=Pearl Box
-   NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+   NEXT_PUBLIC_API_URL=https://mery-rose-backend.onrender.com
    ```
 
 5. **Deploy**
@@ -85,7 +85,7 @@ Your backend is ALREADY DEPLOYED on Railway:
 
 3. **Environment Variables**
    ```
-   REACT_APP_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+   REACT_APP_API_URL=https://mery-rose-backend.onrender.com
    NODE_ENV=production
    ```
 
@@ -108,7 +108,7 @@ Your backend is ALREADY DEPLOYED on Railway:
 ## 🆘 TROUBLESHOOTING
 
 ### "Can't connect to backend"
-- Check backend is running: `https://thrift-shop-backend-production.up.railway.app/api/health`
+- Check backend is running: `https://mery-rose-backend.onrender.com/health`
 - Verify `NEXT_PUBLIC_API_URL` ends with `/api`
 - Check Railway logs for backend errors
 

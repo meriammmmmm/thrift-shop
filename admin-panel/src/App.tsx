@@ -15,7 +15,7 @@ import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 interface User {
   id: number;

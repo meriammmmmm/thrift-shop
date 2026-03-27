@@ -7,7 +7,7 @@
 
 const fetch = require('node-fetch');
 
-const API_BASE = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE = 'https://mery-rose-backend.onrender.com';
 
 async function loginAdmin(email, password) {
   const response = await fetch(`${API_BASE}/auth/login`, {

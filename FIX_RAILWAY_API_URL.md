@@ -8,7 +8,7 @@ https://merryrose.up.railway.app/thrift-shop-backend-production.up.railway.app/a
 
 But it should be:
 ```
-https://thrift-shop-backend-production.up.railway.app/api
+https://mery-rose-backend.onrender.com
 ```
 
 ---
@@ -36,7 +36,7 @@ merryrose.up.railway.app/thrift-shop-backend-production.up.railway.app/api
 
 **Change to (CORRECT):**
 ```
-https://thrift-shop-backend-production.up.railway.app/api
+https://mery-rose-backend.onrender.com
 ```
 
 ### Step 5: Save and Redeploy
@@ -69,7 +69,7 @@ https://thrift-shop-backend-production.up.railway.app/api
 1. Open your frontend URL: https://merryrose.up.railway.app
 2. Open browser console (F12)
 3. Check Network tab
-4. The API calls should now go to: `https://thrift-shop-backend-production.up.railway.app/api`
+4. The API calls should now go to: `https://mery-rose-backend.onrender.com`
 
 ---
 
@@ -79,11 +79,11 @@ https://thrift-shop-backend-production.up.railway.app/api
 1. In Railway frontend project → Variables
 2. Click **"+ New Variable"**
 3. Name: `NEXT_PUBLIC_API_URL`
-4. Value: `https://thrift-shop-backend-production.up.railway.app/api`
+4. Value: `https://mery-rose-backend.onrender.com`
 5. Click **"Add"**
 
 ### Option 2: Check Backend is Running
-1. Open: https://thrift-shop-backend-production.up.railway.app/api/health
+1. Open: https://mery-rose-backend.onrender.com/health
 2. Should see: `{"status":"OK"}`
 3. If not, your backend isn't deployed yet
 
@@ -95,7 +95,7 @@ https://thrift-shop-backend-production.up.railway.app/api
 1. Go to Railway dashboard
 2. Open your frontend project
 3. Variables tab
-4. Update `NEXT_PUBLIC_API_URL` to: `https://thrift-shop-backend-production.up.railway.app/api`
+4. Update `NEXT_PUBLIC_API_URL` to: `https://mery-rose-backend.onrender.com`
 5. Save
 6. Wait for redeploy
 

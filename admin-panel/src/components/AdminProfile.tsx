@@ -140,7 +140,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
 
 const AdminProfile: React.FC<AdminProfileProps> = ({ authToken, user }) => {
   const [loading, setLoading] = useState(false);

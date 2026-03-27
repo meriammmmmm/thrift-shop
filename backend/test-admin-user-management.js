@@ -1,7 +1,7 @@
 // Test script for admin user management functionality
 const axios = require('axios');
 
-const API_BASE = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE = 'https://mery-rose-backend.onrender.com';
 
 // Admin credentials
 const adminCredentials = {
