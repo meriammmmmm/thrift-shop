@@ -1,0 +1,4 @@
+#!/bin/zsh
+export PATH="$HOME/.nvm/versions/node/v20.19.2/bin:$PATH"
+cd thrift-shop
+npm run dev
