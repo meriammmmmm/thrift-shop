@@ -27,15 +27,20 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd thrift-shop && npm install && npm run build
-    startCommand: cd thrift-shop && npm start
+    rootDir: thrift-shop
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
       - key: NEXT_PUBLIC_COMPANY_ID
         value: 1
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: Pearl Box
       - key: NEXT_PUBLIC_API_URL
-        value: https://thrift-shop-backend.onrender.com/api
+        value: https://thrift-shop-backend-production.up.railway.app/api
 
   # Admin Panel
   - type: web
