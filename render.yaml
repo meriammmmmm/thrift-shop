@@ -24,7 +24,7 @@ services:
     region: oregon
     plan: free
     buildCommand: cd admin-panel && npm install && npm run build
-    startCommand: cd admin-panel && npm start
+    startCommand: cd admin-panel && node server.js
     envVars:
       - key: NODE_ENV
         value: production
