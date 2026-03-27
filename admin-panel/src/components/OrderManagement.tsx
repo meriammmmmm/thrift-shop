@@ -26,7 +26,7 @@ interface Order {
   items?: OrderItem[];
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
   const [orders, setOrders] = useState<Order[]>([]);

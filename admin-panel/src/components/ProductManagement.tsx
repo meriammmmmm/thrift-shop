@@ -19,7 +19,7 @@ interface Product {
   images?: string[];
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE_URL = 'https://mery-rose-backend.onrender.com';
 
 const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [products, setProducts] = useState<Product[]>([]);
