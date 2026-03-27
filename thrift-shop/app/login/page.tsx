@@ -122,7 +122,7 @@ export default function LoginPage() {
         password: formData.password,
         name: userInfo.fullName || formData.name,
         companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
-        // Don't send verification code - it's optional now
+        verificationCode: verificationCode, // REQUIRED: Send verification code
         userInfo: {
           fullName: userInfo.fullName,
           email: emailToUse,
@@ -180,9 +180,9 @@ export default function LoginPage() {
           }
         }, 1500);
       } else {
-        // Signup flow - SKIP VERIFICATION FOR NOW
-        // Just register directly without verification
-        await handleRegister();
+        // Signup flow - REQUIRE VERIFICATION
+        // Send verification code first
+        await handleSendVerificationCode();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

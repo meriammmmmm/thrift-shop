@@ -18,6 +18,21 @@ function generateVerificationCode() {
 
 // Send verification email
 async function sendVerificationEmail(email, code) {
+  // Check if email is configured
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.log('⚠️ Email not configured. Verification code:', code);
+    console.log('📧 To enable email verification, add these to your .env file:');
+    console.log('   EMAIL_USER=your-email@gmail.com');
+    console.log('   EMAIL_PASSWORD=your-app-password');
+    
+    return { 
+      success: true, 
+      dev: true,
+      code: code, // Return code in dev mode
+      message: 'Development mode: Email service not configured. Check console for verification code.' 
+    };
+  }
+
   const mailOptions = {
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: email,
@@ -40,7 +55,15 @@ async function sendVerificationEmail(email, code) {
     return { success: true };
   } catch (error) {
     console.error('Email sending error:', error);
-    return { success: false, error: error.message };
+    // In development, still allow registration by showing code in console
+    console.log('⚠️ Email failed to send. Verification code:', code);
+    return { 
+      success: true, 
+      dev: true,
+      code: code,
+      error: error.message,
+      message: 'Email service error. Check console for verification code.' 
+    };
   }
 }
 
