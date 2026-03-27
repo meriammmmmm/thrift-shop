@@ -1,6 +1,5 @@
 // API configuration for connecting to separate backend
-// Hardcoded for Render deployment - change this to your backend URL
-const RENDER_BACKEND_URL = 'https://mery-rose-backend.onrender.com/api';
+const BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -11,30 +10,23 @@ const getApiBaseUrl = () => {
     console.log('NEXT_PUBLIC_API_URL from env:', envUrl);
   }
   
-  // If in production and no env var, use hardcoded Render URL
-  if (!envUrl && typeof window !== 'undefined' && (window.location.hostname.includes('railway.app') || window.location.hostname.includes('vercel.app'))) {
-    console.log('Using hardcoded Render backend URL');
-    return RENDER_BACKEND_URL;
+  // If in production (Render, Railway, Vercel), use env var or fallback to Railway backend
+  if (typeof window !== 'undefined' && 
+      (window.location.hostname.includes('onrender.com') || 
+       window.location.hostname.includes('railway.app') || 
+       window.location.hostname.includes('vercel.app'))) {
+    const productionUrl = envUrl || BACKEND_URL;
+    console.log('Using production backend URL:', productionUrl);
+    return productionUrl;
   }
   
-  // Default to localhost if not set
-  if (!envUrl) {
-    return 'http://localhost:5001/api';
+  // Use env var if set
+  if (envUrl) {
+    return envUrl;
   }
   
-  // If URL doesn't start with http, make it absolute
-  if (!envUrl.startsWith('http://') && !envUrl.startsWith('https://')) {
-    const absoluteUrl = `https://${envUrl}/api`;
-    if (typeof window !== 'undefined') {
-      console.log('Converting to absolute URL:', absoluteUrl);
-    }
-    return absoluteUrl;
-  }
-  
-  // Ensure /api is appended if not already present
-  const finalUrl = envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
-  
-  return finalUrl;
+  // Default to localhost for local development
+  return 'http://localhost:5001/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
