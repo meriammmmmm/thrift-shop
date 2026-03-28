@@ -209,7 +209,7 @@ router.post('/', requireAdmin, async (req, res) => {
       material, JSON.stringify(measurements || {}),
       JSON.stringify(care_instructions || []), JSON.stringify(tags || []),
       seller_name, seller_rating, seller_location, companyId, 
-      visible !== undefined ? visible : true
+      visible !== undefined ? (visible ? 1 : 0) : 1
     ]).catch(async (insertError) => {
       // If insert fails due to missing visible column, try without it
       if (insertError.message && insertError.message.includes('no such column: visible')) {
