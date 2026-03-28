@@ -1,5 +1,5 @@
 // API configuration for connecting to separate backend
-const BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const BACKEND_URL = 'https://mery-rose-backend.onrender.com/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
     console.log('NEXT_PUBLIC_API_URL from env:', envUrl);
   }
   
-  // If in production (Render, Railway, Vercel), use env var or fallback to Railway backend
+  // If in production (Render, Railway, Vercel), use env var or fallback to Render backend
   if (typeof window !== 'undefined' && 
       (window.location.hostname.includes('onrender.com') || 
        window.location.hostname.includes('railway.app') || 

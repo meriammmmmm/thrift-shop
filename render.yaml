@@ -40,7 +40,7 @@ services:
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: Pearl Box
       - key: NEXT_PUBLIC_API_URL
-        value: https://thrift-shop-backend-production.up.railway.app/api
+        value: https://mery-rose-backend.onrender.com/api
 
   # Admin Panel
   - type: web
