@@ -10,16 +10,22 @@ const path = require('path');
 const fs = require('fs');
 const seedDatabase = require('./seed-data');
 
-// Use persistent volume on Railway, or local path otherwise
+// Use persistent volume on Render or Railway, or local path otherwise
 let dbPath = process.env.DB_PATH || './database/thrift_shop.db';
 
 console.log('🔍 Environment check:');
+console.log('- RENDER:', process.env.RENDER);
 console.log('- RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- Initial DB_PATH:', dbPath);
 
+// On Render, use the mounted disk at /data
+if (process.env.RENDER) {
+  dbPath = '/data/thrift_shop.db';
+  console.log('🎨 Render detected - using persistent disk for database');
+}
 // On Railway, use the mounted volume
-if (process.env.RAILWAY_ENVIRONMENT) {
+else if (process.env.RAILWAY_ENVIRONMENT) {
   dbPath = '/app/database/thrift_shop.db';
   console.log('🚂 Railway detected - using persistent volume for database');
 }
