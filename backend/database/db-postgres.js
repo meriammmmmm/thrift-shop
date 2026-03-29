@@ -11,7 +11,11 @@ class PostgresDatabase {
 
     this.pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false }
+      ssl: connectionString.includes('supabase') || connectionString.includes('pooler') 
+        ? { rejectUnauthorized: false } 
+        : false,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000
     });
 
     console.log('🐘 Connected to PostgreSQL database');
