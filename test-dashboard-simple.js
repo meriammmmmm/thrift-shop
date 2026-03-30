@@ -6,7 +6,7 @@ async function testDashboard() {
   try {
     // Login first
     console.log('1. Logging in...');
-    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const loginResponse = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -20,7 +20,7 @@ async function testDashboard() {
     
     // Get dashboard
     console.log('2. Getting dashboard data...');
-    const dashboardResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/dashboard', {
+    const dashboardResponse = await fetch('https://mery-rose-backend.onrender.comapi/admin/dashboard', {
       headers: { 'Authorization': `Bearer ${loginData.token}` }
     });
     

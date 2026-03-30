@@ -2,7 +2,7 @@
 
 ## ✅ Backend Status
 Your backend is ALREADY DEPLOYED on Railway:
-- URL: `https://thrift-shop-backend-production.up.railway.app`
+- URL: `https://mery-rose-backend.onrender.com`
 - Status: Check at `https://mery-rose-backend.onrender.com/health`
 
 ---

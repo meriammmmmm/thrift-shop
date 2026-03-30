@@ -16,7 +16,7 @@ The Blueprint feature doesn't work with your monorepo structure. Deploy each ser
      ```
      NEXT_PUBLIC_COMPANY_ID = 1
      NEXT_PUBLIC_COMPANY_NAME = Pearl Box
-     NEXT_PUBLIC_API_URL = https://thrift-shop-backend-production.up.railway.appapi
+     NEXT_PUBLIC_API_URL = https://mery-rose-backend.onrender.comapi
      ```
      (We'll update the API URL after deploying backend)
 4. Click **Deploy**

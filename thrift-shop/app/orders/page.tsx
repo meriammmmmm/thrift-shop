@@ -90,7 +90,7 @@ export default function OrdersPage() {
 
   const loadCompany = async () => {
     try {
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       const response = await api.getCompanyProducts(parseInt(companyId), { limit: 1 });
       
       if (response.company) {

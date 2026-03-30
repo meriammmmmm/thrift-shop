@@ -5,7 +5,7 @@ import { useNotifications } from '../hooks/useNotifications';
 const getChatImageUrl = () =>
   typeof window !== 'undefined' && window.location.port === '3005'
     ? '/api/admin/ai/chat-image'
-    : 'https://thrift-shop-backend-production.up.railway.appapi/admin/ai/chat-image';
+    : 'https://mery-rose-backend.onrender.comapi/admin/ai/chat-image';
 
 interface ImageChatProps {
   authToken: string;

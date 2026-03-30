@@ -30,7 +30,7 @@ async function testCompany10Users() {
     console.log(`   ✅ Found admin: ${adminEmail}`);
     
     // Try to login (assuming password is admin123)
-    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const loginResponse = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -49,7 +49,7 @@ async function testCompany10Users() {
     
     // Get users for this admin
     console.log('3. Getting users for company 10 admin...');
-    const usersResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/users', {
+    const usersResponse = await fetch('https://mery-rose-backend.onrender.comapi/admin/users', {
       headers: { 'Authorization': `Bearer ${loginData.token}` }
     });
     

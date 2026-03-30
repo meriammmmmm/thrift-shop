@@ -6,7 +6,7 @@ async function testLogin() {
   try {
     console.log('Testing admin login...');
     
-    const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const response = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

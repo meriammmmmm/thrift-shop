@@ -7,7 +7,7 @@
 const fetch = require('node-fetch');
 
 async function loginAdmin(email, password) {
-  const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+  const response = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -22,7 +22,7 @@ async function loginAdmin(email, password) {
 }
 
 async function getAdminUsers(token) {
-  const response = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/users', {
+  const response = await fetch('https://mery-rose-backend.onrender.comapi/admin/users', {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   

@@ -6,7 +6,7 @@ async function debugToggleIssue() {
   try {
     // Step 1: Login and get token
     console.log('1. Logging in as admin...');
-    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const loginResponse = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -27,7 +27,7 @@ async function debugToggleIssue() {
 
     // Step 2: Get testimonials (as admin panel would)
     console.log('\n2. Getting testimonials (admin endpoint)...');
-    const testimonialsResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials', {
+    const testimonialsResponse = await fetch('https://mery-rose-backend.onrender.comapi/testimonials', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -52,7 +52,7 @@ async function debugToggleIssue() {
       console.log(`\n3. Testing toggle on testimonial ID ${testTestimonial.id}...`);
       console.log(`   Current state: is_active = ${testTestimonial.is_active} (${testTestimonial.is_active === 1 ? 'Active' : 'Inactive'})`);
       
-      const toggleResponse = await fetch(`https://thrift-shop-backend-production.up.railway.appapi/testimonials/${testTestimonial.id}/toggle`, {
+      const toggleResponse = await fetch(`https://mery-rose-backend.onrender.comapi/testimonials/${testTestimonial.id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -70,7 +70,7 @@ async function debugToggleIssue() {
 
       // Step 4: Verify change persisted
       console.log('\n4. Verifying change persisted...');
-      const verifyResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/testimonials', {
+      const verifyResponse = await fetch('https://mery-rose-backend.onrender.comapi/testimonials', {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }

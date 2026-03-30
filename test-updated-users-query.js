@@ -12,7 +12,7 @@ async function testUpdatedUsersQuery() {
     
     // Test with Vintage Treasures admin (known to work)
     console.log('1. Testing with Vintage Treasures admin...');
-    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const loginResponse = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -26,7 +26,7 @@ async function testUpdatedUsersQuery() {
     
     // Get users
     console.log('2. Getting users with updated query...');
-    const usersResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/admin/users', {
+    const usersResponse = await fetch('https://mery-rose-backend.onrender.comapi/admin/users', {
       headers: { 'Authorization': `Bearer ${loginData.token}` }
     });
     

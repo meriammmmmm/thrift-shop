@@ -103,7 +103,7 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       const response = await api.getCompanyProducts(parseInt(companyId), { limit: 100 });
       
       if (response.company) {

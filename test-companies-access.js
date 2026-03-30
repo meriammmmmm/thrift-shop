@@ -12,7 +12,7 @@ async function testCompaniesAccess() {
     
     // Login as company admin
     console.log('1. Logging in as Vintage Treasures admin...');
-    const loginResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/auth/login', {
+    const loginResponse = await fetch('https://mery-rose-backend.onrender.comapi/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -26,7 +26,7 @@ async function testCompaniesAccess() {
     
     // Try to access companies endpoint
     console.log('2. Trying to access /api/companies...');
-    const companiesResponse = await fetch('https://thrift-shop-backend-production.up.railway.appapi/companies', {
+    const companiesResponse = await fetch('https://mery-rose-backend.onrender.comapi/companies', {
       headers: { 'Authorization': `Bearer ${loginData.token}` }
     });
     

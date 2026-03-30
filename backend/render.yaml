@@ -18,6 +18,12 @@ services:
         value: admin123
       - key: FRONTEND_URL
         value: https://your-frontend-url.vercel.app
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
+      - key: GEMINI_API_KEY_3
+        sync: false
     # Add your PostgreSQL database connection here after creating it
     # - key: DATABASE_URL
     #   fromDatabase:

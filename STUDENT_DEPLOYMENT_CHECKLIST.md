@@ -111,7 +111,7 @@ Use this checklist to track your deployment progress.
 - [ ] Backend accessible on port 5001
 
 ### Test Backend
-- [ ] Tested locally: `curl https://thrift-shop-backend-production.up.railway.appapi/health`
+- [ ] Tested locally: `curl https://mery-rose-backend.onrender.comapi/health`
 - [ ] Response shows: `{"status":"OK"}`
 - [ ] No errors in logs: `pm2 logs backend`
 

@@ -165,7 +165,7 @@ pm2 status
 # Should show "backend" with status "online"
 
 # Test it works
-curl https://thrift-shop-backend-production.up.railway.appapi/health
+curl https://mery-rose-backend.onrender.comapi/health
 # Should show: {"status":"OK"}
 ```
 
@@ -302,7 +302,7 @@ cp .env.company1 .env.local
 
 # Edit API URL
 nano .env.local
-# Change to: NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.appapi
+# Change to: NEXT_PUBLIC_API_URL=https://mery-rose-backend.onrender.comapi
 
 npm run build
 pm2 start "npm start" --name company1

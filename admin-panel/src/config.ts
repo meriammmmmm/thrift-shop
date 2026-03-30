@@ -3,4 +3,4 @@
 // In development, use localhost
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api'
-  : 'https://thrift-shop-backend-production.up.railway.appapi';
+  : 'https://mery-rose-backend.onrender.comapi';
