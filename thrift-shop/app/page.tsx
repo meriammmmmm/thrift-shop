@@ -80,7 +80,7 @@ export default function Home() {
   // Load custom categories
   const loadCustomCategories = async () => {
     try {
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
       const response = await fetch(`${apiUrl}/categories/public/${companyId}`);
       
@@ -99,7 +99,7 @@ export default function Home() {
       setLoading(true);
       setError(null);
       
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       
       const response = await api.getCompanyProducts(parseInt(companyId), { limit: 50 });
       
