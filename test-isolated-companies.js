@@ -15,7 +15,7 @@ async function testCompanyIsolation() {
   try {
     // Test Company 1 products
     console.log('📦 Testing Company 1 (Vintage Treasures) products...');
-    const company1Response = await fetch(`${API_BASE}/products/company/1`);
+    const company1Response = await fetch(`${API_BASE}/products/company/2`);
     const company1Data = await company1Response.json();
     
     console.log(`   ✅ Company: ${company1Data.company.name}`);
