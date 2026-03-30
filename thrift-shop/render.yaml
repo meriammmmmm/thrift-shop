@@ -7,7 +7,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_COMPANY_ID
-        value: 1
+        value: 2
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: Pearl Box
       - key: NEXT_PUBLIC_API_URL
