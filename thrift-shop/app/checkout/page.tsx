@@ -216,8 +216,46 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Show confirmation modal instead of placing order directly
-    setShowConfirmModal(true);
+    // Check product availability before showing confirmation
+    setIsProcessingOrder(true);
+    try {
+      // Verify each product is still available
+      for (const item of cart) {
+        const product = await api.getProduct(item.id.toString());
+        
+        if (!product.in_stock || product.in_stock === 0 || product.in_stock === false) {
+          alert(`Sorry! "${item.name}" is sold out and has been removed from your cart.`);
+          await api.removeProductFromCart(item.id);
+          await loadCart();
+          setIsProcessingOrder(false);
+          return;
+        }
+        
+        if (product.reservation_status === 'reserved') {
+          alert(`Sorry! "${item.name}" is currently reserved by another customer and has been removed from your cart.`);
+          await api.removeProductFromCart(item.id);
+          await loadCart();
+          setIsProcessingOrder(false);
+          return;
+        }
+        
+        if (product.reservation_status === 'sold') {
+          alert(`Sorry! "${item.name}" has been sold and has been removed from your cart.`);
+          await api.removeProductFromCart(item.id);
+          await loadCart();
+          setIsProcessingOrder(false);
+          return;
+        }
+      }
+      
+      // All products are available, show confirmation modal
+      setIsProcessingOrder(false);
+      setShowConfirmModal(true);
+    } catch (error) {
+      console.error('Error checking product availability:', error);
+      setIsProcessingOrder(false);
+      alert('Error checking product availability. Please try again.');
+    }
   };
 
   const confirmOrder = async () => {
@@ -275,9 +313,22 @@ export default function CheckoutPage() {
       console.error('Order creation failed:', error);
       
       // Check if it's a product availability error
-      if (error?.response?.data?.error?.includes('not available')) {
-        alert('Some items in your cart are no longer available. Your cart has been updated. Please review and try again.');
+      const errorMessage = error?.message || 'Unknown error';
+      
+      if (errorMessage.includes('not available') || 
+          errorMessage.includes('sold out') || 
+          errorMessage.includes('reserved') || 
+          errorMessage.includes('already sold')) {
+        alert(`Sorry! ${errorMessage}\n\nYour cart has been updated. Please review and try again.`);
         // Reload cart to show updated items
+        await loadCart();
+      } else {
+        alert('Failed to place order: ' + errorMessage);
+      }
+      
+      setIsProcessingOrder(false);
+    }
+  };
         await loadCart();
       } else {
         alert('Échec de la commande. Veuillez réessayer.');

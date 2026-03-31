@@ -86,21 +86,43 @@ router.post('/', authenticateToken, async (req, res) => {
     let subtotal = 0;
     const orderItems = [];
     const companiesInOrder = new Set();
+    const unavailableItems = [];
 
     for (const item of items) {
-      const product = await db.get('SELECT * FROM products WHERE id = ?', [item.product_id]);
+      const product = await db.get('SELECT * FROM products WHERE id = $1', [item.product_id]);
       
       if (!product) {
-        return res.status(400).json({ error: `Product ${item.product_id} is not available` });
+        unavailableItems.push({ id: item.product_id, reason: 'Product not found' });
+        continue;
       }
       
-      // Check if product is already sold or reserved
+      // Check if product is already sold
       if (product.in_stock === false || product.in_stock === 0) {
-        return res.status(400).json({ error: `Product "${product.name}" is already sold` });
+        unavailableItems.push({ 
+          id: item.product_id, 
+          name: product.name,
+          reason: 'sold out' 
+        });
+        continue;
       }
       
-      if (product.reservation_status === 'reserved' || product.reservation_status === 'sold') {
-        return res.status(400).json({ error: `Product "${product.name}" is no longer available` });
+      // Check if product is reserved or sold
+      if (product.reservation_status === 'reserved') {
+        unavailableItems.push({ 
+          id: item.product_id, 
+          name: product.name,
+          reason: 'reserved by another customer' 
+        });
+        continue;
+      }
+      
+      if (product.reservation_status === 'sold') {
+        unavailableItems.push({ 
+          id: item.product_id, 
+          name: product.name,
+          reason: 'already sold' 
+        });
+        continue;
       }
 
       const itemTotal = product.price * item.quantity;
@@ -118,6 +140,23 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
+    // If any items are unavailable, return error with details
+    if (unavailableItems.length > 0) {
+      const errorMessage = unavailableItems.map(item => 
+        `"${item.name || 'Product #' + item.id}" is ${item.reason}`
+      ).join(', ');
+      
+      return res.status(400).json({ 
+        error: `Some items are not available: ${errorMessage}`,
+        unavailableItems: unavailableItems
+      });
+    }
+
+    // If no items are available after checking
+    if (orderItems.length === 0) {
+      return res.status(400).json({ error: 'No available items to order' });
+    }
+
     const tax = subtotal * 0.08; // 8% tax
     const shipping = subtotal > 50 ? 0 : 9.99; // Free shipping over $50
     const total = subtotal + tax + shipping;
@@ -131,7 +170,7 @@ router.post('/', authenticateToken, async (req, res) => {
       INSERT INTO orders (
         user_id, subtotal, tax, shipping, total, payment_method,
         shipping_address, billing_address, status, company_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PROCESSING', ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PROCESSING', $9)
     `, [
       req.user.id, subtotal, tax, shipping, total, payment_method,
       JSON.stringify(shipping_address), JSON.stringify(billing_address), primaryCompanyId
@@ -159,12 +198,12 @@ router.post('/', authenticateToken, async (req, res) => {
     // This allows orders to be cancelled without affecting inventory
 
     // Get complete order
-    const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderResult.id]);
+    const order = await db.get('SELECT * FROM orders WHERE id = $1', [orderResult.id]);
     const orderItemsData = await db.all(`
       SELECT oi.*, p.name as product_name, p.images as product_images
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
-      WHERE oi.order_id = ?
+      WHERE oi.order_id = $1
     `, [orderResult.id]);
 
     res.status(201).json({
