@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter with timeout
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: process.env.EMAIL_PORT || 587,
@@ -8,7 +8,10 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
-  }
+  },
+  connectionTimeout: 5000, // 5 seconds timeout
+  greetingTimeout: 5000,
+  socketTimeout: 5000
 });
 
 // Generate 6-digit verification code
@@ -51,18 +54,24 @@ async function sendVerificationEmail(email, code) {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    // Add timeout to the send operation
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email timeout')), 10000) // 10 second timeout
+    );
+    
+    await Promise.race([sendPromise, timeoutPromise]);
     return { success: true };
   } catch (error) {
-    console.error('Email sending error:', error);
-    // In development, still allow registration by showing code in console
+    console.error('Email sending error:', error.message);
+    // In development/production without email, still allow registration by showing code in console
     console.log('⚠️ Email failed to send. Verification code:', code);
     return { 
       success: true, 
       dev: true,
       code: code,
       error: error.message,
-      message: 'Email service error. Check console for verification code.' 
+      message: 'Email service temporarily unavailable. Check console for verification code.' 
     };
   }
 }

@@ -71,10 +71,19 @@ router.post('/send-verification-code', async (req, res) => {
       });
     }
 
-    res.json({ 
+    // In dev mode, return the code in response for testing
+    const response = { 
       message: `Verification code sent to your ${method === 'email' ? 'email' : 'phone'}`,
       dev: result.dev || false
-    });
+    };
+    
+    // If email service is not configured or failed, return code for testing
+    if (result.dev && result.code) {
+      response.code = result.code;
+      response.note = 'Email service not configured. Use this code for testing.';
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Send verification code error:', error);
     res.status(500).json({ error: 'Internal server error' });
