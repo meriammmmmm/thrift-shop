@@ -70,7 +70,14 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to send verification code');
       }
 
-      setSuccess('Verification code sent to your email!');
+      // If in dev mode and code is returned, show it to user
+      if (data.dev && data.code) {
+        setSuccess(`Development Mode: Your verification code is ${data.code}`);
+        setVerificationCode(data.code); // Auto-fill the code
+      } else {
+        setSuccess('Verification code sent to your email!');
+      }
+      
       setStep('verify');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send verification code');
