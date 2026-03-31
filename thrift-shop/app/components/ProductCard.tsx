@@ -152,10 +152,10 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
             }`}
             style={{ backgroundColor: theme.primary }}
           >
-            {product.reservation_status === 'sold' || !product.inStock
-              ? 'Sold Out' 
-              : product.reservation_status === 'reserved'
+            {product.reservation_status === 'reserved'
               ? 'Reserved'
+              : product.reservation_status === 'sold' || !product.inStock
+              ? 'Sold Out' 
               : isInCart 
               ? 'In Cart' 
               : 'Add to Bag'}
