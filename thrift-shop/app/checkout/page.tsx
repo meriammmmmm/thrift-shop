@@ -329,14 +329,6 @@ export default function CheckoutPage() {
       setIsProcessingOrder(false);
     }
   };
-        await loadCart();
-      } else {
-        alert('Échec de la commande. Veuillez réessayer.');
-      }
-    } finally {
-      setIsProcessingOrder(false);
-    }
-  };
 
   const cancelOrder = () => {
     setShowConfirmModal(false);
