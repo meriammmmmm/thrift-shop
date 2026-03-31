@@ -9,10 +9,10 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     console.log('📦 Fetching orders for user:', req.user.id);
     
-    // Get orders
+    // Get orders - use $1 for PostgreSQL compatibility
     const orders = await db.all(`
       SELECT * FROM orders 
-      WHERE user_id = ?
+      WHERE user_id = $1
       ORDER BY created_at DESC
     `, [req.user.id]);
 
@@ -21,30 +21,41 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get order items for each order - ALWAYS show items even if product is sold/deleted
     const ordersWithItems = [];
     for (const order of orders) {
-      const items = await db.all(`
-        SELECT oi.*, 
-               COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
-               COALESCE(p.images, '[]') as product_images,
-               COALESCE(p.description, '') as product_description,
-               COALESCE(p.in_stock, 0) as product_in_stock,
-               COALESCE(p.reservation_status, 'unknown') as product_reservation_status
-        FROM order_items oi
-        LEFT JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = ?
-      `, [order.id]);
+      try {
+        const items = await db.all(`
+          SELECT oi.*, 
+                 COALESCE(p.name, CAST(oi.product_id AS TEXT)) as product_name, 
+                 COALESCE(p.images, '[]') as product_images,
+                 COALESCE(p.description, '') as product_description,
+                 COALESCE(CAST(p.in_stock AS INTEGER), 0) as product_in_stock,
+                 COALESCE(p.reservation_status, 'unknown') as product_reservation_status
+          FROM order_items oi
+          LEFT JOIN products p ON oi.product_id = p.id
+          WHERE oi.order_id = $1
+        `, [order.id]);
 
-      ordersWithItems.push({
-        ...order,
-        shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
-        billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
-        items: items.map(item => ({
-          ...item,
-          product_images: item.product_images ? JSON.parse(item.product_images) : [],
-          product_name: item.product_name || `Product #${item.product_id}`,
-          product_in_stock: item.product_in_stock,
-          product_reservation_status: item.product_reservation_status
-        }))
-      });
+        ordersWithItems.push({
+          ...order,
+          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
+          items: items.map(item => ({
+            ...item,
+            product_images: item.product_images ? JSON.parse(item.product_images) : [],
+            product_name: item.product_name || `Product #${item.product_id}`,
+            product_in_stock: item.product_in_stock,
+            product_reservation_status: item.product_reservation_status
+          }))
+        });
+      } catch (itemError) {
+        console.error(`❌ Error fetching items for order ${order.id}:`, itemError.message);
+        // Still include the order even if items fail
+        ordersWithItems.push({
+          ...order,
+          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
+          items: []
+        });
+      }
     }
 
     console.log('✅ Orders with items prepared successfully');
