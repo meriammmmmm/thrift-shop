@@ -3,21 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 
-// Ensure database directory exists
-const dbDir = path.join(__dirname, 'database');
-if (!fs.existsSync(dbDir)) {
-  console.log('Creating database directory...');
-  fs.mkdirSync(dbDir, { recursive: true });
+// Only create database directory if not using PostgreSQL
+if (!process.env.DATABASE_URL) {
+  const dbDir = path.join(__dirname, 'database');
+  if (!fs.existsSync(dbDir)) {
+    console.log('Creating database directory...');
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 }
 
-// Check if database file exists
-const dbPath = process.env.DB_PATH || path.join(dbDir, 'thrift_shop.db');
-const dbExists = fs.existsSync(dbPath);
-
-if (!dbExists) {
-  console.log('Database file does not exist, it will be created on first connection');
-}
-
-// Start the server
+// Start the server immediately
 console.log('Starting Thrift Shop Backend...');
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', process.env.PORT || 5001);
 require('./server.js');

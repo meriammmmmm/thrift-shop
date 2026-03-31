@@ -1,10 +1,10 @@
 services:
   - type: web
     name: thrift-shop-backend
-    env: docker
+    env: node
     plan: free
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,7 +17,7 @@ services:
       - key: ADMIN_PASSWORD
         value: admin123
       - key: FRONTEND_URL
-        value: https://your-frontend-url.vercel.app
+        value: https://mery-rose.onrender.com
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_API_KEY_2
@@ -30,8 +30,9 @@ services:
     #     name: thrift-shop-db
     #     property: connectionString
 
-databases:
-  - name: thrift-shop-db
-    plan: free
-    databaseName: thriftshop
-    user: thriftshop
+# Uncomment if you want to use PostgreSQL
+# databases:
+#   - name: thrift-shop-db
+#     plan: free
+#     databaseName: thriftshop
+#     user: thriftshop
