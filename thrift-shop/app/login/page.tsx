@@ -18,9 +18,6 @@ interface UserInfo {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [step, setStep] = useState<'form' | 'verify'>('form'); // Add verification step
-  const [verificationMethod, setVerificationMethod] = useState<'email' | 'sms'>('email'); // Add method choice
-  const [verificationCode, setVerificationCode] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -43,146 +40,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  // Send verification code
-  const handleSendVerificationCode = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const emailToUse = userInfo.email || formData.email;
-      const phoneToUse = userInfo.phone;
-      
-      // Validate based on method
-      if (verificationMethod === 'email' && !emailToUse) {
-        setError('Please enter your email address');
-        setLoading(false);
-        return;
-      }
-      if (verificationMethod === 'sms' && !phoneToUse) {
-        setError('Please enter your phone number');
-        setLoading(false);
-        return;
-      }
-      
-      // Hardcoded fallback for API URL
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
-      
-      const response = await fetch(`${apiUrl}/auth/send-verification-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: verificationMethod === 'email' ? emailToUse : undefined,
-          phone: verificationMethod === 'sms' ? phoneToUse : undefined,
-          method: verificationMethod,
-          type: 'registration'
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification code');
-      }
-
-      // If in dev mode and code is returned, show it to user
-      if (data.dev && data.code) {
-        setSuccess(`Development Mode: Your verification code is ${data.code}`);
-        setVerificationCode(data.code); // Auto-fill the code
-      } else {
-        const destination = verificationMethod === 'email' ? 'email' : 'phone';
-        setSuccess(`Verification code sent to your ${destination}!`);
-      }
-      
-      setStep('verify');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify code
-  const handleVerifyCode = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const emailToUse = userInfo.email || formData.email;
-
-      // Hardcoded fallback for API URL
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
-
-      const response = await fetch(`${apiUrl}/auth/verify-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailToUse,
-          code: verificationCode,
-          method: 'email'
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid verification code');
-      }
-
-      setSuccess('Email verified! Creating your account...');
-      
-      // Now register with verified code
-      await handleRegister();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Register after verification
-  const handleRegister = async () => {
-    setLoading(true);
-    try {
-      const emailToUse = userInfo.email || formData.email;
-      const data = await api.register({
-        email: emailToUse,
-        password: formData.password,
-        name: userInfo.fullName || formData.name,
-        companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
-        verificationCode: verificationCode, // REQUIRED: Send verification code
-        userInfo: {
-          fullName: userInfo.fullName,
-          email: emailToUse,
-          phone: userInfo.phone,
-          optionalPhone: userInfo.optionalPhone,
-          address: userInfo.address,
-          city: userInfo.city,
-          state: userInfo.state,
-          zipCode: userInfo.zipCode,
-          country: userInfo.country
-        }
-      });
-
-      // Store token and user data
-      localStorage.setItem('auth-token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      setSuccess('Account created successfully!');
-
-      // Redirect after success
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -191,7 +48,7 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        // Login flow (no verification needed)
+        // Login flow
         const data = await api.login({ email: formData.email, password: formData.password });
         setSuccess('Signed in successfully!');
 
@@ -209,9 +66,36 @@ export default function LoginPage() {
           }
         }, 1500);
       } else {
-        // Signup flow - REQUIRE VERIFICATION
-        // Send verification code first
-        await handleSendVerificationCode();
+        // Signup flow - NO VERIFICATION NEEDED
+        const emailToUse = userInfo.email || formData.email;
+        const data = await api.register({
+          email: emailToUse,
+          password: formData.password,
+          name: userInfo.fullName || formData.name,
+          companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
+          userInfo: {
+            fullName: userInfo.fullName,
+            email: emailToUse,
+            phone: userInfo.phone,
+            optionalPhone: userInfo.optionalPhone,
+            address: userInfo.address,
+            city: userInfo.city,
+            state: userInfo.state,
+            zipCode: userInfo.zipCode,
+            country: userInfo.country
+          }
+        });
+
+        // Store token and user data
+        localStorage.setItem('auth-token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        setSuccess('Account created successfully!');
+
+        // Redirect after success
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -287,77 +171,8 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Verification Step */}
-          {!isLogin && step === 'verify' && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="text-5xl mb-4">{verificationMethod === 'email' ? '📧' : '📱'}</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {verificationMethod === 'email' ? 'Check Your Email' : 'Check Your Phone'}
-                </h3>
-                <p className="text-sm text-gray-600 mb-1">
-                  We sent a 6-digit verification code to:
-                </p>
-                <p className="text-sm font-medium text-gray-900">
-                  {verificationMethod === 'email' ? (userInfo.email || formData.email) : userInfo.phone}
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Code
-                </label>
-                <input
-                  id="verificationCode"
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  placeholder="123456"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                />
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Code expires in 10 minutes
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleVerifyCode}
-                disabled={loading || verificationCode.length !== 6}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? 'Verifying...' : 'Verify & Create Account'}
-              </button>
-
-              <div className="text-center space-y-2">
-                <button
-                  type="button"
-                  onClick={handleSendVerificationCode}
-                  disabled={loading}
-                  className="text-sm text-[var(--color-primary)] hover:underline disabled:opacity-50"
-                >
-                  Didn't receive code? Resend
-                </button>
-                <br />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('form');
-                    setVerificationCode('');
-                    setError('');
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
-                  ← Change email address
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Form Step */}
-          {(isLogin || step === 'form') && (
-            <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Form */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <>
                 {/* Personal Information */}
@@ -614,58 +429,13 @@ export default function LoginPage() {
               </>
             )}
 
-            {/* Verification Method Selector (only for signup) */}
-            {!isLogin && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  How would you like to receive your verification code?
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setVerificationMethod('email')}
-                    className={`flex items-center justify-center px-4 py-3 border-2 rounded-lg transition-all ${
-                      verificationMethod === 'email'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] bg-opacity-10 text-[var(--color-primary)]'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span className="font-medium">Email</span>
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setVerificationMethod('sms')}
-                    className={`flex items-center justify-center px-4 py-3 border-2 rounded-lg transition-all ${
-                      verificationMethod === 'sms'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] bg-opacity-10 text-[var(--color-primary)]'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span className="font-medium">SMS</span>
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  {verificationMethod === 'email' 
-                    ? 'Code will be sent to your email address' 
-                    : 'Code will be sent via SMS to your phone'}
-                </p>
-              </div>
-            )}
-
             <div>
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Continue to Verification')}
+                {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Create Account')}
               </button>
             </div>
           </form>
