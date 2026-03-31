@@ -51,7 +51,10 @@ export default function LoginPage() {
     try {
       const emailToUse = userInfo.email || formData.email;
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/send-verification-code`, {
+      // Hardcoded fallback for API URL
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
+      
+      const response = await fetch(`${apiUrl}/auth/send-verification-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,7 +88,10 @@ export default function LoginPage() {
     try {
       const emailToUse = userInfo.email || formData.email;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-code`, {
+      // Hardcoded fallback for API URL
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
+
+      const response = await fetch(`${apiUrl}/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
