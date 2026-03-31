@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders Endpoint Diagnostic Tool</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: #666;
+    }
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 500;
+    }
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 5px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      border: 1px solid #e0e0e0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .result {
+      margin-top: 15px;
+    }
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .success-box {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .error-box {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-card h3 {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+    .stat-card p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Orders Endpoint Diagnostic Tool</h1>
+      <p>Test and debug your orders API endpoint</p>
+    </div>
+
+    <!-- Step 1: Login -->
+    <div class="section">
+      <h2>Step 1: Login <span id="loginStatus"></span></h2>
+      <div class="info-box">
+        <strong>ℹ️ Info:</strong> You need to login first to get an authentication token.
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="your-email@example.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Your password">
+      </div>
+      <button onclick="login()">🔐 Login</button>
+      <button onclick="clearAuth()" class="btn-danger">🗑️ Clear Auth</button>
+      <div id="loginResult" class="result"></div>
+    </div>
+
+    <!-- Step 2: Check Token -->
+    <div class="section">
+      <h2>Step 2: Verify Token <span id="tokenStatus"></span></h2>
+      <div class="info-box">
+        <strong>Current Token:</strong> <span id="currentToken">Not logged in</span>
+      </div>
+      <button onclick="checkToken()">🔑 Check Token</button>
+      <div id="tokenResult" class="result"></div>
+    </div>
+
+    <!-- Step 3: Fetch Orders -->
+    <div class="section">
+      <h2>Step 3: Fetch Orders <span id="ordersStatus"></span></h2>
+      <button onclick="getOrders()">📦 Get My Orders</button>
+      <button onclick="getOrdersWithDetails()" class="btn-secondary">📋 Get Orders (Detailed)</button>
+      <div id="ordersResult" class="result"></div>
+    </div>
+
+    <!-- Step 4: Test Without Auth -->
+    <div class="section">
+      <h2>Step 4: Test Without Authentication</h2>
+      <div class="info-box">
+        <strong>⚠️ Expected Result:</strong> This should return a 401 Unauthorized error.
+      </div>
+      <button onclick="getOrdersNoAuth()">🚫 Get Orders (No Auth)</button>
+      <div id="noAuthResult" class="result"></div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="section">
+      <h2>📊 Statistics</h2>
+      <div class="grid">
+        <div class="stat-card">
+          <h3 id="orderCount">0</h3>
+          <p>Total Orders</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="requestCount">0</h3>
+          <p>API Requests</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="errorCount">0</h3>
+          <p>Errors</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://mery-rose-backend.onrender.com/api';
+    let authToken = localStorage.getItem('auth-token');
+    let requestCount = 0;
+    let errorCount = 0;
+
+    // Update UI on load
+    updateTokenDisplay();
+
+    function updateTokenDisplay() {
+      const tokenDisplay = document.getElementById('currentToken');
+      const loginStatus = document.getElementById('loginStatus');
+      const tokenStatus = document.getElementById('tokenStatus');
+      
+      if (authToken) {
+        tokenDisplay.textContent = authToken.substring(0, 30) + '...';
+        loginStatus.innerHTML = '<span class="status-badge status-success">✓ Logged In</span>';
+        tokenStatus.innerHTML = '<span class="status-badge status-success">✓ Token Found</span>';
+      } else {
+        tokenDisplay.textContent = 'Not logged in';
+        loginStatus.innerHTML = '<span class="status-badge status-error">✗ Not Logged In</span>';
+        tokenStatus.innerHTML = '<span class="status-badge status-error">✗ No Token</span>';
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('requestCount').textContent = requestCount;
+      document.getElementById('errorCount').textContent = errorCount;
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const resultDiv = document.getElementById('loginResult');
+      
+      if (!email || !password) {
+        resultDiv.innerHTML = '<div class="error-box">❌ Please enter both email and password</div>';
+        return;
+      }
+      
+      try {
+        resultDiv.innerHTML = '<div class="info-box">⏳ Logging in...</div>';
+        requestCount++;
+        updateStats();
+        
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          authToken = data.token;
+          localStorage.setItem('auth-token', authToken);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          updateTokenDisplay();
+          
+          resultDiv.innerHTML = `
+            <div class="success-box">
+              <strong>✅ Login Successful!</strong><br>
+              User: ${data.user.email}<br>
+              Role: ${data.user.role}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          errorCount++;
+          updateStats();
+          resultDiv.innerHTML = `
+            <div class="error-box">
+              <strong>❌ Login Failed (${response.status})</strong><br>
+              ${data.error || 'Unknown error'}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        errorCount++;
+        updateStats();
+        resultDiv.innerHTML = `<div class="error-box">❌ Network Error: ${error.message}</div>`;
+      }
+    }
+
+    function clearAuth() {
+      localStorage.removeItem('auth-token');
+      localStorage.removeItem('user');
+      authToken = null;
+      updateTokenDisplay();
+      document.getElementById('loginResult').innerHTML = '<div class="info-box">✓ Authentication cleared</div>';
+    }
+
+    async function checkToken() {
+      const resultDiv = document.getElementById('tokenResult');
+      
+      if (!authToken) {
+        resultDiv.innerHTML = '<div class="error-box">❌ No token found. Please login first.</div>';
+        return;
+      }
+      
+      try {
+        resultDiv.innerHTML = '<div class="info-box">⏳ Verifying token...</div>';
+        requestCount++;
+        updateStats();
+        
+        const response = await fetch(`${API_URL}/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <div class="success-box">
+              <strong>✅ Token is Valid!</strong><br>
+              User: ${data.email}<br>
+              ID: ${data.id}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          errorCount++;
+          updateStats();
+          resultDiv.innerHTML = `
+            <div class="error-box">
+              <strong>❌ Token Invalid (${response.status})</strong><br>
+              ${data.error || 'Token verification failed'}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        errorCount++;
+        updateStats();
+        resultDiv.innerHTML = `<div class="error-box">❌ Error: ${error.message}</div>`;
+      }
+    }
+
+    async function getOrders() {
+      const resultDiv = document.getElementById('ordersResult');
+      const ordersStatus = document.getElementById('ordersStatus');
+      
+      if (!authToken) {
+        resultDiv.innerHTML = '<div class="error-box">❌ Please login first</div>';
+        return;
+      }
+      
+      try {
+        resultDiv.innerHTML = '<div class="info-box">⏳ Fetching orders...</div>';
+        requestCount++;
+        updateStats();
+        
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          const orderCount = data.orders?.length || 0;
+          document.getElementById('orderCount').textContent = orderCount;
+          ordersStatus.innerHTML = '<span class="status-badge status-success">✓ Success</span>';
+          
+          resultDiv.innerHTML = `
+            <div class="success-box">
+              <strong>✅ Orders Fetched Successfully!</strong><br>
+              Found ${orderCount} order(s)
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          errorCount++;
+          updateStats();
+          ordersStatus.innerHTML = '<span class="status-badge status-error">✗ Failed</span>';
+          
+          resultDiv.innerHTML = `
+            <div class="error-box">
+              <strong>❌ Failed to Fetch Orders (${response.status})</strong><br>
+              ${data.error || 'Unknown error'}<br>
+              ${data.details || ''}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        errorCount++;
+        updateStats();
+        ordersStatus.innerHTML = '<span class="status-badge status-error">✗ Error</span>';
+        resultDiv.innerHTML = `<div class="error-box">❌ Network Error: ${error.message}</div>`;
+      }
+    }
+
+    async function getOrdersWithDetails() {
+      const resultDiv = document.getElementById('ordersResult');
+      
+      if (!authToken) {
+        resultDiv.innerHTML = '<div class="error-box">❌ Please login first</div>';
+        return;
+      }
+      
+      try {
+        resultDiv.innerHTML = '<div class="info-box">⏳ Fetching orders with full details...</div>';
+        requestCount++;
+        updateStats();
+        
+        const startTime = performance.now();
+        
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          const orderCount = data.orders?.length || 0;
+          document.getElementById('orderCount').textContent = orderCount;
+          
+          let detailsHtml = `
+            <div class="success-box">
+              <strong>✅ Orders Fetched Successfully!</strong><br>
+              Found ${orderCount} order(s)<br>
+              Response Time: ${duration}ms
+            </div>
+          `;
+          
+          if (orderCount > 0) {
+            detailsHtml += '<h3>Order Details:</h3>';
+            data.orders.forEach((order, index) => {
+              detailsHtml += `
+                <div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #667eea;">
+                  <strong>Order #${order.id}</strong><br>
+                  Status: <span class="status-badge status-info">${order.status}</span><br>
+                  Total: ${order.total} DT<br>
+                  Items: ${order.items?.length || 0}<br>
+                  Created: ${new Date(order.created_at).toLocaleString()}
+                </div>
+              `;
+            });
+          }
+          
+          detailsHtml += `<h3>Raw Response:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+          resultDiv.innerHTML = detailsHtml;
+        } else {
+          errorCount++;
+          updateStats();
+          
+          resultDiv.innerHTML = `
+            <div class="error-box">
+              <strong>❌ Failed (${response.status})</strong><br>
+              ${data.error || 'Unknown error'}<br>
+              ${data.details || ''}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        errorCount++;
+        updateStats();
+        resultDiv.innerHTML = `<div class="error-box">❌ Error: ${error.message}</div>`;
+      }
+    }
+
+    async function getOrdersNoAuth() {
+      const resultDiv = document.getElementById('noAuthResult');
+      
+      try {
+        resultDiv.innerHTML = '<div class="info-box">⏳ Fetching orders without authentication...</div>';
+        requestCount++;
+        updateStats();
+        
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.status === 401) {
+          resultDiv.innerHTML = `
+            <div class="success-box">
+              <strong>✅ Expected Behavior!</strong><br>
+              The endpoint correctly returned 401 Unauthorized when no token was provided.
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="error-box">
+              <strong>⚠️ Unexpected Response (${response.status})</strong><br>
+              Expected 401, but got ${response.status}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error-box">❌ Error: ${error.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

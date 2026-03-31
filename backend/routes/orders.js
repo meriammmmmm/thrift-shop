@@ -7,12 +7,16 @@ const router = express.Router();
 // Get user orders
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    console.log('📦 Fetching orders for user:', req.user.id);
+    
     // Get orders
     const orders = await db.all(`
       SELECT * FROM orders 
       WHERE user_id = ?
       ORDER BY created_at DESC
     `, [req.user.id]);
+
+    console.log(`✅ Found ${orders.length} orders for user ${req.user.id}`);
 
     // Get order items for each order - ALWAYS show items even if product is sold/deleted
     const ordersWithItems = [];
@@ -43,13 +47,18 @@ router.get('/', authenticateToken, async (req, res) => {
       });
     }
 
+    console.log('✅ Orders with items prepared successfully');
     res.json({
       orders: ordersWithItems
     });
   } catch (error) {
-    console.error('Orders fetch error:', error);
-    console.error('Error details:', error.message, error.stack);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    console.error('❌ Orders fetch error:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to fetch orders', 
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 

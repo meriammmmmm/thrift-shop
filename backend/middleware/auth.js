@@ -6,21 +6,30 @@ const authenticateToken = async (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log('❌ No token provided in request');
     return res.status(401).json({ error: 'Access token required' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ Token verified for user:', decoded.userId);
+    
     const user = await db.get('SELECT id, email, name, role, admin_company_id FROM users WHERE id = ?', [decoded.userId]);
     
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      console.log('❌ User not found for token:', decoded.userId);
+      return res.status(401).json({ error: 'Invalid token - user not found' });
     }
 
+    console.log('✅ User authenticated:', user.email);
     req.user = user;
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    console.error('❌ Token verification failed:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(403).json({ error: 'Token expired - please login again' });
+    }
+    return res.status(403).json({ error: 'Invalid token' });
   }
 };
 

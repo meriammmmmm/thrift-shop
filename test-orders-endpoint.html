@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Orders Endpoint</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Orders Endpoint</h1>
+  
+  <div class="section">
+    <h2>1. Login First</h2>
+    <input type="email" id="email" placeholder="Email" value="test@example.com">
+    <input type="password" id="password" placeholder="Password" value="password123">
+    <button onclick="login()">Login</button>
+    <div id="loginResult"></div>
+  </div>
+
+  <div class="section">
+    <h2>2. Get Orders</h2>
+    <p>Token: <span id="tokenDisplay">Not logged in</span></p>
+    <button onclick="getOrders()">Get My Orders</button>
+    <div id="ordersResult"></div>
+  </div>
+
+  <div class="section">
+    <h2>3. Test Without Token (Should get 401)</h2>
+    <button onclick="getOrdersNoAuth()">Get Orders Without Auth</button>
+    <div id="noAuthResult"></div>
+  </div>
+
+  <script>
+    const API_URL = 'https://mery-rose-backend.onrender.com/api';
+    let authToken = localStorage.getItem('auth-token');
+
+    // Display current token
+    if (authToken) {
+      document.getElementById('tokenDisplay').textContent = authToken.substring(0, 20) + '...';
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const resultDiv = document.getElementById('loginResult');
+      
+      try {
+        resultDiv.innerHTML = '<p>Logging in...</p>';
+        
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          authToken = data.token;
+          localStorage.setItem('auth-token', authToken);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          document.getElementById('tokenDisplay').textContent = authToken.substring(0, 20) + '...';
+          
+          resultDiv.innerHTML = `
+            <p class="success">✅ Login successful!</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <p class="error">❌ Login failed</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+    async function getOrders() {
+      const resultDiv = document.getElementById('ordersResult');
+      
+      if (!authToken) {
+        resultDiv.innerHTML = '<p class="error">❌ Please login first</p>';
+        return;
+      }
+      
+      try {
+        resultDiv.innerHTML = '<p>Fetching orders...</p>';
+        
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <p class="success">✅ Orders fetched successfully!</p>
+            <p>Found ${data.orders?.length || 0} orders</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <p class="error">❌ Failed to fetch orders (Status: ${response.status})</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+    async function getOrdersNoAuth() {
+      const resultDiv = document.getElementById('noAuthResult');
+      
+      try {
+        resultDiv.innerHTML = '<p>Fetching orders without auth...</p>';
+        
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        
+        resultDiv.innerHTML = `
+          <p class="error">Status: ${response.status}</p>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

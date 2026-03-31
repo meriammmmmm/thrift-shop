@@ -104,31 +104,47 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      console.log('Loading orders...');
+      
+      // Check if token exists
+      const token = localStorage.getItem('auth-token');
+      console.log('🔑 Token exists:', !!token);
+      if (token) {
+        console.log('🔑 Token preview:', token.substring(0, 20) + '...');
+      }
+      
+      console.log('📦 Loading orders...');
       const response = await api.getOrders();
-      console.log('Orders response:', response);
+      console.log('✅ Orders response:', response);
+      console.log('✅ Number of orders:', response.orders?.length || 0);
       setOrders(response.orders || []);
     } catch (error: any) {
-      console.error('Load orders error:', error);
-      console.error('Error details:', {
-        status: error.status,
-        message: error.message,
-        response: error.response
-      });
+      console.error('❌ Load orders error:', error);
+      console.error('❌ Error status:', error.status);
+      console.error('❌ Error message:', error.message);
       
       // Handle authentication errors
-      if (error.status === 401 || error.message?.includes('token') || error.message?.includes('Invalid credentials')) {
-        console.log('Authentication error, redirecting to login...');
+      if (error.status === 401 || error.status === 403 || error.message?.includes('token') || error.message?.includes('Session expired')) {
+        console.log('🔒 Authentication error, redirecting to login...');
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user');
-        router.push('/login');
+        
+        setModalConfig({
+          title: 'Session Expired',
+          message: 'Your session has expired. Please sign in again.',
+          type: 'error'
+        });
+        setShowModal(true);
+        
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
         return;
       }
       
       // Show error to user
       setModalConfig({
-        title: 'Error',
-        message: 'Failed to load orders. Please try refreshing the page.',
+        title: 'Error Loading Orders',
+        message: error.message || 'Failed to load orders. Please try refreshing the page.',
         type: 'error'
       });
       setShowModal(true);
