@@ -19,6 +19,7 @@ interface UserInfo {
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep] = useState<'form' | 'verify'>('form'); // Add verification step
+  const [verificationMethod, setVerificationMethod] = useState<'email' | 'sms'>('email'); // Add method choice
   const [verificationCode, setVerificationCode] = useState('');
   const [formData, setFormData] = useState({
     email: '',
@@ -50,6 +51,19 @@ export default function LoginPage() {
 
     try {
       const emailToUse = userInfo.email || formData.email;
+      const phoneToUse = userInfo.phone;
+      
+      // Validate based on method
+      if (verificationMethod === 'email' && !emailToUse) {
+        setError('Please enter your email address');
+        setLoading(false);
+        return;
+      }
+      if (verificationMethod === 'sms' && !phoneToUse) {
+        setError('Please enter your phone number');
+        setLoading(false);
+        return;
+      }
       
       // Hardcoded fallback for API URL
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
@@ -58,8 +72,9 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: emailToUse,
-          method: 'email',
+          email: verificationMethod === 'email' ? emailToUse : undefined,
+          phone: verificationMethod === 'sms' ? phoneToUse : undefined,
+          method: verificationMethod,
           type: 'registration'
         })
       });
@@ -75,7 +90,8 @@ export default function LoginPage() {
         setSuccess(`Development Mode: Your verification code is ${data.code}`);
         setVerificationCode(data.code); // Auto-fill the code
       } else {
-        setSuccess('Verification code sent to your email!');
+        const destination = verificationMethod === 'email' ? 'email' : 'phone';
+        setSuccess(`Verification code sent to your ${destination}!`);
       }
       
       setStep('verify');
@@ -275,15 +291,15 @@ export default function LoginPage() {
           {!isLogin && step === 'verify' && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="text-5xl mb-4">📧</div>
+                <div className="text-5xl mb-4">{verificationMethod === 'email' ? '📧' : '📱'}</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Check Your Email
+                  {verificationMethod === 'email' ? 'Check Your Email' : 'Check Your Phone'}
                 </h3>
                 <p className="text-sm text-gray-600 mb-1">
                   We sent a 6-digit verification code to:
                 </p>
                 <p className="text-sm font-medium text-gray-900">
-                  {userInfo.email || formData.email}
+                  {verificationMethod === 'email' ? (userInfo.email || formData.email) : userInfo.phone}
                 </p>
               </div>
 
@@ -596,6 +612,51 @@ export default function LoginPage() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Verification Method Selector (only for signup) */}
+            {!isLogin && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  How would you like to receive your verification code?
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setVerificationMethod('email')}
+                    className={`flex items-center justify-center px-4 py-3 border-2 rounded-lg transition-all ${
+                      verificationMethod === 'email'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] bg-opacity-10 text-[var(--color-primary)]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium">Email</span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setVerificationMethod('sms')}
+                    className={`flex items-center justify-center px-4 py-3 border-2 rounded-lg transition-all ${
+                      verificationMethod === 'sms'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] bg-opacity-10 text-[var(--color-primary)]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium">SMS</span>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {verificationMethod === 'email' 
+                    ? 'Code will be sent to your email address' 
+                    : 'Code will be sent via SMS to your phone'}
+                </p>
+              </div>
             )}
 
             <div>
