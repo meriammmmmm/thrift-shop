@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Render Deployment Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Render Deployment Test</h1>
+        <p class="subtitle">Test your backend and frontend deployment on Render</p>
+
+        <!-- Backend URL Configuration -->
+        <div class="test-section">
+            <h3>⚙️ Configuration</h3>
+            <label>Backend URL:</label>
+            <input type="text" id="backendUrl" value="https://mery-rose-backend.onrender.com/api" placeholder="https://your-backend.onrender.com/api">
+        </div>
+
+        <!-- Health Check Test -->
+        <div class="test-section">
+            <h3>1. Backend Health Check</h3>
+            <p>Tests if your backend is running and responding</p>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div id="healthResult"></div>
+        </div>
+
+        <!-- CORS Test -->
+        <div class="test-section">
+            <h3>2. CORS Configuration Test</h3>
+            <p>Tests if CORS is properly configured for cross-origin requests</p>
+            <button onclick="testCors()">Test CORS</button>
+            <div id="corsResult"></div>
+        </div>
+
+        <!-- Verification Code Test -->
+        <div class="test-section">
+            <h3>3. Verification Code Endpoint Test</h3>
+            <p>Tests the endpoint that was returning 404 errors</p>
+            <input type="email" id="testEmail" placeholder="test@example.com" value="test@example.com">
+            <button onclick="testVerificationCode()">Test Send Verification Code</button>
+            <div id="verificationResult"></div>
+        </div>
+
+        <!-- Inventory Fix Test -->
+        <div class="test-section">
+            <h3>4. Manual Inventory Fix</h3>
+            <p>Run the inventory migration manually (only needed once)</p>
+            <button onclick="testInventoryFix()">Run Inventory Fix</button>
+            <div id="inventoryResult"></div>
+        </div>
+
+        <!-- Environment Variables Check -->
+        <div class="test-section">
+            <h3>5. Frontend Environment Check</h3>
+            <p>Check if environment variables are properly loaded in the browser</p>
+            <button onclick="checkEnvVars()">Check Environment Variables</button>
+            <div id="envResult"></div>
+        </div>
+
+        <!-- Run All Tests -->
+        <div class="test-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <button onclick="runAllTests()" style="background: white; color: #667eea; font-weight: bold; width: 100%;">
+                🚀 Run All Tests
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function getBackendUrl() {
+            return document.getElementById('backendUrl').value.replace(/\/$/, '');
+        }
+
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="result info">Testing...<span class="loading"></span></div>';
+        }
+
+        function showResult(elementId, success, message, data = null) {
+            const resultDiv = document.getElementById(elementId);
+            const className = success ? 'success' : 'error';
+            const icon = success ? '✅' : '❌';
+            let html = `<div class="result ${className}">${icon} ${message}`;
+            if (data) {
+                html += `\n\n${JSON.stringify(data, null, 2)}`;
+            }
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+
+        async function testHealth() {
+            showLoading('healthResult');
+            try {
+                const response = await fetch(`${getBackendUrl()}/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'OK') {
+                    showResult('healthResult', true, 'Backend is running!', data);
+                } else {
+                    showResult('healthResult', false, 'Backend returned unexpected response', data);
+                }
+            } catch (error) {
+                showResult('healthResult', false, `Failed to connect to backend: ${error.message}`);
+            }
+        }
+
+        async function testCors() {
+            showLoading('corsResult');
+            try {
+                const response = await fetch(`${getBackendUrl()}/cors-test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('corsResult', true, 'CORS is properly configured!', data);
+                } else {
+                    showResult('corsResult', false, 'CORS test failed', data);
+                }
+            } catch (error) {
+                showResult('corsResult', false, `CORS error: ${error.message}\n\nThis usually means CORS is not properly configured.`);
+            }
+        }
+
+        async function testVerificationCode() {
+            showLoading('verificationResult');
+            const email = document.getElementById('testEmail').value;
+            
+            if (!email) {
+                showResult('verificationResult', false, 'Please enter an email address');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBackendUrl()}/auth/send-verification-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        method: 'email',
+                        type: 'registration'
+                    })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('verificationResult', true, 'Verification endpoint is working!', data);
+                } else {
+                    showResult('verificationResult', false, `Endpoint returned error (${response.status})`, data);
+                }
+            } catch (error) {
+                showResult('verificationResult', false, `Failed to call verification endpoint: ${error.message}`);
+            }
+        }
+
+        async function testInventoryFix() {
+            showLoading('inventoryResult');
+            try {
+                const response = await fetch(`${getBackendUrl()}/fix-inventory`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showResult('inventoryResult', true, 'Inventory fix completed!', data);
+                } else {
+                    showResult('inventoryResult', false, 'Inventory fix failed', data);
+                }
+            } catch (error) {
+                showResult('inventoryResult', false, `Failed to run inventory fix: ${error.message}`);
+            }
+        }
+
+        function checkEnvVars() {
+            const envResult = document.getElementById('envResult');
+            
+            // This will only work if this HTML is served from the Next.js app
+            // For standalone testing, we'll show what should be checked
+            const info = {
+                note: 'Open browser console on your deployed frontend to check these:',
+                commands: [
+                    'console.log(process.env.NEXT_PUBLIC_API_URL)',
+                    'console.log(process.env.NEXT_PUBLIC_COMPANY_ID)',
+                    'console.log(process.env.NEXT_PUBLIC_COMPANY_NAME)'
+                ],
+                expectedValues: {
+                    NEXT_PUBLIC_API_URL: 'https://mery-rose-backend.onrender.com/api',
+                    NEXT_PUBLIC_COMPANY_ID: '2',
+                    NEXT_PUBLIC_COMPANY_NAME: 'Pearl Box'
+                },
+                currentBackendUrl: getBackendUrl()
+            };
+            
+            showResult('envResult', true, 'Environment variable check info:', info);
+        }
+
+        async function runAllTests() {
+            await testHealth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testCors();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testVerificationCode();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            checkEnvVars();
+        }
+
+        // Auto-run health check on load
+        window.addEventListener('load', () => {
+            setTimeout(testHealth, 500);
+        });
+    </script>
+</body>
+</html>

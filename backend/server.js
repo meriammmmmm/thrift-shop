@@ -62,9 +62,9 @@ app.use(helmet({
 // });
 // app.use(limiter);
 
-// Body parsing middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Body parsing middleware - optimized for faster startup
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -88,8 +88,61 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     message: 'Thrift Shop Backend is running!',
     timestamp: new Date().toISOString(),
-    cors: 'enabled'
+    cors: 'enabled',
+    env: process.env.NODE_ENV || 'development'
   });
+});
+
+// Manual inventory fix endpoint
+app.get('/api/fix-inventory', async (req, res) => {
+  try {
+    console.log('🔧 Running manual inventory migration...');
+    
+    // Fix CONFIRMED/SHIPPED/DELIVERED orders
+    const completedOrders = await db.all(`
+      SELECT DISTINCT oi.product_id 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status IN ('CONFIRMED', 'SHIPPED', 'DELIVERED')
+    `);
+    
+    for (const item of completedOrders) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = FALSE,
+            reservation_status = 'sold',
+            reserved_by_order_id = NULL
+        WHERE id = ?
+      `, [item.product_id]);
+    }
+    
+    // Fix PROCESSING orders
+    const processingOrders = await db.all(`
+      SELECT oi.product_id, o.id as order_id
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'PROCESSING'
+    `);
+    
+    for (const item of processingOrders) {
+      await db.run(`
+        UPDATE products 
+        SET in_stock = TRUE,
+            reservation_status = 'reserved',
+            reserved_by_order_id = ?
+        WHERE id = ?
+      `, [item.order_id, item.product_id]);
+    }
+    
+    res.json({ 
+      success: true, 
+      soldProducts: completedOrders.length,
+      reservedProducts: processingOrders.length,
+      message: 'Inventory migration complete!'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Fix sequences endpoint (call once after migration)
@@ -214,8 +267,14 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Run inventory migration on startup
+// Run inventory migration on startup (disabled for faster startup on Render)
 async function fixInventoryOnStartup() {
+  // Skip on production to speed up startup
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⏭️  Skipping inventory migration in production (call /api/fix-inventory manually if needed)');
+    return;
+  }
+  
   try {
     console.log('🔧 Running inventory migration...');
     
