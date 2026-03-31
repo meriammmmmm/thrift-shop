@@ -300,15 +300,21 @@ export default function ProductDetails({
             {/* Add to Cart Button */}
             <button 
               onClick={() => onAddToCart(product)}
-              disabled={!product.inStock || isInCart}
+              disabled={!product.inStock || isInCart || product.reservation_status === 'reserved' || product.reservation_status === 'sold'}
               className={`w-full py-3 rounded-lg font-medium text-sm mb-4 transition-all duration-300 hover:scale-105 magnetic-btn shadow-lg hover:shadow-xl ${
-                !product.inStock || isInCart
+                !product.inStock || isInCart || product.reservation_status === 'reserved' || product.reservation_status === 'sold'
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   : 'text-white hover:opacity-90'
               }`}
-              style={{ backgroundColor: product.inStock && !isInCart ? theme.primary : undefined }}
+              style={{ backgroundColor: product.inStock && !isInCart && product.reservation_status !== 'reserved' && product.reservation_status !== 'sold' ? theme.primary : undefined }}
             >
-              {!product.inStock ? 'Sold Out' : isInCart ? 'In Cart' : 'Add to Bag'}
+              {product.reservation_status === 'reserved' 
+                ? '🔒 Reserved' 
+                : product.reservation_status === 'sold' || !product.inStock 
+                ? '❌ Sold Out' 
+                : isInCart 
+                ? '✓ In Cart' 
+                : 'Add to Bag'}
             </button>
 
             {/* Tabs */}
