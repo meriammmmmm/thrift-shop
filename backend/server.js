@@ -267,11 +267,11 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Run inventory migration on startup (disabled for faster startup on Render)
+// Run inventory migration on startup (disabled by default for faster startup)
 async function fixInventoryOnStartup() {
-  // Skip on production to speed up startup
-  if (process.env.NODE_ENV === 'production') {
-    console.log('⏭️  Skipping inventory migration in production (call /api/fix-inventory manually if needed)');
+  // Skip unless explicitly enabled
+  if (process.env.RUN_INVENTORY_FIX !== 'true') {
+    console.log('⏭️  Skipping inventory migration (set RUN_INVENTORY_FIX=true to enable)');
     return;
   }
   
@@ -330,24 +330,27 @@ app.listen(PORT, '0.0.0.0', async () => {
   console.log(`📁 Database path: ${process.env.DB_PATH || './database/thrift_shop.db'}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Create category_products table if it doesn't exist
-  try {
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS category_products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category_id INTEGER NOT NULL,
-        product_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        UNIQUE(category_id, product_id)
-      )
-    `);
-    console.log('✅ category_products table initialized');
-  } catch (error) {
-    console.error('❌ Failed to create category_products table:', error);
-  }
-  
-  // Run inventory fix
-  await fixInventoryOnStartup();
+  // Run async initialization tasks without blocking server startup
+  setImmediate(async () => {
+    // Create category_products table if it doesn't exist
+    try {
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS category_products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          UNIQUE(category_id, product_id)
+        )
+      `);
+      console.log('✅ category_products table initialized');
+    } catch (error) {
+      console.error('❌ Failed to create category_products table:', error);
+    }
+    
+    // Run inventory fix
+    await fixInventoryOnStartup();
+  });
 });
