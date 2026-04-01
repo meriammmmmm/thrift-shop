@@ -14,6 +14,11 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAddToCart, onToggleWishlist, onViewDetails, isWishlisted, isInCart, currencySymbol = '$' }: ProductCardProps) {
   const { theme } = useTheme();
+  
+  console.log('ProductCard - Product:', product.name);
+  console.log('ProductCard - Reservation Status:', product.reservation_status);
+  console.log('ProductCard - In Stock:', product.inStock);
+  
   const discountPercentage = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -55,29 +60,23 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
         )}
       </button>
 
-      {/* Discount Badge */}
-      {discountPercentage > 0 && product.inStock && (
+      {/* Status Badges - Show only one based on priority */}
+      {product.reservation_status === 'sold' || !product.inStock ? (
+        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-red-600">
+          SOLD OUT
+        </div>
+      ) : product.reservation_status === 'reserved' ? (
+        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
+          RESERVED
+        </div>
+      ) : discountPercentage > 0 ? (
         <div 
           className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded text-xs font-bold text-white"
           style={{ backgroundColor: theme.primary }}
         >
           -{discountPercentage}%
         </div>
-      )}
-
-      {/* Reserved Badge - Yellow/Orange */}
-      {product.reservation_status === 'reserved' && (
-        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
-          RESERVED
-        </div>
-      )}
-
-      {/* Sold Out Badge - Red */}
-      {(product.reservation_status === 'sold' || !product.inStock) && product.reservation_status !== 'reserved' && (
-        <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-md text-xs font-bold text-white bg-red-600">
-          SOLD OUT
-        </div>
-      )}
+      ) : null}
 
       {/* Image Container */}
       <div 

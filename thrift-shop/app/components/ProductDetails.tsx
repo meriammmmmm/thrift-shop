@@ -36,6 +36,21 @@ export default function ProductDetails({
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
+  // Reset scroll position when product changes or modal opens
+  useEffect(() => {
+    if (isOpen && product) {
+      // Reset scroll to top
+      const modalContent = document.querySelector('.overflow-y-auto');
+      if (modalContent) {
+        modalContent.scrollTop = 0;
+      }
+      // Reset image index
+      setSelectedImageIndex(0);
+      // Reset to details tab
+      setActiveTab('details');
+    }
+  }, [isOpen, product?.id]);
+
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -104,6 +119,10 @@ export default function ProductDetails({
 
   if (!isOpen || !product) return null;
 
+  console.log('ProductDetails - Product:', product);
+  console.log('ProductDetails - Reservation Status:', product.reservation_status);
+  console.log('ProductDetails - In Stock:', product.inStock);
+
   const discountPercentage = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -118,6 +137,16 @@ export default function ProductDetails({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="grid md:grid-cols-2 gap-0">
+          {/* Close Button - Top Right */}
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:rotate-90"
+          >
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           {/* Image Gallery */}
           <div className="relative bg-white">
             <div 
@@ -152,12 +181,7 @@ export default function ProductDetails({
               </div>
               
               {/* Swipe Indicator */}
-              {product.images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
-                  <i className="fas fa-hand-pointer mr-1"></i>
-                  Swipe or drag to view more
-                </div>
-              )}
+             
               
               {/* Navigation Arrows */}
               {product.images.length > 1 && (
@@ -203,12 +227,20 @@ export default function ProductDetails({
                 )}
               </button>
 
-              {/* Discount Badge */}
-              {discountPercentage > 0 && (
+              {/* Status Badges - Show only one based on priority */}
+              {product.reservation_status === 'sold' || !product.inStock ? (
+                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-gray-600 text-white text-sm font-bold shadow-lg">
+                  ❌ Sold Out
+                </div>
+              ) : product.reservation_status === 'reserved' ? (
+                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-orange-500 text-white text-sm font-bold shadow-lg">
+                  🔒 Reserved
+                </div>
+              ) : discountPercentage > 0 ? (
                 <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-sm font-bold" style={{ backgroundColor: theme.primary }}>
                   -{discountPercentage}%
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Thumbnails */}
@@ -243,21 +275,13 @@ export default function ProductDetails({
                 <p className="text-xs text-gray-500 mb-1">{product.brand}</p>
                 <h1 className="text-xl font-semibold text-gray-900 leading-tight">{product.name}</h1>
               </div>
-              <button 
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 ml-4 p-2 hover:bg-gray-100 rounded-full transition-all duration-200 hover:rotate-90"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
 
             {/* Price */}
             <div className="mb-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{currencySymbol} {product.price.toFixed(2)}</span>
-                {product.originalPrice && (
+                <span className="text-2xl font-bold text-gray-900">{currencySymbol}{product.price.toFixed(2)}</span>
+                {product.originalPrice && product.originalPrice !== product.price && (
                   <span className="text-base text-gray-400 line-through">{currencySymbol}{product.originalPrice.toFixed(2)}</span>
                 )}
               </div>

@@ -114,37 +114,43 @@ export default function Home() {
       }
       
       if (response.products) {
-        const transformedProducts = response.products.map((product: any) => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          originalPrice: product.original_price,
-          images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
-          brand: product.brand,
-          size: product.size,
-          category: product.category,
-          condition: product.condition,
-          color: product.color,
-          inStock: product.in_stock === 1 || product.in_stock === true || product.in_stock === '1',
-          material: product.material,
-          measurements: product.measurements || {},
-          careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
-          tags: Array.isArray(product.tags) ? product.tags : [],
-          seller: {
-            name: product.seller_name || 'Unknown',
-            rating: product.seller_rating || 4.5,
-            location: product.seller_location || 'Unknown'
-          },
-          company: product.company ? {
-            id: product.company.id,
-            name: product.company.name,
-            description: product.company.description
-          } : null,
-          dateAdded: product.created_at,
-          views: product.views || 0,
-          likes: product.likes || 0
-        }));
+        const transformedProducts = response.products.map((product: any) => {
+          console.log('Loading product:', product.name, 'reservation_status:', product.reservation_status);
+          
+          return {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            originalPrice: product.original_price,
+            images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+            brand: product.brand,
+            size: product.size,
+            category: product.category,
+            condition: product.condition,
+            color: product.color,
+            inStock: product.in_stock === 1 || product.in_stock === true || product.in_stock === '1',
+            reservation_status: product.reservation_status || 'available',
+            reserved_by_order_id: product.reserved_by_order_id || null,
+            material: product.material,
+            measurements: product.measurements || {},
+            careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
+            tags: Array.isArray(product.tags) ? product.tags : [],
+            seller: {
+              name: product.seller_name || 'Unknown',
+              rating: product.seller_rating || 4.5,
+              location: product.seller_location || 'Unknown'
+            },
+            company: product.company ? {
+              id: product.company.id,
+              name: product.company.name,
+              description: product.company.description
+            } : null,
+            dateAdded: product.created_at,
+            views: product.views || 0,
+            likes: product.likes || 0
+          };
+        });
         setProducts(transformedProducts);
       }
       
@@ -521,7 +527,9 @@ export default function Home() {
       subtitle: "HANDPICKED FOR YOU",
       description: "Every piece tells a story of elegance, grace, and timeless beauty. What will yours be?",
       buttonText: "EXPLORE NOW",
-      image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&h=700&fit=crop"
+            image: "/images/Hero-Large-f20c429c.webp"
+
+      //image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&h=700&fit=crop"
     }
   ];
 
@@ -981,12 +989,16 @@ export default function Home() {
                           alt={product.name}
                           className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'}`}
                         />
-                        {/* Sold Out Badge - Clean and minimal */}
-                        {!product.inStock && (
+                        {/* Status Badges - Show only one based on priority */}
+                        {product.reservation_status === 'sold' || !product.inStock ? (
                           <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
                             SOLD OUT
                           </div>
-                        )}
+                        ) : product.reservation_status === 'reserved' ? (
+                          <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
+                            RESERVED
+                          </div>
+                        ) : null}
                         {wishlist.includes(product.id) && (
                           <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md">
                             <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
@@ -1058,12 +1070,16 @@ export default function Home() {
                     alt={product.name}
                     className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-700`}
                   />
-                  {/* Sold Out Badge - Clean and minimal */}
-                  {!product.inStock && (
+                  {/* Status Badges - Show only one based on priority */}
+                  {product.reservation_status === 'sold' || !product.inStock ? (
                     <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
                       SOLD OUT
                     </div>
-                  )}
+                  ) : product.reservation_status === 'reserved' ? (
+                    <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
+                      RESERVED
+                    </div>
+                  ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <button className="w-full py-2.5 px-4 bg-white text-gray-900 rounded font-medium text-xs tracking-wide uppercase hover:bg-gray-100 transition-colors magnetic-btn">
