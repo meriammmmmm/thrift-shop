@@ -25,8 +25,8 @@ const getApiBaseUrl = () => {
     return envUrl;
   }
   
-  // Default to localhost for local development
-  return 'http://localhost:5001/api';
+  // Default to Render backend for production
+  return 'https://mery-rose-backend.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
