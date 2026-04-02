@@ -13,6 +13,29 @@ export const metadata: Metadata = {
     ],
     apple: "/images/logo-192.png",
   },
+  openGraph: {
+    title: "Mery Rose Clothing",
+    description: "Sustainable style at affordable prices",
+    url: "https://meryrose.me",
+    siteName: "Mery Rose",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Mery Rose Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mery Rose Clothing",
+    description: "Sustainable style at affordable prices",
+    images: ["/og-image.png"],
+  },
+  metadataBase: new URL("https://meryrose.me"),
 };
 
 export default function RootLayout({
