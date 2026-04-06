@@ -83,20 +83,20 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       db.get('SELECT COUNT(*) as count FROM products WHERE company_id = ?', [companyId]),
       db.get('SELECT COUNT(*) as count FROM orders WHERE company_id = ?', [companyId]),
       db.get("SELECT SUM(total) as total FROM orders WHERE company_id = ? AND status != 'CANCELLED'", [companyId]),
-      // Get new users who ordered from this company this week
-      db.get("SELECT COUNT(DISTINCT o.user_id) as count FROM orders o JOIN users u ON o.user_id = u.id WHERE o.company_id = ? AND u.created_at >= NOW() - INTERVAL '7 days'", [companyId]),
-      db.get("SELECT COUNT(*) as count FROM orders WHERE company_id = ? AND created_at >= NOW() - INTERVAL '7 days'", [companyId]),
-      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = ? AND created_at >= NOW() - INTERVAL '7 days' AND status != 'CANCELLED'", [companyId])
+      // Get new users who ordered from this company this week (SQLite compatible)
+      db.get("SELECT COUNT(DISTINCT o.user_id) as count FROM orders o JOIN users u ON o.user_id = u.id WHERE o.company_id = ? AND u.created_at >= datetime('now', '-7 days')", [companyId]),
+      db.get("SELECT COUNT(*) as count FROM orders WHERE company_id = ? AND created_at >= datetime('now', '-7 days')", [companyId]),
+      db.get("SELECT SUM(total) as total FROM orders WHERE company_id = ? AND created_at >= datetime('now', '-7 days') AND status != 'CANCELLED'", [companyId])
     ]);
 
-    // Daily sales for the last 30 days (company specific)
+    // Daily sales for the last 30 days (company specific, SQLite compatible)
     const dailySales = await db.all(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as orders,
         SUM(total) as revenue
       FROM orders 
-      WHERE company_id = ? AND created_at >= NOW() - INTERVAL '30 days'
+      WHERE company_id = ? AND created_at >= datetime('now', '-30 days')
         AND status != 'CANCELLED'
       GROUP BY DATE(created_at)
       ORDER BY date ASC
@@ -174,14 +174,14 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
       GROUP BY status
     `, [companyId]);
 
-    // User registration trend (company-specific customers)
+    // User registration trend (company-specific customers, SQLite compatible)
     const userRegistrations = await db.all(`
       SELECT 
         DATE(u.created_at) as date,
         COUNT(DISTINCT u.id) as registrations
       FROM users u
       JOIN orders o ON u.id = o.user_id
-      WHERE u.created_at >= NOW() - INTERVAL '30 days'
+      WHERE u.created_at >= datetime('now', '-30 days')
         AND u.role != 'ADMIN'
         AND o.company_id = ?
       GROUP BY DATE(u.created_at)

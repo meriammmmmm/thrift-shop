@@ -452,6 +452,10 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY likes DESC';
         break;
+      case 'custom':
+        // Try to order by display_order if column exists, fallback to created_at
+        orderClause = 'ORDER BY COALESCE(display_order, 999999), created_at DESC';
+        break;
     }
 
     // Get products
