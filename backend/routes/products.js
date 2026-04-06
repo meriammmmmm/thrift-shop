@@ -7,6 +7,8 @@ const router = express.Router();
 // Get all products with filtering
 router.get('/', async (req, res) => {
   try {
+    console.log('📥 GET /api/products - Query params:', req.query);
+    
     const {
       page = 1,
       limit = 12,
@@ -74,19 +76,31 @@ router.get('/', async (req, res) => {
     }
 
     // Get products with company information
-    const products = await db.all(
-      `SELECT p.*, c.name as company_name, c.description as company_description 
-       FROM products p 
-       LEFT JOIN companies c ON p.company_id = c.id 
-       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
+    let products;
+    try {
+      products = await db.all(
+        `SELECT p.*, c.name as company_name, c.description as company_description 
+         FROM products p 
+         LEFT JOIN companies c ON p.company_id = c.id 
+         ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+        [...params, parseInt(limit), offset]
+      );
+    } catch (dbError) {
+      // If companies table doesn't exist, fall back to products only
+      console.log('⚠️ Companies table may not exist, fetching products only:', dbError.message);
+      products = await db.all(
+        `SELECT p.* FROM products p ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+        [...params, parseInt(limit), offset]
+      );
+    }
 
     // Get total count
     const totalResult = await db.get(
       `SELECT COUNT(*) as total FROM products p ${whereClause}`,
       params
     );
+
+    console.log(`✅ Found ${products.length} products, total: ${totalResult.total}`);
 
     // Parse JSON fields and add company info
     const parsedProducts = products.map(product => ({
@@ -117,8 +131,9 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Products fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Products fetch error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 });
 
