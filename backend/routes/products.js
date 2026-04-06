@@ -140,6 +140,189 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get products for a specific company storefront - MUST BE BEFORE /:id route
+router.get('/company/:companyId', async (req, res) => {
+  try {
+    console.log('📥 Company products request:', req.params.companyId);
+    
+    const { companyId } = req.params;
+    
+    // Validate companyId - handle empty string, undefined, null, etc.
+    if (!companyId || companyId === '' || companyId === 'undefined' || companyId === 'null') {
+      console.log('❌ Invalid company ID:', companyId);
+      return res.status(400).json({ 
+        error: 'Invalid company ID',
+        message: 'Company ID is required and must be a valid number'
+      });
+    }
+    
+    // Try to parse as integer
+    const parsedCompanyId = parseInt(companyId);
+    if (isNaN(parsedCompanyId) || parsedCompanyId <= 0) {
+      console.log('❌ Company ID is not a valid number:', companyId);
+      return res.status(400).json({ 
+        error: 'Invalid company ID',
+        message: 'Company ID must be a valid positive number'
+      });
+    }
+    
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      brand,
+      search,
+      sortBy = 'newest',
+      minPrice,
+      maxPrice
+    } = req.query;
+
+    console.log('🔍 Fetching company...');
+    // First, get company information
+    const company = await db.get('SELECT * FROM companies WHERE id = ?', [parsedCompanyId]);
+    console.log('Company result:', company);
+    
+    if (!company) {
+      console.log('❌ Company not found or inactive');
+      // Return a default company structure instead of 404
+      return res.json({
+        company: {
+          id: parsedCompanyId,
+          name: 'Mery Rose',
+          description: 'Elegant vintage fashion and timeless pieces',
+          logo: '/images/mery-rose-logo.png',
+          website: 'https://meryrose.com',
+          email: 'contact@meryrose.com',
+          country: 'US',
+          show_testimonials: true
+        },
+        products: [],
+        pagination: {
+          page: 1,
+          limit: 12,
+          total: 0,
+          pages: 0
+        }
+      });
+    }
+
+    console.log('✅ Company found:', company.name);
+
+    const offset = (page - 1) * limit;
+    // Filter by company
+    let whereClause = 'WHERE p.company_id = ?';
+    let params = [parsedCompanyId];
+
+    // Build where clause
+    if (category && category !== 'All') {
+      whereClause += ' AND p.category = ?';
+      params.push(category);
+    }
+
+    if (brand && brand !== 'All') {
+      whereClause += ' AND p.brand = ?';
+      params.push(brand);
+    }
+
+    if (search) {
+      whereClause += ' AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (minPrice) {
+      whereClause += ' AND p.price >= ?';
+      params.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      whereClause += ' AND p.price <= ?';
+      params.push(parseFloat(maxPrice));
+    }
+
+    // Build order clause
+    let orderClause = 'ORDER BY p.created_at DESC';
+    switch (sortBy) {
+      case 'price-low':
+        orderClause = 'ORDER BY p.price ASC';
+        break;
+      case 'price-high':
+        orderClause = 'ORDER BY p.price DESC';
+        break;
+      case 'brand':
+        orderClause = 'ORDER BY p.brand ASC';
+        break;
+      case 'popular':
+        orderClause = 'ORDER BY p.likes DESC';
+        break;
+    }
+
+    // Get products with company information
+    const products = await db.all(
+      `SELECT p.*, c.name as company_name, c.description as company_description 
+       FROM products p 
+       LEFT JOIN companies c ON p.company_id = c.id 
+       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+
+    // Get total count
+    const totalResult = await db.get(
+      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+      params
+    );
+
+    // Parse JSON fields and add company info
+    const parsedProducts = products.map(product => ({
+      ...product,
+      price: parseFloat(product.price),
+      original_price: product.original_price ? parseFloat(product.original_price) : null,
+      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
+      images: product.images ? JSON.parse(product.images) : [],
+      measurements: product.measurements ? JSON.parse(product.measurements) : null,
+      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+      tags: product.tags ? JSON.parse(product.tags) : [],
+      reservation_status: product.reservation_status || 'available',
+      reserved_by_order_id: product.reserved_by_order_id || null,
+      company: {
+        id: product.company_id,
+        name: product.company_name,
+        description: product.company_description
+      }
+    }));
+
+    res.json({
+      company: {
+        id: company.id,
+        name: company.name,
+        description: company.description,
+        logo: company.logo,
+        website: company.website,
+        email: company.email,
+        country: company.country,
+        show_testimonials: company.show_testimonials
+      },
+      products: parsedProducts,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalResult.total,
+        pages: Math.ceil(totalResult.total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Company products fetch error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Company ID:', req.params.companyId);
+    
+    // Return default company data with error info
+    res.status(500).json({
+      error: 'Failed to fetch products',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 // Get single product
 router.get('/:id', async (req, res) => {
   try {
@@ -584,189 +767,6 @@ router.put('/admin/reorder', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Product reorder error:', error);
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get products for a specific company storefront
-router.get('/company/:companyId', async (req, res) => {
-  try {
-    console.log('📥 Company products request:', req.params.companyId);
-    
-    const { companyId } = req.params;
-    
-    // Validate companyId - handle empty string, undefined, null, etc.
-    if (!companyId || companyId === '' || companyId === 'undefined' || companyId === 'null') {
-      console.log('❌ Invalid company ID:', companyId);
-      return res.status(400).json({ 
-        error: 'Invalid company ID',
-        message: 'Company ID is required and must be a valid number'
-      });
-    }
-    
-    // Try to parse as integer
-    const parsedCompanyId = parseInt(companyId);
-    if (isNaN(parsedCompanyId) || parsedCompanyId <= 0) {
-      console.log('❌ Company ID is not a valid number:', companyId);
-      return res.status(400).json({ 
-        error: 'Invalid company ID',
-        message: 'Company ID must be a valid positive number'
-      });
-    }
-    
-    const {
-      page = 1,
-      limit = 12,
-      category,
-      brand,
-      search,
-      sortBy = 'newest',
-      minPrice,
-      maxPrice
-    } = req.query;
-
-    console.log('🔍 Fetching company...');
-    // First, get company information
-    const company = await db.get('SELECT * FROM companies WHERE id = ?', [parsedCompanyId]);
-    console.log('Company result:', company);
-    
-    if (!company) {
-      console.log('❌ Company not found or inactive');
-      // Return a default company structure instead of 404
-      return res.json({
-        company: {
-          id: parsedCompanyId,
-          name: 'Mery Rose',
-          description: 'Elegant vintage fashion and timeless pieces',
-          logo: '/images/mery-rose-logo.png',
-          website: 'https://meryrose.com',
-          email: 'contact@meryrose.com',
-          country: 'US',
-          show_testimonials: true
-        },
-        products: [],
-        pagination: {
-          page: 1,
-          limit: 12,
-          total: 0,
-          pages: 0
-        }
-      });
-    }
-
-    console.log('✅ Company found:', company.name);
-
-    const offset = (page - 1) * limit;
-    // Filter by company
-    let whereClause = 'WHERE p.company_id = ?';
-    let params = [parsedCompanyId];
-
-    // Build where clause
-    if (category && category !== 'All') {
-      whereClause += ' AND p.category = ?';
-      params.push(category);
-    }
-
-    if (brand && brand !== 'All') {
-      whereClause += ' AND p.brand = ?';
-      params.push(brand);
-    }
-
-    if (search) {
-      whereClause += ' AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)';
-      const searchTerm = `%${search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
-    }
-
-    if (minPrice) {
-      whereClause += ' AND p.price >= ?';
-      params.push(parseFloat(minPrice));
-    }
-
-    if (maxPrice) {
-      whereClause += ' AND p.price <= ?';
-      params.push(parseFloat(maxPrice));
-    }
-
-    // Build order clause
-    let orderClause = 'ORDER BY p.created_at DESC';
-    switch (sortBy) {
-      case 'price-low':
-        orderClause = 'ORDER BY p.price ASC';
-        break;
-      case 'price-high':
-        orderClause = 'ORDER BY p.price DESC';
-        break;
-      case 'brand':
-        orderClause = 'ORDER BY p.brand ASC';
-        break;
-      case 'popular':
-        orderClause = 'ORDER BY p.likes DESC';
-        break;
-    }
-
-    // Get products with company information
-    const products = await db.all(
-      `SELECT p.*, c.name as company_name, c.description as company_description 
-       FROM products p 
-       LEFT JOIN companies c ON p.company_id = c.id 
-       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
-
-    // Get total count
-    const totalResult = await db.get(
-      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
-      params
-    );
-
-    // Parse JSON fields and add company info
-    const parsedProducts = products.map(product => ({
-      ...product,
-      price: parseFloat(product.price),
-      original_price: product.original_price ? parseFloat(product.original_price) : null,
-      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
-      images: product.images ? JSON.parse(product.images) : [],
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : [],
-      reservation_status: product.reservation_status || 'available',
-      reserved_by_order_id: product.reserved_by_order_id || null,
-      company: {
-        id: product.company_id,
-        name: product.company_name,
-        description: product.company_description
-      }
-    }));
-
-    res.json({
-      company: {
-        id: company.id,
-        name: company.name,
-        description: company.description,
-        logo: company.logo,
-        website: company.website,
-        email: company.email,
-        country: company.country,
-        show_testimonials: company.show_testimonials
-      },
-      products: parsedProducts,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: totalResult.total,
-        pages: Math.ceil(totalResult.total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('❌ Company products fetch error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Company ID:', req.params.companyId);
-    
-    // Return default company data with error info
-    res.status(500).json({
-      error: 'Failed to fetch products',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    });
   }
 });
 
