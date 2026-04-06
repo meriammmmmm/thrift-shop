@@ -324,37 +324,37 @@ class PostgresDatabase {
   }
 
   async get(sql, params = []) {
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-    const result = await this.pool.query(pgSql, params);
-    return result.rows[0];
-  }
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+      const result = await this.pool.query(pgSql, params);
+      return result.rows[0];
+    }
 
   async all(sql, params = []) {
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-    const result = await this.pool.query(pgSql, params);
-    return result.rows;
-  }
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+      const result = await this.pool.query(pgSql, params);
+      return result.rows;
+    }
 
   async run(sql, params = []) {
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
 
-    if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
-      const result = await this.pool.query(pgSql + ' RETURNING id', params);
+      if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
+        const result = await this.pool.query(pgSql + ' RETURNING id', params);
+        return { 
+          id: result.rows[0]?.id || null,
+          changes: result.rowCount 
+        };
+      }
+
+      const result = await this.pool.query(pgSql, params);
       return { 
-        id: result.rows[0]?.id || null,
+        id: result.rows[0]?.id || result.rowCount,
         changes: result.rowCount 
       };
     }
-
-    const result = await this.pool.query(pgSql, params);
-    return { 
-      id: result.rows[0]?.id || result.rowCount,
-      changes: result.rowCount 
-    };
-  }
 
   async close() {
     await this.pool.end();
