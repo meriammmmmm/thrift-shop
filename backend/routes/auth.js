@@ -304,4 +304,156 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// Forgot Password - Send reset code
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists
+    const user = await db.get('SELECT id, email, name FROM users WHERE email = ?', [email]);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.json({ 
+        message: 'If an account exists with this email, you will receive a password reset code.',
+        success: true
+      });
+    }
+
+    // Generate verification code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save code to database
+    await db.run(
+      'INSERT INTO verification_codes (email, code, type, expires_at) VALUES (?, ?, ?, ?)',
+      [email, code, 'password_reset', expiresAt.toISOString()]
+    );
+
+    // Send reset code via email
+    const result = await sendVerificationEmail(email, code, 'password_reset');
+    
+    // In dev mode, return the code in response for testing
+    const response = { 
+      message: 'If an account exists with this email, you will receive a password reset code.',
+      success: true
+    };
+    
+    // If email service is not configured, return code for testing
+    if (result.dev && result.code) {
+      response.code = result.code;
+      response.note = 'Email service not configured. Use this code for testing.';
+      response.dev = true;
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify Reset Code
+router.post('/verify-reset-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' });
+    }
+
+    // Find verification code
+    const verification = await db.get(
+      'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1',
+      [email, code, 'password_reset']
+    );
+
+    if (!verification) {
+      return res.status(400).json({ error: 'Invalid reset code' });
+    }
+
+    // Check if expired
+    if (new Date(verification.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Reset code has expired. Please request a new one.' });
+    }
+
+    // Mark as verified
+    await db.run(
+      'UPDATE verification_codes SET verified = 1 WHERE id = ?',
+      [verification.id]
+    );
+
+    res.json({ 
+      message: 'Code verified successfully',
+      verified: true
+    });
+  } catch (error) {
+    console.error('Verify reset code error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reset Password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Email, code, and new password are required' });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    // Find and verify the code
+    const verification = await db.get(
+      'SELECT * FROM verification_codes WHERE email = ? AND code = ? AND type = ? AND verified = 1 ORDER BY created_at DESC LIMIT 1',
+      [email, code, 'password_reset']
+    );
+
+    if (!verification) {
+      return res.status(400).json({ error: 'Invalid or unverified reset code' });
+    }
+
+    // Check if expired (even after verification, for extra security)
+    if (new Date(verification.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Reset code has expired. Please request a new one.' });
+    }
+
+    // Find user
+    const user = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await db.run(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashedPassword, user.id]
+    );
+
+    // Invalidate all reset codes for this email
+    await db.run(
+      'UPDATE verification_codes SET verified = 1 WHERE email = ? AND type = ?',
+      [email, 'password_reset']
+    );
+
+    res.json({ 
+      message: 'Password reset successfully. You can now login with your new password.',
+      success: true
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

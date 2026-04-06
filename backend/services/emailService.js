@@ -20,7 +20,7 @@ function generateVerificationCode() {
 }
 
 // Send verification email
-async function sendVerificationEmail(email, code) {
+async function sendVerificationEmail(email, code, type = 'registration') {
   // Check if email is configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     console.log('⚠️ Email not configured. Verification code:', code);
@@ -36,11 +36,25 @@ async function sendVerificationEmail(email, code) {
     };
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-    to: email,
-    subject: 'Email Verification Code',
-    html: `
+  // Different email templates based on type
+  let subject, html;
+  
+  if (type === 'password_reset') {
+    subject = 'Password Reset Code';
+    html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Password Reset Request</h2>
+        <p>You requested to reset your password. Use the code below to reset it:</p>
+        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+          ${code}
+        </div>
+        <p>This code will expire in 10 minutes.</p>
+        <p><strong>If you didn't request a password reset, please ignore this email and your password will remain unchanged.</strong></p>
+      </div>
+    `;
+  } else {
+    subject = 'Email Verification Code';
+    html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Email Verification</h2>
         <p>Your verification code is:</p>
@@ -50,7 +64,14 @@ async function sendVerificationEmail(email, code) {
         <p>This code will expire in 10 minutes.</p>
         <p>If you didn't request this code, please ignore this email.</p>
       </div>
-    `
+    `;
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to: email,
+    subject: subject,
+    html: html
   };
 
   try {
