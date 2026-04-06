@@ -100,13 +100,13 @@ export default function Home() {
       setError(null);
       
       // Get company ID with better fallback handling
-      const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
+      const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       let companyId = parseInt(companyIdStr);
       
       // Validate company ID - use fallback if invalid
       if (isNaN(companyId) || companyId <= 0) {
-        console.warn('Invalid company ID from env, using fallback: 1');
-        companyId = 1; // Fallback to default company (Mery Rose)
+        console.warn('Invalid company ID from env, using fallback: 2');
+        companyId = 2; // Fallback to Mery Rose
       }
       
       console.log('Loading products for company:', companyId);

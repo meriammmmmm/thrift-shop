@@ -169,8 +169,8 @@ class ApiClient {
     // Validate companyId - use fallback if invalid
     let validCompanyId = companyId;
     if (!companyId || isNaN(companyId) || companyId <= 0) {
-      console.warn(`Invalid company ID: ${companyId}, using fallback company ID: 1`);
-      validCompanyId = 1; // Fallback to default company (Mery Rose)
+      console.warn(`Invalid company ID: ${companyId}, using fallback company ID: 2`);
+      validCompanyId = 2; // Fallback to Mery Rose
     }
     
     const queryString = new URLSearchParams(

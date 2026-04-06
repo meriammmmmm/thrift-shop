@@ -14,6 +14,16 @@ module.exports = async function seedDatabase(db) {
       `);
     }
 
+    // Check if company 2 exists
+    const existingCompany2 = await db.get('SELECT id FROM companies WHERE id = 2');
+    if (!existingCompany2) {
+      console.log('📝 Creating company 2...');
+      await db.run(`
+        INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country, website)
+        VALUES (2, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', 1, 'US', 'https://meryrose.com')
+      `);
+    }
+
     // Check if products exist
     const existingProducts = await db.get('SELECT id FROM products LIMIT 1');
     if (existingProducts) {
