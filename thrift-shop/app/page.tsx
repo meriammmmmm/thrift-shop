@@ -81,7 +81,7 @@ export default function Home() {
   const loadCustomCategories = async () => {
     try {
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mery-rose-backend.onrender.com/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
       const response = await fetch(`${apiUrl}/categories/public/${companyId}`);
       
       if (response.ok) {

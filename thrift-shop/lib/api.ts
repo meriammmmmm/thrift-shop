@@ -1,5 +1,5 @@
 // API configuration for connecting to separate backend
-const BACKEND_URL = 'https://mery-rose-backend.onrender.com/api';
+const BACKEND_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
   }
   
   // Default to Render backend for production
-  return 'https://mery-rose-backend.onrender.com/api';
+  return 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
 };
 
 const API_BASE_URL = getApiBaseUrl();

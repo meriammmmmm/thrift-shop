@@ -23,7 +23,7 @@ interface User {
   country?: string;
 }
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
 
 const UserManagement: React.FC<UserManagementProps> = ({ authToken }) => {
   const [users, setUsers] = useState<User[]>([]);

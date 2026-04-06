@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);
