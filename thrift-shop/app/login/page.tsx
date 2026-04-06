@@ -426,6 +426,17 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Forgot Password Link */}
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/forgot-password')}
+                    className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </>
             )}
 
