@@ -40,7 +40,7 @@ services:
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: Pearl Box
       - key: NEXT_PUBLIC_API_URL
-        value: https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+        value: https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 
   # Admin Panel
   - type: web

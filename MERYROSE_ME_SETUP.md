@@ -6,7 +6,7 @@ Your frontend and backend are now configured to work together:
 
 ### Frontend: meryrose.me
 - **Domain**: meryrose.me
-- **Backend API**: https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+- **Backend API**: https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 - **Company**: Mery Rose (ID: 2)
 
 ### Backend: Render
@@ -59,7 +59,7 @@ Make sure these are set in your hosting dashboard:
 ```
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 ```
 
 ## 🔧 Backend Environment Variables on Render
@@ -85,7 +85,7 @@ Your backend is already configured to accept requests from any origin, including
 
 ### Test Backend Health
 ```bash
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
+curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
 ```
 
 Expected response:
@@ -126,7 +126,7 @@ If you need to update the admin panel:
 
 **admin-panel/.env.production:**
 ```
-VITE_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+VITE_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 VITE_COMPANY_ID=2
 ```
 

@@ -50,7 +50,7 @@ Your backend on Render is stuck with "too many pending requests" because:
 
 **Test the backend:**
 ```bash
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
+curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
 ```
 
 Expected response:
@@ -124,7 +124,7 @@ The backend will automatically use PostgreSQL if DATABASE_URL is set.
 1. **Keep backend warm**: 
    - Free tier sleeps after 15 minutes of inactivity
    - Use a service like UptimeRobot to ping every 10 minutes
-   - URL to ping: `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health`
+   - URL to ping: `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health`
 
 2. **Upgrade if needed**:
    - Starter plan ($7/month) has better performance

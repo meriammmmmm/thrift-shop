@@ -15,7 +15,7 @@ import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
 
 interface User {
   id: number;

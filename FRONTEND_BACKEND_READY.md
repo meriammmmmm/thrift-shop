@@ -25,7 +25,7 @@ Your frontend is now fully configured to use the Render backend in production.
 ### 🌐 Current Configuration
 
 **Frontend Domain:** meryrose.me
-**Backend API:** https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+**Backend API:** https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 **Company:** Mery Rose (ID: 2)
 
 ### 🚀 Ready to Deploy
@@ -60,7 +60,7 @@ netlify deploy --prod
   ```
   NEXT_PUBLIC_COMPANY_ID=2
   NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-  NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+  NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
   ```
 
 #### 3. Update Backend on Render
@@ -84,7 +84,7 @@ In your domain registrar (where you bought meryrose.me):
 
 **Test Backend:**
 ```bash
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
+curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
 ```
 
 Expected response:
@@ -109,7 +109,7 @@ Expected response:
 - Mixed localhost and production URLs
 
 **After:**
-- All frontend files point to `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev`
+- All frontend files point to `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api`
 - No localhost references in production code
 - Clean separation between local dev and production
 

@@ -47,7 +47,7 @@ When prompted:
   ```
   NEXT_PUBLIC_COMPANY_ID=2
   NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-  NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+  NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
   ```
 
 #### Option B: Netlify
@@ -75,7 +75,7 @@ Set environment variables in Netlify dashboard.
    ```
    NEXT_PUBLIC_COMPANY_ID=2
    NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-   NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+   NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
    ```
 6. Deploy!
 
@@ -107,7 +107,7 @@ Set environment variables in Netlify dashboard.
 
 ```bash
 # Test backend
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
+curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
 
 # Should return:
 # {"status":"OK","message":"Thrift Shop Backend is running!","cors":"enabled"}
@@ -124,7 +124,7 @@ Then visit:
 | Item | Value |
 |------|-------|
 | Frontend Domain | meryrose.me |
-| Backend API | https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev |
+| Backend API | https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api |
 | Company Name | Mery Rose |
 | Company ID | 2 |
 

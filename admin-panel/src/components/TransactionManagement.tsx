@@ -14,7 +14,7 @@ interface Transaction {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
 
 const TransactionManagement: React.FC<TransactionManagementProps> = ({ authToken }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

@@ -46,7 +46,7 @@ interface OrderItem {
   size?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);

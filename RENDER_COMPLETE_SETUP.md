@@ -33,7 +33,7 @@ EMAIL_FROM=Mery Rose <meriammhadhbi916@gmail.com>
 
 ```bash
 # Health check
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
+curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
 
 # Should return:
 # {"status":"OK","message":"Thrift Shop Backend is running!"}
@@ -44,7 +44,7 @@ curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health
 Your frontend `.env.production` should have:
 
 ```env
-NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 NEXT_PUBLIC_COMPANY_ID=1
 NEXT_PUBLIC_COMPANY_NAME=Mery Rose
 ```
@@ -67,7 +67,7 @@ NEXT_PUBLIC_COMPANY_NAME=Mery Rose
 
 ### Keep Backend Awake (Optional)
 Use a service like UptimeRobot to ping your backend every 5 minutes:
-- URL to ping: `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/health`
+- URL to ping: `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health`
 - Free at: https://uptimerobot.com/
 
 ### Supabase Database
@@ -82,7 +82,7 @@ If your frontend is not using the Render backend yet:
 
 1. Update `thrift-shop/.env.production`:
 ```env
-NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev
+NEXT_PUBLIC_API_URL=https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api
 ```
 
 2. Redeploy frontend:

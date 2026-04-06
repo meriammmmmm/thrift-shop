@@ -156,7 +156,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, onBack }) => {
   const [product, setProduct] = useState<ProductDetails | null>(null);

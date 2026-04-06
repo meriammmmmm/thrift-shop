@@ -123,7 +123,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev';
+const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
 
 const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackToLogin }) => {
   const [loading, setLoading] = useState(false);
