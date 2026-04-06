@@ -717,18 +717,12 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       params
     );
 
-    // Parse JSON fields - limit image data size
+    // Parse JSON fields
     const parsedProducts = products.map(product => {
       let images = [];
       try {
         images = product.images ? JSON.parse(product.images) : [];
-        // Truncate base64 images in list view to prevent huge responses
-        images = images.map(img => {
-          if (typeof img === 'string' && img.startsWith('data:image') && img.length > 100) {
-            return img.substring(0, 100) + '...[truncated]';
-          }
-          return img;
-        });
+        // Keep full images for admin panel
       } catch (e) {
         console.error('Error parsing images for product', product.id, e);
       }
