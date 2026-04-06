@@ -15,7 +15,10 @@ class PostgresDatabase {
         ? { rejectUnauthorized: false } 
         : false,
       connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 30000
+      idleTimeoutMillis: 30000,
+      max: 20, // Maximum pool size
+      min: 2,  // Minimum pool size
+      allowExitOnIdle: false
     });
 
     console.log('🐘 Connected to PostgreSQL database');

@@ -346,12 +346,17 @@ app.listen(PORT, '0.0.0.0', async () => {
   setImmediate(async () => {
     // Create category_products table if it doesn't exist
     try {
+      // Use SERIAL for PostgreSQL, AUTOINCREMENT for SQLite
+      const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres');
+      const idColumn = isPostgres ? 'id SERIAL PRIMARY KEY' : 'id INTEGER PRIMARY KEY AUTOINCREMENT';
+      const timestampType = isPostgres ? 'TIMESTAMP' : 'DATETIME';
+      
       await db.run(`
         CREATE TABLE IF NOT EXISTS category_products (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ${idColumn},
           category_id INTEGER NOT NULL,
           product_id INTEGER NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at ${timestampType} DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
           FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
           UNIQUE(category_id, product_id)

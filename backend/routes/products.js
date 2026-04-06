@@ -475,13 +475,27 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     );
 
     // Parse JSON fields
-    const parsedProducts = products.map(product => ({
-      ...product,
-      images: product.images ? JSON.parse(product.images) : [],
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : []
-    }));
+    const parsedProducts = products.map(product => {
+      const images = product.images ? JSON.parse(product.images) : [];
+      
+      // For admin list view, only return image URLs, not base64 data
+      // This prevents response payload from being too large
+      const optimizedImages = images.map(img => {
+        if (typeof img === 'string' && img.startsWith('data:image')) {
+          // Return a placeholder for base64 images in list view
+          return '/placeholder-image.jpg';
+        }
+        return img;
+      });
+      
+      return {
+        ...product,
+        images: optimizedImages,
+        measurements: product.measurements ? JSON.parse(product.measurements) : null,
+        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+        tags: product.tags ? JSON.parse(product.tags) : []
+      };
+    });
 
     res.json({
       products: parsedProducts,
