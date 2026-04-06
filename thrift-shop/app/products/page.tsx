@@ -660,21 +660,8 @@ export default function ProductsPage() {
     ];
   }, [companyCurrency]);
 
-  // Show loading state while theme is loading
-  if (themeLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <img 
-          src="/images/mery-rose-logo.png" 
-          alt="Loading..." 
-          className="w-48 h-auto animate-pulse"
-        />
-      </div>
-    );
-  }
-
-  // Show loading state while products are loading
-  if (loading) {
+  // Show loading state while theme or products are loading
+  if (themeLoading || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <img 

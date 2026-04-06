@@ -542,19 +542,7 @@ export default function Home() {
     }
   ];
 
-  if (themeLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <img 
-          src="/images/mery-rose-logo.png" 
-          alt="Loading..." 
-          className="w-48 h-auto animate-pulse"
-        />
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (themeLoading || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <img 
