@@ -144,6 +144,8 @@ router.get('/', async (req, res) => {
 router.get('/company/:companyId', async (req, res) => {
   try {
     console.log('📥 Company products request:', req.params.companyId);
+    console.log('📥 Query params:', req.query);
+    console.log('📥 Origin:', req.headers.origin);
     
     const { companyId } = req.params;
     
@@ -185,6 +187,7 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('📄 Pagination:', { page: parsedPage, limit: parsedLimit, offset });
     
     console.log('🔍 Fetching company with ID:', parsedCompanyId);
+    console.log('🔍 Using database type:', process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite');
     
     // First, get company information
     let company;
