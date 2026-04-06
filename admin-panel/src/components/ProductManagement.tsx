@@ -125,6 +125,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
           ...p,
           price: p.price !== undefined && p.price !== null ? parseFloat(p.price) : 0
         }));
+        console.log('Loaded products with images:', productsWithParsedPrices.map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          hasImages: !!p.images, 
+          imageCount: p.images?.length || 0,
+          firstImagePreview: p.images?.[0]?.substring(0, 50)
+        })));
         setProducts(productsWithParsedPrices);
       }
     } catch (error) {
@@ -375,23 +382,28 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-16 w-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-300">
-                        {product.images && product.images.length > 0 ? (
+                      <div className="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-300 shadow-sm">
+                        {product.images && product.images.length > 0 && product.images[0] ? (
                           <img 
                             src={product.images[0]} 
-                            alt={product.name} 
+                            alt={product.name || 'Product'} 
                             className="w-full h-full object-cover"
+                            loading="lazy"
                             onError={(e) => {
+                              console.error('Image load error for product:', product.id, product.name);
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
                               if (target.parentElement) {
-                                target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-image text-gray-400"></i></div>';
+                                target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><i class="fas fa-image text-gray-400 text-xl"></i></div>';
                               }
+                            }}
+                            onLoad={() => {
+                              console.log('Image loaded successfully for product:', product.id);
                             }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <i className="fas fa-image text-gray-400"></i>
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                            <i className="fas fa-image text-gray-400 text-xl"></i>
                           </div>
                         )}
                       </div>
