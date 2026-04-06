@@ -103,8 +103,17 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       
+      // Set a maximum loading time of 5 seconds
+      const loadingTimeout = setTimeout(() => {
+        setLoading(false);
+        setError('Loading is taking longer than expected. Please refresh the page.');
+      }, 5000);
+      
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       const response = await api.getCompanyProducts(parseInt(companyId), { limit: 100 });
+      
+      // Clear the timeout if we got a response
+      clearTimeout(loadingTimeout);
       
       if (response.company) {
         setCompany(response.company);
@@ -154,6 +163,8 @@ export default function ProductsPage() {
     } catch (error) {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');
+      // Don't keep loading forever on error
+      setLoading(false);
     } finally {
       setLoading(false);
     }

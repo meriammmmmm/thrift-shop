@@ -99,17 +99,25 @@ export default function Home() {
       setLoading(true);
       setError(null);
       
+      // Set a maximum loading time of 5 seconds
+      const loadingTimeout = setTimeout(() => {
+        setLoading(false);
+        setError('Loading is taking longer than expected. Please refresh the page.');
+      }, 5000);
+      
       // Get company ID with better fallback handling
       const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
       let companyId = parseInt(companyIdStr);
       
       // Validate company ID - use fallback if invalid
       if (isNaN(companyId) || companyId <= 0) {
-        console.warn('Invalid company ID from env, using fallback: 2');
         companyId = 2; // Fallback to Mery Rose
       }
       
       const response = await api.getCompanyProducts(companyId, { limit: 50 });
+      
+      // Clear the timeout if we got a response
+      clearTimeout(loadingTimeout);
       
       if (response.company) {
         setCompany(response.company);
@@ -164,6 +172,8 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');
+      // Don't keep loading forever on error
+      setLoading(false);
     } finally {
       setLoading(false);
     }
