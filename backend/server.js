@@ -93,6 +93,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Email configuration test endpoint
+app.get('/api/test-email-config', (req, res) => {
+  const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+  res.json({
+    emailConfigured: emailConfigured,
+    emailUser: process.env.EMAIL_USER ? '***' + process.env.EMAIL_USER.slice(-10) : 'NOT SET',
+    emailHost: process.env.EMAIL_HOST || 'NOT SET',
+    emailPort: process.env.EMAIL_PORT || 'NOT SET',
+    message: emailConfigured ? 'Email is configured' : 'Email is NOT configured - add EMAIL_USER and EMAIL_PASSWORD to environment variables'
+  });
+});
+
 // Manual inventory fix endpoint
 app.get('/api/fix-inventory', async (req, res) => {
   try {
