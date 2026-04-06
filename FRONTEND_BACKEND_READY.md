@@ -25,7 +25,7 @@ Your frontend is now fully configured to use the Render backend in production.
 ### 🌐 Current Configuration
 
 **Frontend Domain:** meryrose.me
-**Backend API:** https://mertrosebackend-meec580k.b4a.run/api/
+**Backend API:** https://mertrosebackend-meec580k.b4a.run/api
 **Company:** Mery Rose (ID: 2)
 
 ### 🚀 Ready to Deploy
@@ -60,7 +60,7 @@ netlify deploy --prod
   ```
   NEXT_PUBLIC_COMPANY_ID=2
   NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-  NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api/
+  NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api
   ```
 
 #### 3. Update Backend on Render
@@ -84,7 +84,7 @@ In your domain registrar (where you bought meryrose.me):
 
 **Test Backend:**
 ```bash
-curl https://mertrosebackend-meec580k.b4a.run/api//health
+curl https://mertrosebackend-meec580k.b4a.run/api/health
 ```
 
 Expected response:
@@ -109,7 +109,7 @@ Expected response:
 - Mixed localhost and production URLs
 
 **After:**
-- All frontend files point to `https://mertrosebackend-meec580k.b4a.run/api/`
+- All frontend files point to `https://mertrosebackend-meec580k.b4a.run/api`
 - No localhost references in production code
 - Clean separation between local dev and production
 

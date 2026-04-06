@@ -24,7 +24,7 @@ interface Company {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 
 const CompanyManagement: React.FC<CompanyManagementProps> = ({ authToken }) => {
   const [companies, setCompanies] = useState<Company[]>([]);

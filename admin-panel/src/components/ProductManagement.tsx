@@ -19,7 +19,7 @@ interface Product {
   images?: string[];
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 
 const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [products, setProducts] = useState<Product[]>([]);

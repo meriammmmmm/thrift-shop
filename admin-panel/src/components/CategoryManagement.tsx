@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);

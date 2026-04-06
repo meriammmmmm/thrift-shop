@@ -23,7 +23,7 @@ interface User {
   country?: string;
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 
 const UserManagement: React.FC<UserManagementProps> = ({ authToken }) => {
   const [users, setUsers] = useState<User[]>([]);

@@ -1,5 +1,5 @@
 // API configuration for connecting to separate backend
-const BACKEND_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
+const BACKEND_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
   }
   
   // Default to Render backend for production
-  return 'https://mertrosebackend-meec580k.b4a.run/api/';
+  return 'https://mertrosebackend-meec580k.b4a.run/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
