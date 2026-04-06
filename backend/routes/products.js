@@ -177,10 +177,28 @@ router.get('/company/:companyId', async (req, res) => {
       maxPrice
     } = req.query;
 
-    console.log('🔍 Fetching company...');
+    // Parse and validate pagination parameters
+    const parsedPage = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.min(Math.max(1, parseInt(limit) || 12), 100); // Max 100 items per page
+    const offset = (parsedPage - 1) * parsedLimit;
+    
+    console.log('📄 Pagination:', { page: parsedPage, limit: parsedLimit, offset });
+    
+    console.log('🔍 Fetching company with ID:', parsedCompanyId);
+    
     // First, get company information
-    const company = await db.get('SELECT * FROM companies WHERE id = ?', [parsedCompanyId]);
-    console.log('Company result:', company);
+    let company;
+    try {
+      company = await db.get('SELECT * FROM companies WHERE id = ?', [parsedCompanyId]);
+      console.log('Company query result:', company);
+    } catch (companyError) {
+      console.error('❌ Error fetching company:', companyError);
+      console.error('Company error stack:', companyError.stack);
+      return res.status(500).json({ 
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? companyError.message : 'Failed to fetch company data'
+      });
+    }
     
     if (!company) {
       console.log('❌ Company not found or inactive');
@@ -208,7 +226,6 @@ router.get('/company/:companyId', async (req, res) => {
 
     console.log('✅ Company found:', company.name);
 
-    const offset = (page - 1) * limit;
     // Filter by company
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parsedCompanyId];
@@ -258,19 +275,39 @@ router.get('/company/:companyId', async (req, res) => {
     }
 
     // Get products with company information
-    const products = await db.all(
-      `SELECT p.*, c.name as company_name, c.description as company_description 
-       FROM products p 
-       LEFT JOIN companies c ON p.company_id = c.id 
-       ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
+    let products;
+    try {
+      products = await db.all(
+        `SELECT p.*, c.name as company_name, c.description as company_description 
+         FROM products p 
+         LEFT JOIN companies c ON p.company_id = c.id 
+         ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
+        [...params, parsedLimit, offset]
+      );
+      console.log(`✅ Found ${products.length} products for company ${parsedCompanyId}`);
+    } catch (productsError) {
+      console.error('❌ Error fetching products:', productsError);
+      console.error('Products error stack:', productsError.stack);
+      console.error('Query params:', [...params, parsedLimit, offset]);
+      return res.status(500).json({ 
+        error: 'Database error',
+        message: process.env.NODE_ENV === 'development' ? productsError.message : 'Failed to fetch products'
+      });
+    }
 
     // Get total count
-    const totalResult = await db.get(
-      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
-      params
-    );
+    let totalResult;
+    try {
+      totalResult = await db.get(
+        `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+        params
+      );
+      console.log(`Total products count: ${totalResult.total}`);
+    } catch (countError) {
+      console.error('❌ Error counting products:', countError);
+      // Continue with 0 total if count fails
+      totalResult = { total: 0 };
+    }
 
     // Parse JSON fields and add company info
     const parsedProducts = products.map(product => ({
@@ -304,10 +341,10 @@ router.get('/company/:companyId', async (req, res) => {
       },
       products: parsedProducts,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parsedPage,
+        limit: parsedLimit,
         total: totalResult.total,
-        pages: Math.ceil(totalResult.total / limit)
+        pages: Math.ceil(totalResult.total / parsedLimit)
       }
     });
   } catch (error) {
