@@ -329,10 +329,19 @@ export default function ProductsPage() {
       setSelectedBrand(brandParam);
     }
     
-    // Load products from API - show page immediately
-    setLoading(false);
-    loadProducts();
+    // Load products from API - max 2 second loading
+    const maxLoadingTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    
+    loadProducts().finally(() => {
+      clearTimeout(maxLoadingTimer);
+      setLoading(false);
+    });
+    
     loadProfilePicture();
+    
+    return () => clearTimeout(maxLoadingTimer);
   }, []);
 
   const loadProfilePicture = () => {

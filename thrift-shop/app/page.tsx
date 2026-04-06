@@ -96,6 +96,7 @@ export default function Home() {
   // Load products from API
   const loadProducts = async () => {
     try {
+      setLoading(true);
       setError(null);
       
       // Get company ID with better fallback handling
@@ -223,11 +224,20 @@ export default function Home() {
       loadUserWishlist();
     }
     
-    // Show page immediately, load products in background
-    setLoading(false);
-    loadProducts();
+    // Show page after max 2 seconds even if API is slow
+    const maxLoadingTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    
+    loadProducts().finally(() => {
+      clearTimeout(maxLoadingTimer);
+      setLoading(false);
+    });
+    
     loadProfilePicture();
     loadCustomCategories();
+    
+    return () => clearTimeout(maxLoadingTimer);
   }, []);
 
   const loadProfilePicture = () => {
@@ -540,8 +550,8 @@ export default function Home() {
     }
   ];
 
-  // Only show loading for theme, not products
-  if (themeLoading) {
+  // Show loading for theme or initial product load (max 2 seconds)
+  if (themeLoading || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <img 
@@ -552,26 +562,6 @@ export default function Home() {
       </div>
     );
   }
-
-  // Don't block page render for product loading errors
-  // if (error) {
-  //   return (
-  //     <div className="min-h-screen bg-white flex items-center justify-center">
-  //       <div className="text-center">
-  //         <div className="text-red-500 text-6xl mb-4">⚠️</div>
-  //         <h2 className="text-2xl font-bold text-gray-900 mb-2">Failed to Load Products</h2>
-  //         <p className="text-gray-600 mb-4">{error}</p>
-  //         <button 
-  //           onClick={loadProducts}
-  //           className="px-6 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
-  //           style={{ backgroundColor: theme.primary }}
-  //         >
-  //           Try Again
-  //         </button>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="min-h-screen bg-white">
