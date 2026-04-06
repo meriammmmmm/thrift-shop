@@ -96,14 +96,7 @@ export default function Home() {
   // Load products from API
   const loadProducts = async () => {
     try {
-      setLoading(true);
       setError(null);
-      
-      // Set a maximum loading time of 5 seconds
-      const loadingTimeout = setTimeout(() => {
-        setLoading(false);
-        setError('Loading is taking longer than expected. Please refresh the page.');
-      }, 5000);
       
       // Get company ID with better fallback handling
       const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
@@ -115,9 +108,6 @@ export default function Home() {
       }
       
       const response = await api.getCompanyProducts(companyId, { limit: 50 });
-      
-      // Clear the timeout if we got a response
-      clearTimeout(loadingTimeout);
       
       if (response.company) {
         setCompany(response.company);
@@ -172,8 +162,6 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');
-      // Don't keep loading forever on error
-      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -234,6 +222,9 @@ export default function Home() {
       loadUserCart();
       loadUserWishlist();
     }
+    
+    // Show page immediately, load products in background
+    setLoading(false);
     loadProducts();
     loadProfilePicture();
     loadCustomCategories();
@@ -549,7 +540,8 @@ export default function Home() {
     }
   ];
 
-  if (themeLoading || loading) {
+  // Only show loading for theme, not products
+  if (themeLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <img 
@@ -561,24 +553,25 @@ export default function Home() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Failed to Load Products</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={loadProducts}
-            className="px-6 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: theme.primary }}
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Don't block page render for product loading errors
+  // if (error) {
+  //   return (
+  //     <div className="min-h-screen bg-white flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="text-red-500 text-6xl mb-4">⚠️</div>
+  //         <h2 className="text-2xl font-bold text-gray-900 mb-2">Failed to Load Products</h2>
+  //         <p className="text-gray-600 mb-4">{error}</p>
+  //         <button 
+  //           onClick={loadProducts}
+  //           className="px-6 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
+  //           style={{ backgroundColor: theme.primary }}
+  //         >
+  //           Try Again
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-white">
