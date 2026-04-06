@@ -6,7 +6,7 @@ interface CreateUserProps {
   onBack: () => void;
 }
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
 
 const CreateUser: React.FC<CreateUserProps> = ({ authToken, onBack }) => {
   const [formData, setFormData] = useState({

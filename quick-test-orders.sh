@@ -10,7 +10,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-API_URL="https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api"
+API_URL="https://mertrosebackend-meec580k.b4a.run/api/"
 
 # Test 1: Health check
 echo "1️⃣  Testing health endpoint..."

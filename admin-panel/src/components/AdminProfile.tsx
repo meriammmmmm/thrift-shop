@@ -140,7 +140,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
+const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api/';
 
 const AdminProfile: React.FC<AdminProfileProps> = ({ authToken, user }) => {
   const [loading, setLoading] = useState(false);

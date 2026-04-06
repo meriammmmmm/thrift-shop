@@ -18,7 +18,7 @@ Ping your backend every 5 minutes to keep it awake 24/7.
 2. Fill in:
    - **Monitor Type:** HTTP(s)
    - **Friendly Name:** Mery Rose Backend
-   - **URL:** `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health`
+   - **URL:** `https://mertrosebackend-meec580k.b4a.run/api//health`
    - **Monitoring Interval:** 5 minutes
 3. Click **"Create Monitor"**
 
@@ -41,7 +41,7 @@ If you want a backup, also add:
 1. Go to: https://cron-job.org/
 2. Sign up free
 3. Create job:
-   - URL: `https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health`
+   - URL: `https://mertrosebackend-meec580k.b4a.run/api//health`
    - Interval: Every 5 minutes
 4. Enable job
 
@@ -66,7 +66,7 @@ After setting up UptimeRobot, test your backend:
 
 ```bash
 # Should respond in < 1 second (not 30 seconds)
-curl https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api/health
+curl https://mertrosebackend-meec580k.b4a.run/api//health
 ```
 
 ## Monitoring

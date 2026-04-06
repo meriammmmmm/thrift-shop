@@ -15,7 +15,7 @@ export default function ForgotPassword() {
   const [message, setMessage] = useState('');
   const [devCode, setDevCode] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://thrift-shop-meriammmmmm5582-aytejivo.leapcell.dev/api';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mertrosebackend-meec580k.b4a.run/api/';
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
