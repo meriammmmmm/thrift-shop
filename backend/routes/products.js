@@ -400,10 +400,12 @@ router.get('/meta/brands', async (req, res) => {
 // Get products for admin (company-specific)
 router.get('/admin/products', requireAdmin, async (req, res) => {
   try {
+    console.log('📦 Admin products request received:', req.query);
     const adminUser = req.user;
     const companyId = adminUser.admin_company_id;
 
     if (!companyId) {
+      console.log('❌ No company ID for admin');
       return res.status(403).json({ error: 'Admin not associated with any company' });
     }
 
@@ -415,6 +417,8 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       search,
       sortBy = 'newest'
     } = req.query;
+    
+    console.log('🔍 Query params:', { page, limit, category, brand, search, sortBy, companyId });
 
     const offset = (page - 1) * limit;
     let whereClause = 'WHERE company_id = ?';
