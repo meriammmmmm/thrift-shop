@@ -307,41 +307,41 @@ class PostgresDatabase {
   }
 
   async get(sql, params = []) {
-    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-    const result = await this.pool.query(pgSql, params);
-    return result.rows[0];
-  }
+      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+      const result = await this.pool.query(pgSql, params);
+      return result.rows[0];
+    }
 
   async all(sql, params = []) {
-    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-    const result = await this.pool.query(pgSql, params);
-    return result.rows;
-  }
+      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+      const result = await this.pool.query(pgSql, params);
+      return result.rows;
+    }
 
   async run(sql, params = []) {
-    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-    let paramIndex = 1;
-    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-    
-    // Check if it's an INSERT query
-    if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
-      const result = await this.pool.query(pgSql + ' RETURNING id', params);
+      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+      let paramIndex = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+
+      // Check if it's an INSERT query
+      if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
+        const result = await this.pool.query(pgSql + ' RETURNING id', params);
+        return { 
+          id: result.rows[0]?.id || null,
+          changes: result.rowCount 
+        };
+      }
+
+      const result = await this.pool.query(pgSql, params);
       return { 
-        id: result.rows[0]?.id || null,
+        id: result.rows[0]?.id || result.rowCount,
         changes: result.rowCount 
       };
     }
-    
-    const result = await this.pool.query(pgSql, params);
-    return { 
-      id: result.rows[0]?.id || result.rowCount,
-      changes: result.rowCount 
-    };
-  }
 
   async close() {
     await this.pool.end();
