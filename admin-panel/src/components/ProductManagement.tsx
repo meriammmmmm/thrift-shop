@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ProductDetails from './ProductDetails';
 import AddProduct from './AddProduct';
 import ConfirmationModal from './ConfirmationModal';
@@ -72,8 +72,6 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   };
 
   useEffect(() => {
-    loadProducts();
-    
     // Get company currency from API when component loads
     const fetchCompanyCurrency = async () => {
       try {
@@ -108,7 +106,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
     };
   }, [authToken]);
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=100&sortBy=${sortBy}`, {
@@ -139,7 +137,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sortBy, authToken]);
 
   const deleteProduct = async (productId: number) => {
     try {
@@ -249,7 +247,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
 
   useEffect(() => {
     loadProducts();
-  }, [sortBy]);
+  }, [loadProducts]);
 
   // Show AddProduct component if requested
   if (showAddProduct) {
