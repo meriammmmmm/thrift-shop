@@ -378,7 +378,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 // Get categories
 router.get('/meta/categories', async (req, res) => {
   try {
-    const categories = await db.all('SELECT DISTINCT category FROM products WHERE in_stock = TRUE');
+    const categories = await db.all('SELECT DISTINCT category FROM products WHERE category IS NOT NULL');
     res.json(categories.map(c => c.category));
   } catch (error) {
     console.error('Categories fetch error:', error);
@@ -389,7 +389,7 @@ router.get('/meta/categories', async (req, res) => {
 // Get brands
 router.get('/meta/brands', async (req, res) => {
   try {
-    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE in_stock = TRUE');
+    const brands = await db.all('SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL');
     res.json(brands.map(b => b.brand));
   } catch (error) {
     console.error('Brands fetch error:', error);
