@@ -420,6 +420,9 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     console.log('🔍 Query params:', { page, limit, category, brand, search, sortBy, companyId });
 
     const offset = (page - 1) * limit;
+    // Enforce maximum limit to prevent huge responses
+    const maxLimit = Math.min(parseInt(limit), 100);
+    
     let whereClause = 'WHERE company_id = ?';
     let params = [companyId];
 
@@ -464,7 +467,7 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     // Get products
     const products = await db.all(
       `SELECT * FROM products ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
+      [...params, maxLimit, offset]
     );
 
     // Get total count
@@ -473,22 +476,38 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       params
     );
 
-    // Parse JSON fields
-    const parsedProducts = products.map(product => ({
-      ...product,
-      images: product.images ? JSON.parse(product.images) : [],
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : []
-    }));
+    // Parse JSON fields - limit image data size
+    const parsedProducts = products.map(product => {
+      let images = [];
+      try {
+        images = product.images ? JSON.parse(product.images) : [];
+        // Truncate base64 images in list view to prevent huge responses
+        images = images.map(img => {
+          if (typeof img === 'string' && img.startsWith('data:image') && img.length > 100) {
+            return img.substring(0, 100) + '...[truncated]';
+          }
+          return img;
+        });
+      } catch (e) {
+        console.error('Error parsing images for product', product.id, e);
+      }
+      
+      return {
+        ...product,
+        images,
+        measurements: product.measurements ? JSON.parse(product.measurements) : null,
+        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+        tags: product.tags ? JSON.parse(product.tags) : []
+      };
+    });
 
     res.json({
       products: parsedProducts,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: maxLimit,
         total: totalResult.total,
-        pages: Math.ceil(totalResult.total / limit)
+        pages: Math.ceil(totalResult.total / maxLimit)
       }
     });
   } catch (error) {
