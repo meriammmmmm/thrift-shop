@@ -1,5 +1,5 @@
 # fly.toml app configuration file
-app = "thrift-shop-backend"
+app = "meryrose-thrift-backend"
 primary_region = "iad"
 
 [build]
