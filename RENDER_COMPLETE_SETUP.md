@@ -33,7 +33,7 @@ EMAIL_FROM=Mery Rose <meriammhadhbi916@gmail.com>
 
 ```bash
 # Health check
-curl mertrosebackend-7wop5nev.b4a.run/api/health
+curl https://mertrosebackend-7wop5nev.b4a.run/api/health
 
 # Should return:
 # {"status":"OK","message":"Thrift Shop Backend is running!"}
@@ -44,7 +44,7 @@ curl mertrosebackend-7wop5nev.b4a.run/api/health
 Your frontend `.env.production` should have:
 
 ```env
-NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
+NEXT_PUBLIC_API_URL=https://mertrosebackend-7wop5nev.b4a.run/api
 NEXT_PUBLIC_COMPANY_ID=1
 NEXT_PUBLIC_COMPANY_NAME=Mery Rose
 ```
@@ -67,7 +67,7 @@ NEXT_PUBLIC_COMPANY_NAME=Mery Rose
 
 ### Keep Backend Awake (Optional)
 Use a service like UptimeRobot to ping your backend every 5 minutes:
-- URL to ping: `mertrosebackend-7wop5nev.b4a.run/api/health`
+- URL to ping: `https://mertrosebackend-7wop5nev.b4a.run/api/health`
 - Free at: https://uptimerobot.com/
 
 ### Supabase Database
@@ -82,7 +82,7 @@ If your frontend is not using the Render backend yet:
 
 1. Update `thrift-shop/.env.production`:
 ```env
-NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
+NEXT_PUBLIC_API_URL=https://mertrosebackend-7wop5nev.b4a.run/api
 ```
 
 2. Redeploy frontend:

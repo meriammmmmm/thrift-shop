@@ -133,7 +133,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://mertrosebackend-7wop5nev.b4a.run/api';
+const API_BASE_URL = 'https://https://mertrosebackend-7wop5nev.b4a.run/api';
 
 const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   const [formData, setFormData] = useState({

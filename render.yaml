@@ -40,7 +40,7 @@ services:
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: Pearl Box
       - key: NEXT_PUBLIC_API_URL
-        value: mertrosebackend-7wop5nev.b4a.run/api
+        value: https://mertrosebackend-7wop5nev.b4a.run/api
 
   # Admin Panel
   - type: web
