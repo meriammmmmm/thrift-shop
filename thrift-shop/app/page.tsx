@@ -224,20 +224,10 @@ export default function Home() {
       loadUserWishlist();
     }
     
-    // Show page after max 2 seconds even if API is slow
-    const maxLoadingTimer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    
-    loadProducts().finally(() => {
-      clearTimeout(maxLoadingTimer);
-      setLoading(false);
-    });
-    
+    // Load products and wait for completion
+    loadProducts();
     loadProfilePicture();
     loadCustomCategories();
-    
-    return () => clearTimeout(maxLoadingTimer);
   }, []);
 
   const loadProfilePicture = () => {
