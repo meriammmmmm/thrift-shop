@@ -109,7 +109,6 @@ export default function Home() {
         companyId = 2; // Fallback to Mery Rose
       }
       
-      console.log('Loading products for company:', companyId);
       const response = await api.getCompanyProducts(companyId, { limit: 50 });
       
       if (response.company) {
@@ -124,8 +123,6 @@ export default function Home() {
       
       if (response.products) {
         const transformedProducts = response.products.map((product: any) => {
-          console.log('Loading product:', product.name, 'reservation_status:', product.reservation_status);
-          
           return {
             id: product.id,
             name: product.name,

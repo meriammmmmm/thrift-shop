@@ -5,18 +5,12 @@ const BACKEND_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
 const getApiBaseUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   
-  // Log for debugging
-  if (typeof window !== 'undefined') {
-    console.log('NEXT_PUBLIC_API_URL from env:', envUrl);
-  }
-  
   // If in production (Render, Railway, Vercel), use env var or fallback to Render backend
   if (typeof window !== 'undefined' && 
       (window.location.hostname.includes('onrender.com') || 
        window.location.hostname.includes('railway.app') || 
        window.location.hostname.includes('vercel.app'))) {
     const productionUrl = envUrl || BACKEND_URL;
-    console.log('Using production backend URL:', productionUrl);
     return productionUrl;
   }
   
@@ -30,11 +24,6 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
-
-// Log the final API URL
-if (typeof window !== 'undefined') {
-  console.log('Final API_BASE_URL:', API_BASE_URL);
-}
 
 class ApiClient {
   private baseURL: string;
@@ -182,7 +171,6 @@ class ApiClient {
       }, {} as Record<string, string>)
     ).toString();
 
-    console.log(`Fetching products for company ${validCompanyId} with params:`, queryString);
     return this.request(`/products/company/${validCompanyId}${queryString ? `?${queryString}` : ''}`);
   }
 
