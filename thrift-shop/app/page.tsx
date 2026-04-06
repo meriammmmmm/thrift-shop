@@ -99,9 +99,18 @@ export default function Home() {
       setLoading(true);
       setError(null);
       
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
+      // Get company ID with better fallback handling
+      const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
+      let companyId = parseInt(companyIdStr);
       
-      const response = await api.getCompanyProducts(parseInt(companyId), { limit: 50 });
+      // Validate company ID - use fallback if invalid
+      if (isNaN(companyId) || companyId <= 0) {
+        console.warn('Invalid company ID from env, using fallback: 2');
+        companyId = 2; // Fallback to Mery Rose
+      }
+      
+      console.log('Loading products for company:', companyId);
+      const response = await api.getCompanyProducts(companyId, { limit: 50 });
       
       if (response.company) {
         setCompany(response.company);
@@ -154,7 +163,7 @@ export default function Home() {
         setProducts(transformedProducts);
       }
       
-      await loadTestimonials(companyId);
+      await loadTestimonials(companyId.toString());
     } catch (error) {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');

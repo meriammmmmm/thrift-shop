@@ -166,6 +166,13 @@ class ApiClient {
     minPrice?: number;
     maxPrice?: number;
   } = {}) {
+    // Validate companyId - use fallback if invalid
+    let validCompanyId = companyId;
+    if (!companyId || isNaN(companyId) || companyId <= 0) {
+      console.warn(`Invalid company ID: ${companyId}, using fallback company ID: 2`);
+      validCompanyId = 2; // Fallback to Mery Rose
+    }
+    
     const queryString = new URLSearchParams(
       Object.entries(params).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && (typeof value === 'number' || value !== '')) {
@@ -175,7 +182,8 @@ class ApiClient {
       }, {} as Record<string, string>)
     ).toString();
 
-    return this.request(`/products/company/${companyId}${queryString ? `?${queryString}` : ''}`);
+    console.log(`Fetching products for company ${validCompanyId} with params:`, queryString);
+    return this.request(`/products/company/${validCompanyId}${queryString ? `?${queryString}` : ''}`);
   }
 
   async getProduct(id: string) {

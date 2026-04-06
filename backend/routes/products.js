@@ -26,9 +26,12 @@ router.get('/', async (req, res) => {
     let params = [];
 
     // Filter by company if specified
-    if (companyId) {
-      whereClause += ' AND p.company_id = ?';
-      params.push(parseInt(companyId));
+    if (companyId && companyId !== 'undefined' && companyId !== 'null') {
+      const parsedCompanyId = parseInt(companyId);
+      if (!isNaN(parsedCompanyId)) {
+        whereClause += ' AND p.company_id = ?';
+        params.push(parsedCompanyId);
+      }
     }
 
     // Build where clause
@@ -590,6 +593,26 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('📥 Company products request:', req.params.companyId);
     
     const { companyId } = req.params;
+    
+    // Validate companyId - handle empty string, undefined, null, etc.
+    if (!companyId || companyId === '' || companyId === 'undefined' || companyId === 'null') {
+      console.log('❌ Invalid company ID:', companyId);
+      return res.status(400).json({ 
+        error: 'Invalid company ID',
+        message: 'Company ID is required and must be a valid number'
+      });
+    }
+    
+    // Try to parse as integer
+    const parsedCompanyId = parseInt(companyId);
+    if (isNaN(parsedCompanyId) || parsedCompanyId <= 0) {
+      console.log('❌ Company ID is not a valid number:', companyId);
+      return res.status(400).json({ 
+        error: 'Invalid company ID',
+        message: 'Company ID must be a valid positive number'
+      });
+    }
+    
     const {
       page = 1,
       limit = 12,
@@ -603,7 +626,7 @@ router.get('/company/:companyId', async (req, res) => {
 
     console.log('🔍 Fetching company...');
     // First, get company information
-    const company = await db.get('SELECT * FROM companies WHERE id = ?', [companyId]);
+    const company = await db.get('SELECT * FROM companies WHERE id = ?', [parsedCompanyId]);
     console.log('Company result:', company);
     
     if (!company) {
@@ -611,7 +634,7 @@ router.get('/company/:companyId', async (req, res) => {
       // Return a default company structure instead of 404
       return res.json({
         company: {
-          id: parseInt(companyId),
+          id: parsedCompanyId,
           name: 'Mery Rose',
           description: 'Elegant vintage fashion and timeless pieces',
           logo: '/images/mery-rose-logo.png',
@@ -635,7 +658,7 @@ router.get('/company/:companyId', async (req, res) => {
     const offset = (page - 1) * limit;
     // Filter by company
     let whereClause = 'WHERE p.company_id = ?';
-    let params = [parseInt(companyId)];
+    let params = [parsedCompanyId];
 
     // Build where clause
     if (category && category !== 'All') {
