@@ -125,7 +125,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
           ...p,
           price: p.price !== undefined && p.price !== null ? parseFloat(p.price) : 0
         }));
-        console.log('Loaded products with images:', productsWithParsedPrices.map(p => ({ 
+        console.log('Loaded products with images:', productsWithParsedPrices.map((p: any) => ({ 
           id: p.id, 
           name: p.name, 
           hasImages: !!p.images, 
