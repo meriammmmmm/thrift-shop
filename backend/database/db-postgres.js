@@ -16,17 +16,33 @@ class PostgresDatabase {
         : false,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
-      max: 20, // Maximum pool size
-      min: 2,  // Minimum pool size
+      max: 3,              // ✅ FIXED: was 20, free tiers allow very few connections
       allowExitOnIdle: false
     });
 
+    // ✅ FIXED: Prevent uncaught pool errors from crashing the server
+    this.pool.on('error', (err) => {
+      console.error('⚠️ Unexpected PostgreSQL pool error:', err.message);
+    });
+
     console.log('🐘 Connected to PostgreSQL database');
-    this.initTables();
+    
+    // ✅ FIXED: Don't await this — let server start regardless
+    this.initTables().catch(err => {
+      console.error('⚠️ initTables failed on startup (non-fatal):', err.message);
+    });
   }
 
   async initTables() {
-    const client = await this.pool.connect();
+    let client;
+    try {
+      client = await this.pool.connect();
+    } catch (err) {
+      // ✅ FIXED: If we can't get a connection, log and bail — don't crash
+      console.error('⚠️ Could not connect to DB for initTables:', err.message);
+      return;
+    }
+
     try {
       await client.query(`
         CREATE TABLE IF NOT EXISTS users (
@@ -284,8 +300,6 @@ class PostgresDatabase {
       try {
         await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS visible BOOLEAN DEFAULT true`);
         console.log('✅ Added visible column to products table');
-        
-        // Update existing products to be visible by default
         const updateResult = await client.query(`UPDATE products SET visible = true WHERE visible IS NULL`);
         console.log(`✅ Updated ${updateResult.rowCount} products to be visible by default`);
       } catch (err) {
@@ -299,49 +313,48 @@ class PostgresDatabase {
       } else {
         console.log('✅ Database already has data');
       }
+
     } catch (err) {
-      console.error('Error initializing tables:', err.message);
+      // ✅ FIXED: Log but don't crash — server stays alive
+      console.error('⚠️ Error initializing tables (non-fatal):', err.message);
     } finally {
-      client.release();
+      // ✅ FIXED: Always release the client back to the pool
+      if (client) client.release();
     }
   }
 
   async get(sql, params = []) {
-      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-      let paramIndex = 1;
-      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-      const result = await this.pool.query(pgSql, params);
-      return result.rows[0];
-    }
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    const result = await this.pool.query(pgSql, params);
+    return result.rows[0];
+  }
 
   async all(sql, params = []) {
-      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-      let paramIndex = 1;
-      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-      const result = await this.pool.query(pgSql, params);
-      return result.rows;
-    }
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    const result = await this.pool.query(pgSql, params);
+    return result.rows;
+  }
 
   async run(sql, params = []) {
-      // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-      let paramIndex = 1;
-      const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    let paramIndex = 1;
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
 
-      // Check if it's an INSERT query
-      if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
-        const result = await this.pool.query(pgSql + ' RETURNING id', params);
-        return { 
-          id: result.rows[0]?.id || null,
-          changes: result.rowCount 
-        };
-      }
-
-      const result = await this.pool.query(pgSql, params);
+    if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
+      const result = await this.pool.query(pgSql + ' RETURNING id', params);
       return { 
-        id: result.rows[0]?.id || result.rowCount,
+        id: result.rows[0]?.id || null,
         changes: result.rowCount 
       };
     }
+
+    const result = await this.pool.query(pgSql, params);
+    return { 
+      id: result.rows[0]?.id || result.rowCount,
+      changes: result.rowCount 
+    };
+  }
 
   async close() {
     await this.pool.end();
