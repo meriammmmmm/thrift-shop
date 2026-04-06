@@ -4,6 +4,38 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Diagnostic endpoint to check database and products
+router.get('/debug/check-company/:companyId', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    
+    // Check company
+    const company = await db.get('SELECT * FROM companies WHERE id = ?', [companyId]);
+    
+    // Check products for this company
+    const products = await db.all('SELECT id, name, company_id, visible FROM products WHERE company_id = ? LIMIT 5', [companyId]);
+    
+    // Check all products count
+    const allProducts = await db.get('SELECT COUNT(*) as count FROM products WHERE company_id = ?', [companyId]);
+    
+    // Check visible products count
+    const visibleProducts = await db.get('SELECT COUNT(*) as count FROM products WHERE company_id = ? AND (visible = 1 OR visible IS NULL)', [companyId]);
+    
+    res.json({
+      company,
+      sampleProducts: products,
+      totalProducts: allProducts.count,
+      visibleProducts: visibleProducts.count,
+      databaseType: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Get all products with filtering
 router.get('/', async (req, res) => {
   try {
