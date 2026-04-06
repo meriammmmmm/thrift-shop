@@ -600,13 +600,9 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('✅ Company found:', company.name);
 
     const offset = (page - 1) * limit;
-    // Filter by company and visibility
+    // Filter by company
     let whereClause = 'WHERE p.company_id = ?';
     let params = [parseInt(companyId)];
-    
-    // Add visibility filter (show only visible products, treat NULL as visible)
-    whereClause += ' AND (p.visible = true OR p.visible IS NULL)';
-    
 
     // Build where clause
     if (category && category !== 'All') {
@@ -711,25 +707,9 @@ router.get('/company/:companyId', async (req, res) => {
     console.error('Company ID:', req.params.companyId);
     
     // Return default company data with error info
-    res.json({
-      company: {
-        id: parseInt(req.params.companyId),
-        name: 'Mery Rose',
-        description: 'Elegant vintage fashion and timeless pieces',
-        logo: '/images/mery-rose-logo.png',
-        website: 'https://meryrose.com',
-        email: 'contact@meryrose.com',
-        country: 'US',
-        show_testimonials: true
-      },
-      products: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 0,
-        pages: 0
-      },
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Database error'
+    res.status(500).json({
+      error: 'Failed to fetch products',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
