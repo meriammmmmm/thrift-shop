@@ -20,8 +20,7 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    // Filter products by visibility (show only visible products, treat NULL as visible)
-    let whereClause = 'WHERE (p.visible = true OR p.visible IS NULL)';
+    let whereClause = 'WHERE 1=1';
     let params = [];
 
     // Filter by company if specified
