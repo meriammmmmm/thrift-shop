@@ -437,7 +437,7 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
-    // Build order clause
+    // Build order clause - use only columns that definitely exist
     let orderClause = 'ORDER BY created_at DESC';
     switch (sortBy) {
       case 'price-low':
@@ -450,12 +450,8 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         orderClause = 'ORDER BY brand ASC';
         break;
       case 'popular':
-        orderClause = 'ORDER BY COALESCE(likes, 0) DESC';
-        break;
       case 'custom':
       case 'customRequest':
-        orderClause = 'ORDER BY COALESCE(display_order, 999999), created_at DESC';
-        break;
       case 'newest':
       default:
         orderClause = 'ORDER BY created_at DESC';
