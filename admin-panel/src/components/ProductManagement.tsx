@@ -375,9 +375,20 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-12 w-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="h-16 w-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-300">
                         {product.images && product.images.length > 0 ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><i class="fas fa-image text-gray-400"></i></div>';
+                              }
+                            }}
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <i className="fas fa-image text-gray-400"></i>
