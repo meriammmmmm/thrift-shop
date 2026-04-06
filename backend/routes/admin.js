@@ -31,20 +31,32 @@ router.post('/debug/create-category-products-table', requireAdmin, async (req, r
   try {
     // Use SERIAL for PostgreSQL, AUTOINCREMENT for SQLite
     const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres');
-    const idColumn = isPostgres ? 'id SERIAL PRIMARY KEY' : 'id INTEGER PRIMARY KEY AUTOINCREMENT';
-    const timestampType = isPostgres ? 'TIMESTAMP' : 'DATETIME';
     
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS category_products (
-        ${idColumn},
-        category_id INTEGER NOT NULL,
-        product_id INTEGER NOT NULL,
-        created_at ${timestampType} DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        UNIQUE(category_id, product_id)
-      )
-    `);
+    if (isPostgres) {
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS category_products (
+          id SERIAL PRIMARY KEY,
+          category_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          UNIQUE(category_id, product_id)
+        )
+      `);
+    } else {
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS category_products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          UNIQUE(category_id, product_id)
+        )
+      `);
+    }
     
     const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'", []);
     res.json({ 
@@ -1600,20 +1612,32 @@ router.post('/categories/:id/products', requireAdmin, async (req, res) => {
     try {
       // Use SERIAL for PostgreSQL, AUTOINCREMENT for SQLite
       const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres');
-      const idColumn = isPostgres ? 'id SERIAL PRIMARY KEY' : 'id INTEGER PRIMARY KEY AUTOINCREMENT';
-      const timestampType = isPostgres ? 'TIMESTAMP' : 'DATETIME';
       
-      await db.run(`
-        CREATE TABLE IF NOT EXISTS category_products (
-          ${idColumn},
-          category_id INTEGER NOT NULL,
-          product_id INTEGER NOT NULL,
-          created_at ${timestampType} DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-          UNIQUE(category_id, product_id)
-        )
-      `);
+      if (isPostgres) {
+        await db.run(`
+          CREATE TABLE IF NOT EXISTS category_products (
+            id SERIAL PRIMARY KEY,
+            category_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            UNIQUE(category_id, product_id)
+          )
+        `);
+      } else {
+        await db.run(`
+          CREATE TABLE IF NOT EXISTS category_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            UNIQUE(category_id, product_id)
+          )
+        `);
+      }
       console.log('✅ category_products table verified/created');
     } catch (tableError) {
       console.error('❌ Failed to create category_products table:', tableError);
