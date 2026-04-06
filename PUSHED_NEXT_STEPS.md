@@ -43,7 +43,7 @@ When prompted, set these environment variables:
 ```
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api
+NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
 ```
 
 Or set them in Vercel dashboard:
@@ -71,7 +71,7 @@ In your domain registrar (where you bought meryrose.me):
 
 ```bash
 # Test backend
-curl https://mertrosebackend-meec580k.b4a.run/api/health
+curl mertrosebackend-7wop5nev.b4a.run/api/health
 
 # Should return:
 # {"status":"OK","message":"Thrift Shop Backend is running!"}
@@ -98,7 +98,7 @@ Then visit:
 | Item | Value |
 |------|-------|
 | Frontend | meryrose.me |
-| Backend | https://mertrosebackend-meec580k.b4a.run/api |
+| Backend | mertrosebackend-7wop5nev.b4a.run/api |
 | Company | Mery Rose (ID: 2) |
 | GitHub | ✅ Pushed |
 

@@ -38,7 +38,7 @@ DATABASE_URL=your-postgres-connection-string
 Go to your frontend Render dashboard → Environment tab → Add:
 
 ```
-NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api
+NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Pearl Box
 NODE_ENV=production
@@ -58,7 +58,7 @@ NODE_ENV=production
 
 **Test the backend:**
 ```bash
-curl https://mertrosebackend-meec580k.b4a.run/api/health
+curl mertrosebackend-7wop5nev.b4a.run/api/health
 ```
 
 Expected response:
@@ -74,7 +74,7 @@ Expected response:
 
 **Run inventory fix (if needed):**
 ```bash
-curl https://mertrosebackend-meec580k.b4a.run/api/fix-inventory
+curl mertrosebackend-7wop5nev.b4a.run/api/fix-inventory
 ```
 
 **Test the frontend:**

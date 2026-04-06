@@ -46,7 +46,7 @@ interface OrderItem {
   size?: string;
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
+const API_BASE_URL = 'mertrosebackend-7wop5nev.b4a.run/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);

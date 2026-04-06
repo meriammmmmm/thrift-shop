@@ -26,7 +26,7 @@ interface Order {
   items?: OrderItem[];
 }
 
-const API_BASE_URL = 'https://mertrosebackend-meec580k.b4a.run/api';
+const API_BASE_URL = 'mertrosebackend-7wop5nev.b4a.run/api';
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
   const [orders, setOrders] = useState<Order[]>([]);

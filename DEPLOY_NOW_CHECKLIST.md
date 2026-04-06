@@ -47,7 +47,7 @@ When prompted:
   ```
   NEXT_PUBLIC_COMPANY_ID=2
   NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-  NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api
+  NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
   ```
 
 #### Option B: Netlify
@@ -75,7 +75,7 @@ Set environment variables in Netlify dashboard.
    ```
    NEXT_PUBLIC_COMPANY_ID=2
    NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-   NEXT_PUBLIC_API_URL=https://mertrosebackend-meec580k.b4a.run/api
+   NEXT_PUBLIC_API_URL=mertrosebackend-7wop5nev.b4a.run/api
    ```
 6. Deploy!
 
@@ -107,7 +107,7 @@ Set environment variables in Netlify dashboard.
 
 ```bash
 # Test backend
-curl https://mertrosebackend-meec580k.b4a.run/api/health
+curl mertrosebackend-7wop5nev.b4a.run/api/health
 
 # Should return:
 # {"status":"OK","message":"Thrift Shop Backend is running!","cors":"enabled"}
@@ -124,7 +124,7 @@ Then visit:
 | Item | Value |
 |------|-------|
 | Frontend Domain | meryrose.me |
-| Backend API | https://mertrosebackend-meec580k.b4a.run/api |
+| Backend API | mertrosebackend-7wop5nev.b4a.run/api |
 | Company Name | Mery Rose |
 | Company ID | 2 |
 
