@@ -452,6 +452,13 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY likes DESC';
         break;
+      case 'custom':
+        orderClause = 'ORDER BY created_at DESC';
+        break;
+      case 'newest':
+      default:
+        orderClause = 'ORDER BY created_at DESC';
+        break;
     }
 
     // Get products
