@@ -6,10 +6,37 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 // Get theme settings (must come before /:key route)
 router.get('/theme', async (req, res) => {
   try {
-    const setting = await db.get('SELECT * FROM settings WHERE key = ?', ['theme']);
-    if (!setting) {
-      // Return default theme if not found
-      const defaultTheme = {
+    const defaultTheme = {
+      primary: '#0d9488',
+      primaryHover: '#0f766e',
+      primaryLight: '#5eead4',
+      secondary: '#64748b',
+      accent: '#f59e0b',
+      background: '#ffffff',
+      text: '#1f2937',
+      textLight: '#6b7280',
+      success: '#10b981',
+      error: '#ef4444',
+      warning: '#f59e0b',
+      info: '#3b82f6'
+    };
+    
+    try {
+      const setting = await db.get('SELECT * FROM settings WHERE key = ?', ['theme']);
+      if (!setting) {
+        return res.json({ theme: defaultTheme });
+      }
+      res.json({ theme: JSON.parse(setting.value) });
+    } catch (dbError) {
+      // If settings table doesn't exist or query fails, return default theme
+      console.warn('Settings table query failed, returning default theme:', dbError.message);
+      res.json({ theme: defaultTheme });
+    }
+  } catch (error) {
+    console.error('Get theme error:', error);
+    // Always return a valid theme, never 500
+    res.json({ 
+      theme: {
         primary: '#0d9488',
         primaryHover: '#0f766e',
         primaryLight: '#5eead4',
@@ -22,13 +49,8 @@ router.get('/theme', async (req, res) => {
         error: '#ef4444',
         warning: '#f59e0b',
         info: '#3b82f6'
-      };
-      return res.json({ theme: defaultTheme });
-    }
-    res.json({ theme: JSON.parse(setting.value) });
-  } catch (error) {
-    console.error('Get theme error:', error);
-    res.status(500).json({ error: 'Failed to get theme' });
+      }
+    });
   }
 });
 
