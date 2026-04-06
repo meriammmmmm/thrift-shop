@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 
     const offset = (page - 1) * limit;
     // Filter products by visibility (show only visible products, treat NULL as visible)
-    let whereClause = 'WHERE (p.visible = true OR p.visible IS NULL)';
+    let whereClause = 'WHERE (p.visible = 1 OR p.visible IS NULL)';
     let params = [];
 
     // Filter by company if specified
@@ -453,8 +453,12 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         orderClause = 'ORDER BY likes DESC';
         break;
       case 'custom':
-        // Try to order by display_order if column exists, fallback to created_at
-        orderClause = 'ORDER BY COALESCE(display_order, 999999), created_at DESC';
+        // Order by display_order, with NULL values at the end
+        orderClause = 'ORDER BY CASE WHEN display_order IS NULL THEN 1 ELSE 0 END, display_order ASC, created_at DESC';
+        break;
+      case 'newest':
+      default:
+        orderClause = 'ORDER BY created_at DESC';
         break;
     }
 
@@ -493,11 +497,13 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
-      companyId: req.user?.admin_company_id
+      companyId: req.user?.admin_company_id,
+      query: req.query
     });
     res.status(500).json({ 
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message,
+      details: error.stack
     });
   }
 });
@@ -570,26 +576,10 @@ router.get('/company/:companyId', async (req, res) => {
     console.log('Company result:', company);
     
     if (!company) {
-      console.log('❌ Company not found or inactive');
-      // Return a default company structure instead of 404
-      return res.json({
-        company: {
-          id: parseInt(companyId),
-          name: 'Mery Rose',
-          description: 'Elegant vintage fashion and timeless pieces',
-          logo: '/images/mery-rose-logo.png',
-          website: 'https://meryrose.com',
-          email: 'contact@meryrose.com',
-          country: 'US',
-          show_testimonials: true
-        },
-        products: [],
-        pagination: {
-          page: 1,
-          limit: 12,
-          total: 0,
-          pages: 0
-        }
+      console.log('❌ Company not found');
+      return res.status(404).json({ 
+        error: 'Company not found',
+        companyId: companyId
       });
     }
 
@@ -601,7 +591,7 @@ router.get('/company/:companyId', async (req, res) => {
     let params = [parseInt(companyId)];
     
     // Add visibility filter (show only visible products, treat NULL as visible)
-    whereClause += ' AND (p.visible = true OR p.visible IS NULL)';
+    whereClause += ' AND (p.visible = 1 OR p.visible IS NULL)';
     
 
     // Build where clause
@@ -648,6 +638,8 @@ router.get('/company/:companyId', async (req, res) => {
         break;
     }
 
+    console.log('🔍 Fetching products with query:', { whereClause, params, orderClause });
+
     // Get products with company information
     const products = await db.all(
       `SELECT p.*, c.name as company_name, c.description as company_description 
@@ -657,11 +649,15 @@ router.get('/company/:companyId', async (req, res) => {
       [...params, parseInt(limit), offset]
     );
 
+    console.log(`✅ Found ${products.length} products`);
+
     // Get total count
     const totalResult = await db.get(
       `SELECT COUNT(*) as total FROM products p ${whereClause}`,
       params
     );
+
+    console.log(`✅ Total products: ${totalResult.total}`);
 
     // Parse JSON fields and add company info
     const parsedProducts = products.map(product => ({
@@ -705,27 +701,13 @@ router.get('/company/:companyId', async (req, res) => {
     console.error('❌ Company products fetch error:', error);
     console.error('Error stack:', error.stack);
     console.error('Company ID:', req.params.companyId);
+    console.error('Query params:', req.query);
     
-    // Return default company data with error info
-    res.json({
-      company: {
-        id: parseInt(req.params.companyId),
-        name: 'Mery Rose',
-        description: 'Elegant vintage fashion and timeless pieces',
-        logo: '/images/mery-rose-logo.png',
-        website: 'https://meryrose.com',
-        email: 'contact@meryrose.com',
-        country: 'US',
-        show_testimonials: true
-      },
-      products: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 0,
-        pages: 0
-      },
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Database error'
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      details: error.stack,
+      companyId: req.params.companyId
     });
   }
 });
