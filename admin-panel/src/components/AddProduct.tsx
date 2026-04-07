@@ -133,7 +133,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://https://thrift-shop-backend-production-9cad.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
 
 const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   const [formData, setFormData] = useState({
