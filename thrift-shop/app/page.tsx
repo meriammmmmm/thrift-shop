@@ -81,7 +81,7 @@ export default function Home() {
   const loadCustomCategories = async () => {
     try {
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://https://thrift-shop-backend-production-9cad.up.railway.app/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
       const response = await fetch(`${apiUrl}/categories/public/${companyId}`);
       
       if (response.ok) {
@@ -157,13 +157,18 @@ export default function Home() {
           };
         });
         setProducts(transformedProducts);
+        console.log('Products loaded successfully:', transformedProducts.length);
       }
       
-      await loadTestimonials(companyId.toString());
+      // Load testimonials in background without blocking
+      loadTestimonials(companyId.toString()).catch(err => {
+        console.error('Testimonials load failed:', err);
+      });
     } catch (error) {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -540,8 +545,8 @@ export default function Home() {
     }
   ];
 
-  // Show loading for theme or initial product load (max 2 seconds)
-  if (themeLoading || loading) {
+  // Show loading for initial product load only (not theme)
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <img 
@@ -552,6 +557,8 @@ export default function Home() {
       </div>
     );
   }
+
+  console.log('Page rendering - loading:', loading, 'products:', products.length);
 
   return (
     <div className="min-h-screen bg-white">

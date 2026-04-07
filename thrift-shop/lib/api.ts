@@ -1,5 +1,5 @@
 // API configuration for connecting to separate backend
-const BACKEND_URL = 'https://https://thrift-shop-backend-production-9cad.up.railway.app/api';
+const BACKEND_URL = 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -20,7 +20,7 @@ const getApiBaseUrl = () => {
   }
   
   // Default to Render backend for production
-  return 'https://https://thrift-shop-backend-production-9cad.up.railway.app/api';
+  return 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
