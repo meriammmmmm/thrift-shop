@@ -15,7 +15,7 @@ import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
 
-const API_BASE_URL = 'https://mertrosebackend-7wop5nev.b4a.run/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
 
 interface User {
   id: number;

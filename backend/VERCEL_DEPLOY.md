@@ -78,7 +78,7 @@ curl https://your-backend.vercel.app/api/health
 ## Alternative: Keep Back4App
 
 Your backend is already working on Back4App:
-- `https://mertrosebackend-7wop5nev.b4a.run/api`
+- `https://thrift-shop-backend-production-9cad.up.railway.app/api`
 - Supports SQLite
 - Always-on server
 - No cold starts

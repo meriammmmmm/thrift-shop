@@ -24,7 +24,7 @@ interface Company {
   logo?: string;
 }
 
-const API_BASE_URL = 'https://mertrosebackend-7wop5nev.b4a.run/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-9cad.up.railway.app/api';
 
 const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
   const [stats, setStats] = useState<DashboardStats>({

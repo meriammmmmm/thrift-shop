@@ -81,7 +81,7 @@ export default function Home() {
   const loadCustomCategories = async () => {
     try {
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://https://mertrosebackend-7wop5nev.b4a.run/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://https://thrift-shop-backend-production-9cad.up.railway.app/api';
       const response = await fetch(`${apiUrl}/categories/public/${companyId}`);
       
       if (response.ok) {
