@@ -59,7 +59,15 @@ const App: React.FC = () => {
 
   const loadAndApplyCurrentTheme = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/settings/theme`);
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/settings/theme`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         if (data.theme) {
@@ -68,6 +76,21 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load theme for admin panel:', error);
+      // Apply default theme if loading fails
+      applyThemeToAdminPanel({
+        primary: '#0d9488',
+        primaryHover: '#0f766e',
+        primaryLight: '#5eead4',
+        secondary: '#64748b',
+        accent: '#f59e0b',
+        background: '#ffffff',
+        text: '#1f2937',
+        textLight: '#6b7280',
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+      });
     }
   };
 

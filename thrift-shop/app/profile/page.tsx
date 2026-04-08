@@ -527,7 +527,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.fullName}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, fullName: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="Enter your full name"
                       />
@@ -540,7 +540,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.email}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, email: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="Enter your email"
                       />
@@ -553,7 +553,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.phone}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, phone: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="Enter your phone number"
                       />
@@ -565,7 +565,7 @@ export default function ProfilePage() {
                         type="tel"
                         value={editingUserInfo.optionalPhone}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, optionalPhone: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="Optional phone number"
                       />
@@ -579,7 +579,7 @@ export default function ProfilePage() {
                       required
                       value={editingUserInfo.address}
                       onChange={(e) => setEditingUserInfo({...editingUserInfo, address: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                       style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                       placeholder="Enter your address"
                     />
@@ -593,7 +593,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.city}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, city: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="City"
                       />
@@ -606,7 +606,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.state}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, state: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="State or Region"
                       />
@@ -619,7 +619,7 @@ export default function ProfilePage() {
                         required
                         value={editingUserInfo.zipCode}
                         onChange={(e) => setEditingUserInfo({...editingUserInfo, zipCode: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                         style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                         placeholder="ZIP Code"
                       />
@@ -631,7 +631,7 @@ export default function ProfilePage() {
                     <select
                       value={editingUserInfo.country}
                       onChange={(e) => setEditingUserInfo({...editingUserInfo, country: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all focus:ring-opacity-50 text-gray-900"
                       style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
                     >
                       <option value="Tunisia">Tunisia</option>

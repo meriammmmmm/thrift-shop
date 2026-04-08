@@ -121,7 +121,12 @@ export default function Home() {
       }
       
       if (response.products) {
-        const transformedProducts = response.products.map((product: any) => {
+        // Filter out hidden products (visible = 0 or visible = false)
+        const visibleProducts = response.products.filter((product: any) => {
+          return product.visible === true || product.visible === 1 || product.visible === '1' || product.visible === null || product.visible === undefined;
+        });
+        
+        const transformedProducts = visibleProducts.map((product: any) => {
           return {
             id: product.id,
             name: product.name,
@@ -935,7 +940,8 @@ export default function Home() {
         );
       })()}
 
-      {/* Trending Now Section */}
+      {/* Trending Now Section - Show only most_lovable products */}
+      {sortedProducts.filter(p => p.most_lovable).length > 0 && (
       <section id="products-section" className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5" style={{ 
           backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -958,7 +964,7 @@ export default function Home() {
                 className="flex transition-transform duration-300 ease-out"
                 style={{ transform: `translateX(-${currentTrendingIndex * 100}%)` }}
               >
-                {sortedProducts.slice(0, 3).map((product, index) => (
+                {sortedProducts.filter(p => p.most_lovable).slice(0, 3).map((product, index) => (
                   <div 
                     key={product.id}
                     className="w-full flex-shrink-0 px-2"
@@ -1042,7 +1048,7 @@ export default function Home() {
 
           {/* Desktop Grid */}
           <div className="hidden md:grid grid-cols-3 gap-8">
-            {sortedProducts.slice(0, 3).map((product, index) => (
+            {sortedProducts.filter(p => p.most_lovable).slice(0, 3).map((product, index) => (
               <div 
                 key={product.id}
                 className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
@@ -1103,12 +1109,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Clean Out Service Section */}
      
 
-      {/* New Arrivals Section - Overlapping Circles Carousel */}
+      {/* New Arrivals Section - With Animated Stars */}
       <section className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
+        {/* Original Background Image */}
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&h=500&fit=crop" 
@@ -1118,7 +1126,64 @@ export default function Home() {
           <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${theme.primary}99, ${theme.primary}aa)` }}></div>
         </div>
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Animated Stars Layer - 4-Pointed Sparkle Stars */}
+       <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+  <div className="absolute inset-0">
+    {[...Array(80)].map((_, i) => {
+      const animations = ['twinkle', 'float', 'pulse', 'drift'];
+      const randomAnimation = animations[i % animations.length];
+      const size = Math.random() * 10 + 6;
+      return (
+        <span
+          key={`star-${i}`}
+          className="absolute select-none"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            fontSize: `${size}px`,
+            color: '#ffc2d0',
+            animation: `${randomAnimation} ${Math.random() * 5 + 2}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 5}s`,
+            lineHeight: 1,
+          }}
+        >
+          ✦
+        </span>
+      );
+    })}
+  </div>
+</div>
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6">
+          {newArrivals.length === 0 ? (
+            /* Coming Soon Message when no products */
+            <div className="text-center animate-fadeIn px-4 py-8">
+              <div className="text-6xl sm:text-8xl mb-6 animate-bounce">💕</div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 tracking-tight">New Drop Coming Soon</h2>
+              <div className="inline-block px-6 py-3 rounded-full bg-white/20 backdrop-blur-sm text-white font-semibold text-base sm:text-lg mb-6 shadow-lg">
+                Friday at 21:00 Tunis Time
+              </div>
+              <p className="text-sm sm:text-base mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
+                Get ready for the hottest fashion drop! We're bringing you stunning pieces perfect for parties, 
+                nights out, and making unforgettable memories. Cute, trendy, and absolutely fabulous! ✨
+              </p>
+              <div className="flex flex-wrap justify-center gap-4 text-sm sm:text-base">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
+                  <span>Party Ready</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
+                  <span>Trendy Styles</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
+                  <span>Fashion Forward</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Regular carousel when products exist */
+            <>
           {/* Overlapping Product Circles Carousel */}
           <div className="flex items-center justify-center mb-8 sm:mb-12">
             {/* Left Arrow */}
@@ -1234,6 +1299,8 @@ export default function Home() {
               Shop New Arrivals
             </button>
           </div>
+          </>
+          )}
         </div>
       </section>
 
@@ -1463,24 +1530,25 @@ export default function Home() {
               <h3 className="text-2xl font-bold mb-4 tracking-wide">
                 {company?.name?.toUpperCase() || 'MERY ROSE'}
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">
                 {company?.description || 'Sustainable fashion for conscious consumers.'}
               </p>
+              <a href="mailto:meryroseclothing@gmail.com" className="text-gray-400 hover:text-white text-sm flex items-center gap-2 mb-6 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                meryroseclothing@gmail.com
+              </a>
               <div className="flex space-x-3">
-                <a href="#" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all" aria-label="Instagram">
+                <a href="https://www.instagram.com/meryrose.clothing?igsh=ZGNwcTFieHE2YTVt&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all" aria-label="Instagram">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
                     <path d="M12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all" aria-label="Facebook">
+                <a href="https://www.tiktok.com/@meryroseclothing" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all" aria-label="TikTok">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all" aria-label="Pinterest">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.627 0-12 5.372-12 12 0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146 1.124.347 2.317.535 3.554.535 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                   </svg>
                 </a>
               </div>

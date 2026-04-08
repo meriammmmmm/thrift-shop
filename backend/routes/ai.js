@@ -177,6 +177,12 @@ router.get('/services-status', authenticateToken, async (req, res) => {
         service: 'Stable Diffusion XL',
         features: ['Free generation', 'Good quality', 'Fast processing']
       },
+      gemini: {
+        available: aiService.geminiApiKeys.length > 0,
+        keyCount: aiService.geminiApiKeys.length,
+        service: 'Google Gemini Vision',
+        features: ['Real AI vision', 'Image analysis', 'Product detection']
+      },
       demo: {
         available: true,
         service: 'Demo Mode',
@@ -188,6 +194,21 @@ router.get('/services-status', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Services status error:', error);
     res.status(500).json({ error: 'Failed to get services status' });
+  }
+});
+
+// Debug endpoint to check environment variables
+router.get('/debug-env', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      gemini_key_exists: !!process.env.GEMINI_API_KEY,
+      gemini_key_starts_with: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+      gemini_keys_loaded: aiService.geminiApiKeys.length,
+      has_openai: !!aiService.openai,
+      has_huggingface: !!aiService.huggingFaceApiKey
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

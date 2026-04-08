@@ -38,17 +38,23 @@ class ApiClient {
     // Get token from localStorage
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
     
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
+      signal: controller.signal,
       ...options,
     };
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         // Handle authentication errors
@@ -73,6 +79,16 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Request timeout:', url);
+        const timeoutError = new Error('Request timeout - server not responding');
+        (timeoutError as any).status = 408;
+        throw timeoutError;
+      }
+      
       // Don't log 404 errors as they're often expected (e.g., user info not found)
       if ((error as any)?.status !== 404) {
         console.error('API request failed:', error);

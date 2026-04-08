@@ -116,7 +116,12 @@ export default function ProductsPage() {
       }
       
       if (response.products) {
-        const transformedProducts = response.products.map((product: any) => {
+        // Filter out hidden products (visible = 0 or visible = false)
+        const visibleProducts = response.products.filter((product: any) => {
+          return product.visible === true || product.visible === 1 || product.visible === '1' || product.visible === null || product.visible === undefined;
+        });
+        
+        const transformedProducts = visibleProducts.map((product: any) => {
           const inStockValue = product.in_stock === true || product.in_stock === 1 || product.in_stock === '1';
           
           return {

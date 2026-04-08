@@ -191,7 +191,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.fullName}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="Full name"
                         />
                       </div>
@@ -207,7 +207,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.email}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="Email address"
                         />
                       </div>
@@ -223,7 +223,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.phone}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="Phone number"
                         />
                       </div>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                           type="tel"
                           value={userInfo.optionalPhone}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="Alternative phone"
                         />
                       </div>
@@ -261,7 +261,7 @@ export default function LoginPage() {
                         required={!isLogin}
                         value={userInfo.address}
                         onChange={handleUserInfoChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                         placeholder="Street address"
                       />
                     </div>
@@ -278,7 +278,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.city}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="City"
                         />
                       </div>
@@ -294,7 +294,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.state}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="State"
                         />
                       </div>
@@ -310,7 +310,7 @@ export default function LoginPage() {
                           required={!isLogin}
                           value={userInfo.zipCode}
                           onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                           placeholder="ZIP"
                         />
                       </div>
@@ -325,7 +325,7 @@ export default function LoginPage() {
                         name="country"
                         value={userInfo.country}
                         onChange={handleUserInfoChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                       >
                         <option value="Tunisia">Tunisia</option>
                         <option value="USA">United States</option>
@@ -353,7 +353,7 @@ export default function LoginPage() {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                       placeholder="Create password"
                     />
                     <button
@@ -389,7 +389,7 @@ export default function LoginPage() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -408,7 +408,7 @@ export default function LoginPage() {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm"
+                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
                       placeholder="••••••••"
                     />
                     <button
@@ -427,16 +427,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Forgot Password Link */}
-                <div className="flex items-center justify-end">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/forgot-password')}
-                    className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+             
               </>
             )}
 

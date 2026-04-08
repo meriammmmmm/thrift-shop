@@ -35,6 +35,7 @@ export interface Product {
   dateAdded: string;
   views: number;
   likes: number;
+  most_lovable?: boolean;
 }
 
 export interface CartItem extends Product {

@@ -149,7 +149,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     images: '',
     material: '',
     seller: '',
-    visible: true
+    visible: true,
+    most_lovable: false
   });
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -642,7 +643,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
       images: '',
       material: '',
       seller: '',
-      visible: true
+      visible: true,
+      most_lovable: false
     });
     setSelectedImages([]);
     setImagePreviews([]);
@@ -690,7 +692,8 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         material: formData.material,
         seller: formData.seller,
         in_stock: true,
-        visible: formData.visible
+        visible: formData.visible,
+        most_lovable: formData.most_lovable
       };
 
       const response = await fetch(`${API_BASE_URL}/products`, {
@@ -1333,6 +1336,48 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
               <p className="text-xs text-gray-600">
                 <i className="fas fa-info-circle mr-1 text-blue-500"></i>
                 <strong>Tip:</strong> Use this to create draft products or temporarily hide items without deleting them.
+              </p>
+            </div>
+          </div>
+
+          {/* Most Lovable Toggle */}
+          <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border-2 border-pink-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="block text-lg font-bold text-gray-800 mb-1">
+                  <i className={`fas fa-heart mr-2 ${formData.most_lovable ? 'text-pink-600' : 'text-gray-400'}`}></i>
+                  Most Lovable Product
+                </label>
+                <p className="text-sm text-gray-600">
+                  {formData.most_lovable 
+                    ? '💖 This product will appear in the "Most Loved Pieces" section on homepage' 
+                    : '🤍 This product will not be featured in "Most Loved Pieces"'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, most_lovable: !prev.most_lovable }))}
+                className={`relative inline-flex h-12 w-24 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  formData.most_lovable 
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-600 focus:ring-pink-500' 
+                    : 'bg-gray-300 focus:ring-gray-400'
+                }`}
+              >
+                <span
+                  className={`inline-block h-10 w-10 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                    formData.most_lovable ? 'translate-x-12' : 'translate-x-1'
+                  }`}
+                >
+                  <i className={`fas ${formData.most_lovable ? 'fa-heart' : 'fa-heart-broken'} text-lg flex items-center justify-center h-full ${
+                    formData.most_lovable ? 'text-pink-600' : 'text-gray-400'
+                  }`}></i>
+                </span>
+              </button>
+            </div>
+            <div className="mt-4 p-3 bg-white rounded-lg border border-pink-200">
+              <p className="text-xs text-gray-600">
+                <i className="fas fa-info-circle mr-1 text-pink-500"></i>
+                <strong>Tip:</strong> Enable this to feature your best products in the "Most Loved Pieces" section. Only products with this enabled will show there!
               </p>
             </div>
           </div>
