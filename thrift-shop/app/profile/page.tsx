@@ -1,3 +1,4 @@
+// Force rebuild - input text color fix
 'use client';
 
 import { useState, useEffect } from 'react';
