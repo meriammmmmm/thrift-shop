@@ -152,6 +152,7 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     visible: true,
     most_lovable: false
   });
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
@@ -465,12 +466,16 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
           condition: aiData.condition || prev.condition,
           category: aiData.category_suggestion || prev.category,
           brand: aiData.brand_suggestion || prev.brand,
-          size: aiData.size_suggestion || prev.size,
           price: aiData.suggested_price_min != null ? String(aiData.suggested_price_min) : prev.price,
           originalPrice: aiData.suggested_price_max != null ? String(aiData.suggested_price_max) : prev.originalPrice,
           color: aiData.color || prev.color,
           material: aiData.material || prev.material
         }));
+        
+        // Update selected sizes if AI detected a size
+        if (aiData.size_suggestion) {
+          setSelectedSizes([aiData.size_suggestion]);
+        }
 
         showSuccess('Success', '🤖 Image analyser: AI analyzed your photo and generated product details!');
       } else {
@@ -531,12 +536,16 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
             condition: aiData.condition || prev.condition,
             category: aiData.category_suggestion || prev.category,
             brand: aiData.brand_suggestion || prev.brand,
-            size: aiData.size_suggestion || prev.size,
             price: aiData.suggested_price_min != null ? String(aiData.suggested_price_min) : prev.price,
             originalPrice: aiData.suggested_price_max != null ? String(aiData.suggested_price_max) : prev.originalPrice,
             color: aiData.color || prev.color,
             material: aiData.material || prev.material
           }));
+          
+          // Update selected sizes if AI detected a size
+          if (aiData.size_suggestion) {
+            setSelectedSizes([aiData.size_suggestion]);
+          }
 
           showSuccess('Success', 'AI description generated successfully!');
         } else {
@@ -649,10 +658,22 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
     setSelectedImages([]);
     setImagePreviews([]);
     setSelectedOccasions([]);
+    setSelectedSizes([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Categories that don't need size selection
+    const noSizeCategories = ['Bags', 'Jewelry', 'Watches', 'Sunglasses', 'Belts', 'Scarves', 'Hats', 'Books', 'Home', 'Vintage', 'Other', 'Phones', 'Headphones', 'Cameras'];
+    const needsSize = !noSizeCategories.includes(formData.category);
+    
+    // Validate that at least one size is selected (only for categories that need size)
+    if (needsSize && selectedSizes.length === 0) {
+      showError('Error', 'Please select at least one size');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -684,7 +705,7 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
         price: parseFloat(formData.price),
         original_price: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         category: formData.category,
-        size: formData.size,
+        size: selectedSizes.length > 0 ? selectedSizes.join(', ') : 'N/A', // Join multiple sizes or N/A for accessories
         condition: formData.condition,
         color: formData.color,
         description: formData.description,
@@ -1147,60 +1168,201 @@ const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
                 { value: "Other", label: "🔖 Other", group: "� Other" }
               ]}
             />
-            <CustomSelect
-              label="Size"
-              value={formData.size}
-              onChange={(value) => setFormData(prev => ({ ...prev, size: value }))}
-              placeholder="AI will detect size from image"
-              required={true}
-              aiLoading={aiLoading}
-              aiText="AI detecting..."
-              options={[
-                // Clothing Sizes
-                { value: "XXS", label: "XXS (Extra Extra Small)", group: "👕 Clothing Sizes" },
-                { value: "XS", label: "XS (Extra Small)", group: "👕 Clothing Sizes" },
-                { value: "S", label: "S (Small)", group: "👕 Clothing Sizes" },
-                { value: "M", label: "M (Medium)", group: "👕 Clothing Sizes" },
-                { value: "L", label: "L (Large)", group: "👕 Clothing Sizes" },
-                { value: "XL", label: "XL (Extra Large)", group: "👕 Clothing Sizes" },
-                { value: "XXL", label: "XXL (Extra Extra Large)", group: "👕 Clothing Sizes" },
-                { value: "XXXL", label: "XXXL (3X Large)", group: "👕 Clothing Sizes" },
+            
+            {/* Multi-Select Size Field - Category Based */}
+            <div>
+              {(() => {
+                // Categories that don't need size selection
+                const noSizeCategories = ['Bags', 'Jewelry', 'Watches', 'Sunglasses', 'Belts', 'Scarves', 'Hats', 'Books', 'Home', 'Vintage', 'Other', 'Phones', 'Headphones', 'Cameras'];
+                const needsSize = !noSizeCategories.includes(formData.category);
                 
-                // Pants & Jeans
-                { value: "26", label: "26\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "28", label: "28\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "30", label: "30\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "32", label: "32\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "34", label: "34\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "36", label: "36\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "38", label: "38\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "40", label: "40\" Waist", group: "👖 Pants & Jeans (Waist)" },
-                { value: "42", label: "42\" Waist", group: "👖 Pants & Jeans (Waist)" },
+                if (!needsSize) {
+                  return (
+                    <div className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        <i className="fas fa-info-circle mr-2 text-blue-500"></i>
+                        Size selection is not required for <strong>{formData.category || 'this category'}</strong>
+                      </p>
+                    </div>
+                  );
+                }
                 
-                // Shoe Sizes
-                { value: "5", label: "US 5", group: "👠 Shoe Sizes (US)" },
-                { value: "5.5", label: "US 5.5", group: "👠 Shoe Sizes (US)" },
-                { value: "6", label: "US 6", group: "👠 Shoe Sizes (US)" },
-                { value: "6.5", label: "US 6.5", group: "👠 Shoe Sizes (US)" },
-                { value: "7", label: "US 7", group: "👠 Shoe Sizes (US)" },
-                { value: "7.5", label: "US 7.5", group: "👠 Shoe Sizes (US)" },
-                { value: "8", label: "US 8", group: "👠 Shoe Sizes (US)" },
-                { value: "8.5", label: "US 8.5", group: "👠 Shoe Sizes (US)" },
-                { value: "9", label: "US 9", group: "👠 Shoe Sizes (US)" },
-                { value: "9.5", label: "US 9.5", group: "👠 Shoe Sizes (US)" },
-                { value: "10", label: "US 10", group: "👠 Shoe Sizes (US)" },
-                { value: "10.5", label: "US 10.5", group: "👠 Shoe Sizes (US)" },
-                { value: "11", label: "US 11", group: "👠 Shoe Sizes (US)" },
-                { value: "11.5", label: "US 11.5", group: "👠 Shoe Sizes (US)" },
-                { value: "12", label: "US 12", group: "👠 Shoe Sizes (US)" },
-                { value: "13", label: "US 13", group: "👠 Shoe Sizes (US)" },
-                
-                // Other
-                { value: "One Size", label: "One Size Fits All", group: "🔖 Other" },
-                { value: "Adjustable", label: "Adjustable", group: "🔖 Other" },
-                { value: "Custom", label: "Custom Size", group: "🔖 Other" }
-              ]}
-            />
+                return (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Size (Multiple Selection) *
+                      {aiLoading && (
+                        <span className="ml-2 text-xs text-purple-600">
+                          <i className="fas fa-magic animate-pulse mr-1"></i>
+                          AI detecting...
+                        </span>
+                      )}
+                    </label>
+                    <div className="space-y-3">
+                      {/* Selected Sizes Display */}
+                      {selectedSizes.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                          {selectedSizes.map((size) => (
+                            <span
+                              key={size}
+                              className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-medium"
+                            >
+                              {size}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSizes(prev => prev.filter(s => s !== size))}
+                                className="hover:bg-blue-700 rounded-full p-1 transition-colors"
+                              >
+                                <i className="fas fa-times text-xs"></i>
+                              </button>
+                            </span>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSizes([])}
+                            className="text-xs text-red-600 hover:text-red-700 font-medium px-2"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Size Selection Grid */}
+                      <div className="border-2 border-gray-200 rounded-xl p-4 max-h-96 overflow-y-auto">
+                        {/* Clothing Sizes */}
+                        {!['Sneakers', 'Boots', 'Heels', 'Flats', 'Sandals'].includes(formData.category) && (
+                          <>
+                            <div className="mb-4">
+                              <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wider">
+                                👕 Clothing Sizes
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"].map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedSizes(prev => 
+                                        prev.includes(size) 
+                                          ? prev.filter(s => s !== size)
+                                          : [...prev, size]
+                                      );
+                                    }}
+                                    className={`p-2 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
+                                      selectedSizes.includes(size)
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                        : 'bg-gray-50 hover:bg-blue-100 border-gray-200 hover:border-blue-400'
+                                    }`}
+                                  >
+                                    {size}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* Pants & Jeans */}
+                            <div className="mb-4">
+                              <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wider">
+                                👖 Pants & Jeans (Waist)
+                              </div>
+                              <div className="grid grid-cols-5 gap-2">
+                                {["26", "28", "30", "32", "34", "36", "38", "40", "42"].map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedSizes(prev => 
+                                        prev.includes(size) 
+                                          ? prev.filter(s => s !== size)
+                                          : [...prev, size]
+                                      );
+                                    }}
+                                    className={`p-2 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
+                                      selectedSizes.includes(size)
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                        : 'bg-gray-50 hover:bg-blue-100 border-gray-200 hover:border-blue-400'
+                                    }`}
+                                  >
+                                    {size}"
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* Shoe Sizes - EU 30-48 */}
+                        {['Sneakers', 'Boots', 'Heels', 'Flats', 'Sandals'].includes(formData.category) && (
+                          <div className="mb-4">
+                            <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wider">
+                              👠 Shoe Sizes (EU)
+                            </div>
+                            <div className="grid grid-cols-6 gap-2">
+                              {Array.from({ length: 19 }, (_, i) => (30 + i).toString()).map((size) => (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedSizes(prev => 
+                                      prev.includes(size) 
+                                        ? prev.filter(s => s !== size)
+                                        : [...prev, size]
+                                    );
+                                  }}
+                                  className={`p-2 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
+                                    selectedSizes.includes(size)
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                      : 'bg-gray-50 hover:bg-blue-100 border-gray-200 hover:border-blue-400'
+                                  }`}
+                                >
+                                  {size}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Other Sizes */}
+                        <div>
+                          <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-wider">
+                            🔖 Other
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["One Size", "Adjustable", "Custom"].map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSizes(prev => 
+                                    prev.includes(size) 
+                                      ? prev.filter(s => s !== size)
+                                      : [...prev, size]
+                                  );
+                                }}
+                                className={`p-2 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
+                                  selectedSizes.includes(size)
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                    : 'bg-gray-50 hover:bg-blue-100 border-gray-200 hover:border-blue-400'
+                                }`}
+                              >
+                                {size}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {selectedSizes.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          Please select at least one size
+                        </p>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
             <CustomSelect
               label="Condition"
               value={formData.condition}

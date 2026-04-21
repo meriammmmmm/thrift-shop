@@ -941,7 +941,6 @@ export default function Home() {
       })()}
 
       {/* Trending Now Section - Show only most_lovable products */}
-      {sortedProducts.filter(p => p.most_lovable).length > 0 && (
       <section id="products-section" className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5" style={{ 
           backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -964,7 +963,10 @@ export default function Home() {
                 className="flex transition-transform duration-300 ease-out"
                 style={{ transform: `translateX(-${currentTrendingIndex * 100}%)` }}
               >
-                {sortedProducts.filter(p => p.most_lovable).slice(0, 3).map((product, index) => (
+                {products
+                  .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+                  .slice(0, 3)
+                  .map((product, index) => (
                   <div 
                     key={product.id}
                     className="w-full flex-shrink-0 px-2"
@@ -1048,7 +1050,10 @@ export default function Home() {
 
           {/* Desktop Grid */}
           <div className="hidden md:grid grid-cols-3 gap-8">
-            {sortedProducts.filter(p => p.most_lovable).slice(0, 3).map((product, index) => (
+            {products
+              .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+              .slice(0, 3)
+              .map((product, index) => (
               <div 
                 key={product.id}
                 className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
@@ -1109,7 +1114,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      )}
+      
 
       {/* Clean Out Service Section */}
      
