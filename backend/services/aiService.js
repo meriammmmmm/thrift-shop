@@ -28,9 +28,9 @@ class AIService {
     console.log(`🔑 Total Gemini API keys loaded: ${this.geminiApiKeys.length}`);
     this.currentGeminiKeyIndex = 0;
     this.geminiApiKey = this.geminiApiKeys[0]; // Keep for backward compatibility
-    // Use Gemini Pro for better image analysis (or set GEMINI_MODEL env var)
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const geminiApiVersion = process.env.GEMINI_API_VERSION || 'v1';
+    // HARDCODED: Use the correct working Gemini model
+    const geminiModel = 'gemini-2.5-flash'; // This is the ONLY working model as of 2026
+    const geminiApiVersion = 'v1';
     this.geminiEndpoint = `https://generativelanguage.googleapis.com/${geminiApiVersion}/models/${geminiModel}:generateContent`;
     console.log(`🤖 Using Gemini model: ${geminiModel} (API version: ${geminiApiVersion})`);
     
