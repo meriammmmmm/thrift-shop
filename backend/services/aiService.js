@@ -484,9 +484,20 @@ Be specific about what you actually see in the image.`;
   async generateWithGemini(imageBase64, productName = '', category = '', brand = '', retryCount = 0, apiKey = null) {
     try {
       console.log('🔍 Using Google Gemini Vision AI - ACTUALLY LOOKING AT YOUR IMAGE!');
+      console.log('📊 Debug Info:', {
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length || 0,
+        apiKeyStart: apiKey?.substring(0, 10) || 'NONE',
+        retryCount,
+        endpoint: this.geminiEndpoint
+      });
 
       // Use provided key or current key
       const keyToUse = apiKey || this.geminiApiKeys[this.currentGeminiKeyIndex];
+      
+      if (!keyToUse || keyToUse === 'your-gemini-key-here') {
+        throw new Error('No valid Gemini API key available. Please set GEMINI_API_KEY in Railway environment variables.');
+      }
 
       // Convert base64 to proper format for Gemini
       const imageData = imageBase64.replace(/^data:image\/[^;]+;base64,/, '');
@@ -625,7 +636,12 @@ CRITICAL: Keep description under 200 characters. Be specific but BRIEF. Example:
       };
 
     } catch (error) {
-      console.error('Gemini Vision API Error:', error.response?.status, error.response?.data || error.message);
+      console.error('❌ Gemini Vision API Error Details:');
+      console.error('Status:', error.response?.status);
+      console.error('Status Text:', error.response?.statusText);
+      console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Error Message:', error.message);
+      console.error('Endpoint Used:', this.geminiEndpoint);
       
       // Handle rate limiting with retry (only for same key)
       if (error.response?.status === 429 && retryCount < 2) {
@@ -637,10 +653,15 @@ CRITICAL: Keep description under 200 characters. Be specific but BRIEF. Example:
       
       // If rate limited, throw error to trigger key rotation
       if (error.response?.status === 429) {
-        throw new Error(`Google Gemini API rate limit exceeded. Please wait a few minutes and try again. You can also try using a different API key or upgrade your Gemini API quota at https://aistudio.google.com/`);
+        throw new Error(`Google Gemini API rate limit exceeded. Error: ${JSON.stringify(error.response?.data)}`);
       }
       
-      throw new Error(`Google Gemini AI failed: ${error.message}. The AI could not analyze your image.`);
+      // If 404, model not found
+      if (error.response?.status === 404) {
+        throw new Error(`Gemini model not found. Endpoint: ${this.geminiEndpoint}. Error: ${JSON.stringify(error.response?.data)}`);
+      }
+      
+      throw new Error(`Google Gemini AI failed: ${error.message}. Status: ${error.response?.status}. Data: ${JSON.stringify(error.response?.data)}`);
     }
   }
 
