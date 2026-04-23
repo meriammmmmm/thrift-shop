@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy app files
 COPY . .
@@ -16,6 +16,9 @@ RUN npm run build
 
 # Expose port
 EXPOSE 3000
+
+# Set environment variable for port
+ENV PORT=3000
 
 # Start the app
 CMD ["npm", "start"]
