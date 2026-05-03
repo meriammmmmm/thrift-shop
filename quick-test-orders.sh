@@ -10,7 +10,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-API_URL="https://thrift-shop-backend-production-9cad.up.railway.app/api"
+API_URL="https://thrift-shop-backend-production.up.railway.app/api"
 
 # Test 1: Health check
 echo "1️⃣  Testing health endpoint..."

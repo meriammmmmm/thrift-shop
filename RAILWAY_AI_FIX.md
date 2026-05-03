@@ -59,7 +59,7 @@ When you upload an image:
 After Railway redeploys, you can test the API directly:
 
 ```bash
-curl -X POST https://thrift-shop-backend-production-9cad.up.railway.app/api/admin/ai/generate-description \
+curl -X POST https://thrift-shop-backend-production.up.railway.app/api/admin/ai/generate-description \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{"image":"data:image/jpeg;base64,/9j/4AAQ...","productName":"Test"}'

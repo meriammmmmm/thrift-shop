@@ -5,6 +5,6 @@
   "env": {
     "NEXT_PUBLIC_COMPANY_ID": "2",
     "NEXT_PUBLIC_COMPANY_NAME": "Pearl Box",
-    "NEXT_PUBLIC_API_URL": "https://thrift-shop-backend-production-9cad.up.railway.app/api"
+    "NEXT_PUBLIC_API_URL": "https://thrift-shop-backend-production.up.railway.app/api"
   }
 }
