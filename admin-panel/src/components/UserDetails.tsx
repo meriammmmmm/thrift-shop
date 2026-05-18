@@ -46,7 +46,7 @@ interface OrderItem {
   size?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);

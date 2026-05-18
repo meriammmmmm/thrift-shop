@@ -12,7 +12,7 @@
  * 3. Run: node migrate-products-railway-to-render.js
  */
 
-const RAILWAY_BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app';
+const RAILWAY_BACKEND_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app';
 const RENDER_BACKEND_URL = 'https://mery-rose-backend.onrender.com';
 
 // Admin credentials for authentication

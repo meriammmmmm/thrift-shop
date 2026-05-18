@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);

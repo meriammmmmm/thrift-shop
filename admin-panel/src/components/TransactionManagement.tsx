@@ -14,7 +14,7 @@ interface Transaction {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
 
 const TransactionManagement: React.FC<TransactionManagementProps> = ({ authToken }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
