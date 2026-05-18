@@ -80,7 +80,7 @@ export default function Home() {
   // Load custom categories
   const loadCustomCategories = async () => {
     try {
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
+      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
       const response = await fetch(`${apiUrl}/categories/public/${companyId}`);
       
@@ -100,12 +100,12 @@ export default function Home() {
       setError(null);
       
       // Get company ID with better fallback handling
-      const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
+      const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       let companyId = parseInt(companyIdStr);
       
       // Validate company ID - use fallback if invalid
       if (isNaN(companyId) || companyId <= 0) {
-        companyId = 2; // Fallback to Mery Rose
+        companyId = 1; // Fallback to company 1
       }
       
       const response = await api.getCompanyProducts(companyId, { limit: 50 });

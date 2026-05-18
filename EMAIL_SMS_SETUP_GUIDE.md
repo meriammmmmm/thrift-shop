@@ -132,7 +132,7 @@ Add SMS option to login page - let users choose email or SMS verification.
 
 ### Test Email (after configuration)
 ```bash
-curl -X POST https://thrift-shop-backend-production.up.railway.app/api/auth/send-verification-code \
+curl -X POST https://thrift-shop-backend-production-dbea.up.railway.app/api/api/auth/send-verification-code \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","method":"email","type":"registration"}'
 ```
@@ -146,7 +146,7 @@ Expected response:
 
 ### Test SMS (after Twilio setup)
 ```bash
-curl -X POST https://thrift-shop-backend-production.up.railway.app/api/auth/send-verification-code \
+curl -X POST https://thrift-shop-backend-production-dbea.up.railway.app/api/api/auth/send-verification-code \
   -H "Content-Type: application/json" \
   -d '{"phone":"+1234567890","method":"sms","type":"registration"}'
 ```

@@ -6,7 +6,7 @@ Your frontend and backend are now configured to work together:
 
 ### Frontend: meryrose.me
 - **Domain**: meryrose.me
-- **Backend API**: https://thrift-shop-backend-production.up.railway.app/api
+- **Backend API**: https://thrift-shop-backend-production-dbea.up.railway.app/api/api
 - **Company**: Mery Rose (ID: 2)
 
 ### Backend: Render
@@ -59,7 +59,7 @@ Make sure these are set in your hosting dashboard:
 ```
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Mery Rose
-NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production-dbea.up.railway.app/api/api
 ```
 
 ## 🔧 Backend Environment Variables on Render
@@ -85,7 +85,7 @@ Your backend is already configured to accept requests from any origin, including
 
 ### Test Backend Health
 ```bash
-curl https://thrift-shop-backend-production.up.railway.app/api/health
+curl https://thrift-shop-backend-production-dbea.up.railway.app/api/api/health
 ```
 
 Expected response:
@@ -126,7 +126,7 @@ If you need to update the admin panel:
 
 **admin-panel/.env.production:**
 ```
-VITE_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+VITE_API_URL=https://thrift-shop-backend-production-dbea.up.railway.app/api/api
 VITE_COMPANY_ID=2
 ```
 

@@ -38,7 +38,7 @@ DATABASE_URL=your-postgres-connection-string
 Go to your frontend Render dashboard → Environment tab → Add:
 
 ```
-NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production-dbea.up.railway.app/api/api
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Pearl Box
 NODE_ENV=production
@@ -58,7 +58,7 @@ NODE_ENV=production
 
 **Test the backend:**
 ```bash
-curl https://thrift-shop-backend-production.up.railway.app/api/health
+curl https://thrift-shop-backend-production-dbea.up.railway.app/api/api/health
 ```
 
 Expected response:
@@ -74,7 +74,7 @@ Expected response:
 
 **Run inventory fix (if needed):**
 ```bash
-curl https://thrift-shop-backend-production.up.railway.app/api/fix-inventory
+curl https://thrift-shop-backend-production-dbea.up.railway.app/api/api/fix-inventory
 ```
 
 **Test the frontend:**

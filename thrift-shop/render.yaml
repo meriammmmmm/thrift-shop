@@ -7,8 +7,8 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_COMPANY_ID
-        value: "2"
+        value: "1"
       - key: NEXT_PUBLIC_COMPANY_NAME
         value: "Pearl Box"
       - key: NEXT_PUBLIC_API_URL
-        value: "https://https://thrift-shop-backend-production-dbea.up.railway.app/api"
+        value: "https://thrift-shop-backend-production-dbea.up.railway.app/api"

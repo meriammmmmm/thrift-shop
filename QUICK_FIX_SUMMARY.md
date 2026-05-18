@@ -41,7 +41,7 @@ Go to: https://dashboard.render.com → Your frontend service → Environment
 
 Add these variables:
 ```
-NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production.up.railway.app/api
+NEXT_PUBLIC_API_URL=https://thrift-shop-backend-production-dbea.up.railway.app/api/api
 NEXT_PUBLIC_COMPANY_ID=2
 NEXT_PUBLIC_COMPANY_NAME=Pearl Box
 NODE_ENV=production
@@ -57,10 +57,10 @@ Open `test-render-deployment.html` in your browser and run all tests
 Or test manually:
 ```bash
 # Test backend health
-curl https://thrift-shop-backend-production.up.railway.app/api/health
+curl https://thrift-shop-backend-production-dbea.up.railway.app/api/api/health
 
 # Test verification endpoint
-curl -X POST https://thrift-shop-backend-production.up.railway.app/api/auth/send-verification-code \
+curl -X POST https://thrift-shop-backend-production-dbea.up.railway.app/api/api/auth/send-verification-code \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","method":"email","type":"registration"}'
 ```
