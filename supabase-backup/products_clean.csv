@@ -1,0 +1,234 @@
+id,name,description,price,original_price,images,brand,size,category,condition,color,in_stock,visible,material,measurements,care_instructions,tags,seller_name,seller_rating,seller_location,views,likes,company_id,display_order,reservation_status,reserved_by_order_id,created_at,updated_at
+2,Black & Gold Glitter Bustier Top,"Sparkling black and gold glitter bustier top with structured seaming. Features adjustable straps and a hook-and-eye back closure. New with tags.
+
+Style notes: Pair with high-waisted trousers or a skirt for a glamorous evening look.",30.00,30.00,"2_black-gold-glitter-bustier-top_1.jpg, 2_black-gold-glitter-bustier-top_2.jpg",High Street Brand,S/M,Bustiers & Corsets,New with Tags,"Black, Gold Glitter",true,true,Polyester Blend (with glitter),{},[],[],,,,4,0,2,39,available,,2026-03-30 13:14:55.337649,2026-04-10 19:10:14.448033
+3,Black Patent Faux Leather Lace-Up Bustier Top,"Black strapless bustier top crafted from shiny patent faux leather. It features a bold front lace-up closure with silver-toned grommets, perfect for an edgy look.
+
+Style notes: Pair with high-waisted jeans or a skirt for a bold, night-out ensemble.",25.00,25.00,"3_black-patent-faux-leather-lace-up-bustier-top_1.jpg, 3_black-patent-faux-leather-lace-up-bustier-top_2.jpg",Contemporary,S/M,Tops / Bustiers & Corsets,Excellent,Black,true,true,Patent Faux Leather,{},[],[],,,,0,0,2,38,available,,2026-03-30 13:15:54.626935,2026-04-10 19:10:14.104925
+5,Black Faux Leather Strapless Cut-Out Mini Dress,"Edgy black faux leather strapless mini dress with a structured bodice. Features bold side cut-outs and snap button detail. Perfect for a night out.
+
+Style notes: Pair with chunky boots or heels for a bold, statement-making evening look.",45.00,45.00,"5_black-faux-leather-strapless-cut-out-mini-dress_1.jpg, 5_black-faux-leather-strapless-cut-out-mini-dress_2.jpg",PrettyLittleThing,XL,Mini Dresses,New with tags,Black,true,true,Faux Leather,{},[],[],,,,0,0,2,37,available,,2026-03-30 14:49:50.146062,2026-04-10 19:10:13.761913
+6,Black Lace & Mesh Bustier Top,"Black lace and mesh bustier top with structured boning. Features sheer panels and a multi-hook back closure. Perfect for layering or as a statement piece.
+
+Style notes: Pair this versatile bustier with high-waisted jeans or a skirt for a trendy night-out look.",15.00,15.00,"6_black-lace-mesh-bustier-top_1.jpg, 6_black-lace-mesh-bustier-top_2.jpg, 6_black-lace-mesh-bustier-top_3.jpg",Auden,M/L/XL,Bustier Tops,New with tags,Black,true,true,"Lace, Mesh, Fabric",{},[],[],,,,0,0,2,36,available,,2026-03-30 15:01:05.247173,2026-04-10 19:10:13.419104
+7,Off-White Draped Mesh Corset Top,"Off-white corset-style top featuring a draped sheer mesh overlay and sweetheart neckline. It has visible boning details and delicate spaghetti straps, perfect for a chic look.
+
+Style notes: Pair with high-waisted trousers or a skirt for an elegant evening or party ensemble.",30.00,30.00,"7_off-white-draped-mesh-corset-top_1.jpg, 7_off-white-draped-mesh-corset-top_2.jpg, 7_off-white-draped-mesh-corset-top_3.jpg",SHEINBAE,Small/Medium,Corset Tops,New with tags,Off-White,true,true,Satin-blend and Mesh,{},[],[],,,,0,0,2,35,available,,2026-03-30 15:05:52.659535,2026-04-10 19:10:12.96632
+9,Missguided Off-White Strapless Corset Top,"Off-white strapless top with a structured, corset-style fit. Features five prominent gold teardrop buttons down the front and an elasticated top edge. Made from a sturdy cotton blend.
+
+Style notes: Pair with high-waisted denim or a maxi skirt for a trendy, summer-ready outfit.",35.00,35.00,"9_missguided-off-white-strapless-corset-top_1.jpg, 9_missguided-off-white-strapless-corset-top_2.jpg",Missguided,S/M,Tops,New with tags,Off-white,true,true,Cotton blend,{},[],[],,,,0,0,2,34,available,,2026-03-30 15:09:21.461506,2026-04-10 19:10:12.525876
+10,Black Faux Leather Multi-Buckle Studded Mini Skirt,"Edgy black faux leather mini skirt featuring multiple horizontal straps with silver-tone buckles and grommets. Accented with pyramid studs for a punk-inspired look.
+
+Style notes: Pair with a band tee and combat boots for a complete edgy, alternative look.",40.00,40.00,"10_black-faux-leather-multi-buckle-studded-mini-skirt_1.jpg, 10_black-faux-leather-multi-buckle-studded-mini-skirt_2.jpg",ROMWE,S/M,Mini Skirts,New with tags,Black,true,true,Faux Leather,{},[],[],,,,0,0,2,30,available,,2026-03-30 15:09:55.851083,2026-04-10 19:10:10.333422
+11,Black Faux Leather Button-Front A-Line Mini Skirt,"Black faux leather A-line mini skirt with a full-length silver button-front closure and vertical panel stitching. This versatile piece can be dressed up or down.
+
+Style notes: Pair with a graphic tee and sneakers for a casual look, or a blouse and boots for an edgy ensemble.",30.00,30.00,"11_black-faux-leather-button-front-a-line-mini-skirt_1.jpg, 11_black-faux-leather-button-front-a-line-mini-skirt_2.jpg",H&M,Small,Skirts,Excellent,Black,true,true,Faux Leather,{},[],[],,,,0,0,2,29,available,,2026-03-30 15:24:15.245937,2026-04-10 19:10:09.761265
+12,Bershka Silver Metallic Faux Leather Mini Skirt,"Metallic silver mini skirt with a crinkled texture. Features an asymmetrical snap-button closure and two decorative zipper pockets. Made from a faux leather material.
+
+Style notes: Pair this statement skirt with a simple black top and boots for a bold evening look, or dress it down with a graphic tee and sneakers.",35.00,35.00,"12_bershka-silver-metallic-faux-leather-mini-skirt_1.jpg, 12_bershka-silver-metallic-faux-leather-mini-skirt_2.jpg, 12_bershka-silver-metallic-faux-leather-mini-skirt_3.jpg",Bershka,M,Mini Skirts,New with tags,Silver Metallic,true,true,Faux Leather,{},[],[],,,,0,0,2,28,available,,2026-03-30 15:31:07.457088,2026-04-10 19:10:09.178084
+13,Black Velvet Sleeveless Dress,"Black velvet sleeveless Dress with a round neckline. Features a visible back zipper closure. Soft, shimmering fabric, perfect for evening wear.
+
+",35.00,35.00,"13_black-velvet-sleeveless-dress_1.jpg, 13_black-velvet-sleeveless-dress_2.jpg",Onyx,Not visible,Dresses,Excellent,Black,true,false,Velvet,{},[],[],,,,1,0,2,27,available,,2026-03-30 15:32:14.446766,2026-04-10 19:10:08.443973
+14,Black Floral Brocade Lace-Up Corset,"Black brocade corset with a subtle floral pattern and front lace-up detail. Features ruffled trim along the bustline and hem, with strap loops.
+
+Style notes: Pair with high-waisted jeans for a chic casual look or a skirt for an evening outfit.",25.00,25.00,"14_black-floral-brocade-lace-up-corset_1.jpg, 14_black-floral-brocade-lace-up-corset_2.jpg",Fashion Brand,M/XL,Corsets & Bustiers,Excellent,Black,true,false,Brocade fabric (polyester blend),{},[],[],,,,0,0,2,26,available,,2026-03-31 09:32:43.786051,2026-04-10 19:10:07.624888
+15,Camel Faux Suede Mini Skirt,"Camel faux suede mini skirt with a soft texture. Features a concealed side zipper closure and a clean, minimalist design.
+
+Style notes: Pair with a chunky knit sweater and ankle boots for a chic autumn look.",20.00,20.00,"15_camel-faux-suede-mini-skirt_1.jpg, 15_camel-faux-suede-mini-skirt_2.jpg",Bershka,"S/M,38 ",Skirts,Excellent,Camel Brown,true,true,Faux Suede,{},[],[],,,,0,0,2,25,available,,2026-03-31 09:36:37.173463,2026-04-10 19:10:06.727234
+16,Black Glitter Bodycon Mini Dress,"Black glitter bodycon mini dress with a V-neckline and delicate spaghetti straps. Made from a stretchy, sparkly knit fabric, perfect for a night out.
+
+Style notes: Pair with heels and minimalist jewelry for a chic evening look, or layer under a blazer for a sophisticated party outfit.",35.00,35.00,"16_black-glitter-bodycon-mini-dress_1.jpg, 16_black-glitter-bodycon-mini-dress_2.jpg",Fashion Brand,S/M,Dresses,Excellent,Black with silver glitter,true,true,Glitter knit blend (likely polyester/spandex),{},[],[],,,,0,0,2,24,available,,2026-03-31 09:37:20.373908,2026-04-10 19:10:05.696547
+17,Black Lace-Up Front Mini Skirt,"Black A-line mini skirt featuring a central lace-up detail with silver-tone grommets. Crafted from a matte, woven fabric, likely a cotton blend.
+
+Style notes: Pair with a graphic tee and boots for an edgy vibe, or a blouse and heels for a night out.",20.00,20.00,"17_black-lace-up-front-mini-skirt_1.jpg, 17_black-lace-up-front-mini-skirt_2.jpg",Contemporary,Small,Skirts,"Excellent, minor wrinkles",Black,true,true,Cotton Blend,{},[],[],,,,2,0,2,23,available,,2026-03-31 09:38:24.07276,2026-04-10 19:10:04.523138
+18,Black Faux Leather Lace Trim Slip Dress,"Black mini slip dress with spaghetti straps and a delicate lace/fringe trim neckline. Features a crinkled faux leather-like body, giving it an edgy yet feminine appeal.
+
+Style notes: Layer over a t-shirt for a casual look or wear alone with heels for a night out.",30.00,30.00,"18_black-faux-leather-lace-trim-slip-dress_1.jpg, 18_black-faux-leather-lace-trim-slip-dress_2.jpg",Unknown,Small/Medium,Dresses,"Good, with some visible wrinkling on the fabric.",Black,true,true,"Faux Leather / Coated Fabric (body), Lace (trim)",{},[],[],,,,2,0,2,22,available,,2026-03-31 09:39:12.345628,2026-04-10 19:10:03.31551
+19,Black  Sweetheart Skater Dress,"Classic black  dress with a sweetheart neckline and a flared skater skirt. Features thin, detachable straps and a back zipper closure. Made from a matte, possibly stretch knit fabric.
+
+Style notes: Pair with heels and statement jewelry for a night out, or layer with a jacket for a casual chic look.",35.00,35.00,"19_black-sweetheart-skater-dress_1.jpg, 19_black-sweetheart-skater-dress_2.jpg",Contemporary,Small,Dresses,Excellent,Black,true,true,Knit Blend,{},[],[],,,,2,0,2,21,available,,2026-03-31 09:45:37.801356,2026-04-10 19:10:01.935451
+20,Black Faux Leather Lace-Up Mini Skirt,"Black faux leather mini skirt with a glossy finish. Features a prominent lace-up front with silver eyelets and black ribbon. A chic, edgy style.
+
+Style notes: Pair with a band tee and combat boots for an edgy look, or a silky camisole and heels for a night out.",40.00,40.00,"20_black-faux-leather-lace-up-mini-skirt_1.jpg, 20_black-faux-leather-lace-up-mini-skirt_2.jpg",Contemporary Fashion,Small/Medium,Skirts,Excellent,Black,true,true,Faux Leather,{},[],[],,,,4,0,2,20,available,,2026-04-06 10:05:45.74187,2026-04-10 19:10:00.415164
+21,Dusty Blue Faux Suede Cross Detail Mini Skirt,"Dusty blue faux suede mini skirt with large cross overlays on the front. Features silver-tone grommets around the waist and hem, and a side zipper. Distressed finish.
+
+Style notes: Pair with combat boots and a graphic tee for an edgy, alternative look.",45.00,45.00,"21_dusty-blue-faux-suede-cross-detail-mini-skirt_1.jpg, 21_dusty-blue-faux-suede-cross-detail-mini-skirt_2.jpg",EGO,UK 10 / US 6 / EU 38,Skirts,"Excellent, appears new",Dusty Blue,true,true,Faux Suede,{},[],[],,,,0,0,2,19,available,,2026-04-07 12:45:22.265565,2026-04-10 19:09:58.857244
+24,Holographic One-Shoulder Crop Top & Ruched Mini Skirt Set,"Iridescent silver two-piece set featuring a one-shoulder crop top with side ties and a matching ruched mini skirt. Made from a stretchy, shimmering fabric.
+
+Style notes: Perfect for festivals, rave wear, or a bold party statement.",55.00,55.00,24_holographic-one-shoulder-crop-top-ruched-mini-skir_1.jpg,shein,Small/Medium,Two-Piece Sets,New,Holographic Silver,true,true,Stretchy Polyester Blend,{},[],[],,,,0,0,2,18,available,,2026-04-07 14:04:59.428711,2026-04-10 19:09:45.389246
+25,Off-White Faux Leather Biker Mini Skirt,"Off-white faux leather mini skirt with an asymmetrical black zipper. Features a lace-up side detail and front pockets, giving it a moto-inspired look.
+
+Style notes: Pair with a graphic tee and combat boots for an edgy look, or dress up with a fitted top and heels.",35.00,35.00,"25_off-white-faux-leather-biker-mini-skirt_1.jpg, 25_off-white-faux-leather-biker-mini-skirt_2.jpg",Bershka,Small/Medium,Skirts,Good,Off-White,true,true,Faux Leather,{},[],[],,,,0,0,2,18,available,,2026-04-07 14:07:57.306176,2026-04-10 19:09:57.283223
+26,Cream Structured Corset Top,"Cream structured corset top with wide straps and a curved neckline. Features visible vertical boning channels and a pointed front hem. Made from a woven fabric.
+
+Style notes: Pair with high-waisted jeans or a flowy skirt for a chic, trendy look.",25.00,25.00,"26_cream-structured-corset-top_1.jpg, 26_cream-structured-corset-top_2.jpg",H&M,Small/Medium,Tops,"Excellent, appears new",Cream,true,true,Woven Fabric,{},[],[],,,,0,0,2,31,available,,2026-04-07 14:09:36.194977,2026-04-10 19:10:10.900608
+27,Black Open-Knit Halter Bikini Top with Gold Ring,"Black open-knit halter top with triangle cups and a prominent gold-tone irregular O-ring. Features tie closures and a sheer, textured design.
+
+Style notes: Pair with high-waisted shorts or a maxi skirt for a chic beach or festival look.",40.00,40.00,27_black-open-knit-halter-bikini-top-with-gold-ring_1.jpg,SHEINBAE,"XS, / US 2 / EU 34",Swimwear Tops,New with tags,Black,true,true,Open-knit synthetic blend,{},[],[],,,,0,0,2,17,available,,2026-04-07 14:10:41.237709,2026-04-10 19:09:55.571493
+28,Black Pink Plaid Pleated Mini Skirt with Lace Trim,"Black, white, and pink plaid pleated mini skirt with a delicate black lace trim at the hem. Made from a woven fabric, offering a punk-inspired or preppy aesthetic.
+
+Style notes: Pair with a graphic tee and combat boots for an edgy look, or a fitted top and loafers for a preppy aesthetic.",25.00,25.00,28_black-pink-plaid-pleated-mini-skirt-with-lace-trim_1.jpg,shein,"Small,",Skirts,Excellent,Black,true,true,"Woven fabric, Lace",{},[],[],,,,0,0,2,16,available,,2026-04-07 14:13:06.279317,2026-04-10 19:09:53.84401
+29,White One-Shoulder Cut-Out Ruched Bodycon Mini Dress,"White one-shoulder mini dress with a deep V-cutout and side waist cut-outs. Features a bodycon fit and all-over ruching in a stretchy knit fabric.
+
+Style notes: Pair with strappy heels and minimalist jewelry for a striking party or club look.",65.00,65.00,"29_white-one-shoulder-cut-out-ruched-bodycon-mini-dre_1.jpg, 29_white-one-shoulder-cut-out-ruched-bodycon-mini-dre_2.jpg, 29_white-one-shoulder-cut-out-ruched-bodycon-mini-dre_3.jpg",shein,"XS, / US 2 / EU 34",Dresses,New,White,true,false,Stretchy Knit,{},[],[],,,,0,0,2,15,available,,2026-04-07 14:16:18.175107,2026-04-10 19:09:52.109228
+30,Fuchsia Faux Leather Bustier Crop Top,"Vibrant fuchsia faux leather bustier crop top with thin spaghetti straps. Features a structured sweetheart neckline and visible seam detailing. New with tags.
+
+Style notes: Pair with high-waisted jeans or a skirt for a bold, edgy evening look.",40.00,40.00,"30_fuchsia-faux-leather-bustier-crop-top_1.jpg, 30_fuchsia-faux-leather-bustier-crop-top_2.jpg",PrettyLittleThing,"XS, / US 2 / EU 34",Bustiers & Corsets,New with tags,Fuchsia,true,true,Faux Leather,{},[],[],,,,0,0,2,32,available,,2026-04-07 14:16:57.397707,2026-04-10 19:10:11.489294
+31,Miss Sixty Black Faux Leather Mini Skirt,"Black faux leather mini skirt with a slightly distressed, crinkled texture. Features a zip fly, button closure, and five-pocket styling.
+
+Style notes: Pair with a band tee and combat boots for an edgy look, or dress up with a silk cami and heels.",40.00,40.00,"31_miss-sixty-black-faux-leather-mini-skirt_1.jpg, 31_miss-sixty-black-faux-leather-mini-skirt_2.jpg, 31_miss-sixty-black-faux-leather-mini-skirt_3.jpg",Miss Sixty,Small (S),Skirts,Excellent,Black,true,true,Faux Leather,{},[],[],,,,0,0,2,14,available,,2026-04-07 14:22:04.9652,2026-04-10 19:09:50.214961
+32,Black and Blue ACE Cheerleading Uniform,"Black long-sleeve cheer uniform with royal blue and white accents. Features 'ACE' logo, mesh sleeves, and rhinestone details. Made from stretchy performance fabric.
+
+Style notes: Perfect for cheerleading performances or practice, offering both style and flexibility.",40.00,40.00,"32_black-and-blue-ace-cheerleading-uniform_1.jpg, 32_black-and-blue-ace-cheerleading-uniform_2.jpg",Teamwear Brand,S/M,Cheerleading Uniform,Excellent,"Black, Royal Blue, White",true,true,"Performance Knit, Mesh",{},[],[],,,,0,0,2,13,available,,2026-04-07 14:24:00.649364,2026-04-10 19:09:46.463354
+33,Black Contrast Stitch Button-Front Mini Skirt,"Black A-line mini skirt with prominent white contrast stitching. Features a full button-front closure with silver-toned buttons. Made from a sturdy cotton blend.
+
+Style notes: This versatile skirt pairs well with a graphic tee and sneakers for a casual look, or a blouse and boots for a chic ensemble.",25.00,25.00,"33_black-contrast-stitch-button-front-mini-skirt_1.jpg, 33_black-contrast-stitch-button-front-mini-skirt_2.jpg",Forever 21,Unknown,Skirts,"Good, minor wear",Black,true,false,Cotton blend,{},[],[],,,,0,0,2,10,available,,2026-04-07 14:26:11.025256,2026-04-10 19:09:40.280082
+34,Black Faux Leather Biker Mini Skirt,"Edgy black faux leather mini skirt with a textured finish. Features lace-up sides, a zippered pocket, and a studded waistband for a biker-chic look.
+
+Style notes: Pair with a band tee and combat boots for an edgy look, or dress up with a silk cami and heels.",35.00,35.00,"34_black-faux-leather-biker-mini-skirt_1.jpg, 34_black-faux-leather-biker-mini-skirt_2.jpg, 34_black-faux-leather-biker-mini-skirt_3.jpg",Pull&Bear,Small,Skirts,New with tags,Black,true,false,Faux Leather,{},[],[],,,,1,0,2,9,available,,2026-04-07 14:28:16.556282,2026-04-10 19:09:38.219852
+35,Black Crinkled Cowl Neck Slip Dress,"Black mini slip dress featuring thin adjustable spaghetti straps and a draped cowl neckline. The fabric has a distinct crinkled, textured finish.
+
+Style notes: Pair with a leather jacket and boots for an edgy look, or dress up with heels for an evening out.",30.00,30.00,"35_black-crinkled-cowl-neck-slip-dress_1.jpg, 35_black-crinkled-cowl-neck-slip-dress_2.jpg",bershka,Small/Medium,Dresses,"Good, but wrinkled",Black,true,false,Crinkled Polyester Blend,{},[],[],,,,2,0,2,8,available,,2026-04-07 14:32:03.178698,2026-04-10 19:09:36.159546
+36,Eclectic Patchwork Faux Leather Handbag,"Eclectic black faux leather and denim patchwork handbag with woven fabric panels in red, white, and grey patterns. Features dual top handles and a detachable crossbody strap.
+
+Style notes: Perfect for adding an eclectic, bohemian touch to casual denim looks or earthy-toned ensembles.",50.00,50.00,"36_eclectic-patchwork-faux-leather-handbag_1.jpg, 36_eclectic-patchwork-faux-leather-handbag_2.jpg",Desigual,Medium,Handbags,"Good, with minor wear on handles",Black (multi-color patchwork),true,true,"Faux leather, denim, woven fabric",{},[],[],,,,2,0,2,6,available,,2026-04-10 16:04:18.831089,2026-04-10 19:09:33.925712
+37,Mustard Yellow Floral Jacquard Halter Mini Dress,"Vibrant mustard yellow mini dress featuring a halter neckline and intricate floral jacquard pattern. Designed with a fitted bodice and a playful tiered, flared skirt.
+
+Style notes: Ideal for summer events, pair with espadrilles or dress up with heels and delicate jewelry.",45.00,45.00,"37_mustard-yellow-floral-jacquard-halter-mini-dress_1.jpg, 37_mustard-yellow-floral-jacquard-halter-mini-dress_2.jpg",Boutique,M,Dresses,Excellent,Mustard Yellow,true,true,Jacquard,{},[],[],,,,2,0,2,11,available,,2026-04-10 16:15:03.39091,2026-04-10 19:09:42.340835
+38,Black Crinkled Faux Leather Shoulder Bag,"Black, crinkled faux leather shoulder bag with a slouchy silhouette. Features a top zipper closure, front zip pocket, and side snap pockets. Silver-tone hardware.
+
+Style notes: This versatile bag is perfect for everyday use, adding a casual-chic touch to any outfit.",50.00,50.00,"38_black-crinkled-faux-leather-shoulder-bag_1.jpg, 38_black-crinkled-faux-leather-shoulder-bag_2.jpg",Generic Fashion Brand,Custom,Bags,Like New,Black,true,true,Faux Leather,{},[],[],,,,3,0,2,5,available,,2026-04-10 16:26:27.469828,2026-04-10 19:09:31.766331
+39,Brown Suede & Leather Hobo Shoulder Bag,"Dark brown suede hobo bag with a tan leather front panel and adjustable shoulder strap. Features decorative side zippers with leather pull ties, perfect for everyday wear.
+
+Style notes: This versatile bag complements casual outfits and adds a relaxed touch to smart-casual looks.",45.00,45.00,"39_brown-suede-leather-hobo-shoulder-bag_1.jpg, 39_brown-suede-leather-hobo-shoulder-bag_2.jpg",Unbranded/Contemporary,Custom,Handbags & Shoulder Bags,Like New,Brown (Dark Brown & Tan),true,false,Suede and Leather,{},[],[],,,,0,0,2,4,available,,2026-04-10 16:39:33.33847,2026-04-10 19:09:29.612757
+40,Denim Corset-Style Shoulder Bag,"Dark wash denim handbag with shiny black shoulder straps. Features a corset-style lace-up front and side lacing details, giving it a unique, edgy look.
+
+Style notes: Pair this unique bag with casual denim outfits or a simple dress to add an edgy, nostalgic touch.",45.00,45.00,"40_denim-corset-style-shoulder-bag_1.jpg, 40_denim-corset-style-shoulder-bag_2.jpg",Fashion Brand,Custom,Shoulder Bags,Like New,Dark Blue,true,true,"Denim, Faux Leather",{},[],[],,,,0,0,2,3,available,,2026-04-10 16:44:50.930277,2026-04-10 19:09:27.362405
+41,Black Goth-Inspired Canvas Shoulder Bag,"Black canvas shoulder bag with patent faux leather trim. Features front lacing, silver O-rings, and buckle details on pockets and straps, giving it a gothic aesthetic.
+
+Style notes: Ideal for adding an edgy, alternative touch to casual or gothic ensembles.",50.00,50.00,"41_black-goth-inspired-canvas-shoulder-bag_1.jpg, 41_black-goth-inspired-canvas-shoulder-bag_2.jpg",Alternative/Gothic Style,Custom,Shoulder Bags,Like New,Black,true,true,"Canvas, Patent Faux Leather, Metal",{},[],[],,,,0,0,2,2,available,,2026-04-10 16:46:39.41079,2026-04-10 19:09:25.037097
+42,CATWALK Black & Grey Fabric Shoulder Bag,"Black fabric shoulder bag with contrasting grey straps and trim. Features multiple studded front pockets and silver-tone hardware, offering a casual, utilitarian style.
+
+Style notes: Perfect for a casual everyday look, pairing well with jeans and a t-shirt or athleisure wear.",35.00,35.00,42_catwalk-black-grey-fabric-shoulder-bag_1.jpg,CATWALK, Custom,Shoulder Bags,Like New,Black with Grey Accents,true,true,Nylon/Fabric,{},[],[],,,,0,0,2,1,available,,2026-04-10 17:11:09.103414,2026-04-10 19:09:22.757668
+43,Olive Green Plaid Pleated Mini Skirt,"Chic olive green and cream plaid mini skirt with a flattering pleated design. Features a structured waistband and a short, flared silhouette.
+
+Style notes: Pair with a fitted knit top and boots for a stylish academic or preppy look.",25.00,25.00,43_olive-green-plaid-pleated-mini-skirt_1.jpg,Stradivarius,"36, M, S",Skirts,Excellent,Olive Green,true,true,Woven Blend,{},[],[],,,,0,0,2,13,available,,2026-04-10 17:16:10.352814,2026-04-10 19:09:48.302861
+44,Brown Leather Slouchy Hobo Shoulder Bag,"A slouchy brown leather shoulder bag with a hobo silhouette. Features contrast stitching, an adjustable strap, and a unique iridescent mirror tag. The two-tone brown design adds depth.
+
+Style notes: Pair this versatile bag with casual denim or a bohemian dress for an effortless everyday look.",60.00,60.00,"44_brown-leather-slouchy-hobo-shoulder-bag_1.jpg, 44_brown-leather-slouchy-hobo-shoulder-bag_2.jpg",Unbranded,Custom,Shoulder Bags,Like New,Brown (Two-tone),true,true,Leather,{},[],[],,,,0,0,2,0,available,,2026-04-10 17:22:02.693155,2026-04-10 19:09:20.434582
+45,Orange Mesh Corset Bustier Top,"Vibrant orange-red sheer mesh bustier top with delicate spaghetti straps. Features visible boning details and a structured, corset-inspired silhouette.
+
+Style notes: Pair with high-waisted jeans or a skirt for a trendy, edgy look, or layer under a blazer.",40.00,40.00,45_orange-mesh-corset-bustier-top_1.jpg,Garage,"M, S",Bustiers & Corsets,New with Tags,Orange-Red,true,true,Mesh,{},[],[],,,,0,0,2,33,available,,2026-04-10 18:51:09.131184,2026-04-10 19:10:12.047523
+46,Burgundy Ruffled Sweetheart Corset Top,"Burgundy corset-style top featuring a sweetheart neckline with ruffled trim. It has thin spaghetti straps and visible boning details for a structured silhouette.
+
+Style notes: Pair with high-waisted jeans or a skirt for a chic, evening-ready look.",35.00,35.00,"46_burgundy-ruffled-sweetheart-corset-top_1.jpg, 46_burgundy-ruffled-sweetheart-corset-top_2.jpg",Contemporary Fashion,S/M,Corset Tops,Excellent,Burgundy,true,true,Polyester Blend,{},[],[],,,,0,0,2,0,available,,2026-04-17 13:50:03.251893,2026-04-17 13:50:03.251893
+47,Red and Black Lace Corset Top,"Strapless red and black lace corset top with front ribbon lacing. Features black floral lace overlay on red fabric, trimmed with scalloped lace and sequins.
+
+Style notes: Pair with a high-waisted skirt or leather pants for a dramatic evening look, or layer under a blazer for a chic edge.",30.00,30.00,"47_red-and-black-lace-corset-top_1.jpg, 47_red-and-black-lace-corset-top_2.jpg",Fashion Retailer,"S, M",Corset Top,Excellent,Red and Black,true,true,"Lace, Polyester, Sequins",{},[],[],,,,0,0,2,0,available,,2026-04-17 14:05:35.778023,2026-04-17 14:05:35.778023
+48,Black Ruched Strapless Tiered Mini Dress,"Black strapless mini dress featuring a ruched, form-fitting bodice. The skirt is composed of multiple tiers of ruffled, sheer fabric, creating a playful silhouette.
+
+Style notes: Pair with heels and statement jewelry for a chic evening or party look.",25.00,25.00,48_black-ruched-strapless-tiered-mini-dress_1.jpg,Contemporary Brand,"M, S",Dresses,Good,Black,true,true,Polyester Blend,{},[],[],,,,0,0,2,0,available,,2026-04-17 14:45:31.185731,2026-04-17 14:45:31.185731
+49,Monochrome Snakeskin Print Mini Skirt,"Monochrome snakeskin print mini skirt with a striking black, white, and grey pattern. Features an exposed silver-tone front zipper with a circular O-ring pull tab. 
+ style_notes: Pair with a simple black top and boots for an edgy evening look, or a white tee and sneakers for a casual vibe.
+  ",25.00,25.00,"49_monochrome-snakeskin-print-mini-skirt_1.jpg, 49_monochrome-snakeskin-print-mini-skirt_2.jpg",Contemporary,S/M,AI Detected,Excellent,Black and White,true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-17 15:46:15.142317,2026-04-17 15:46:15.142317
+50,George Gina & Lucy Brown Nylon Multi-Pocket Tote Bag,"Brown nylon tote bag with black accents and silver-tone hardware. Features multiple exterior zippered pockets and a prominent carabiner detail, offering a utilitarian-chic style.
+
+Style notes: This versatile tote is perfect for adding a casual, utilitarian-chic touch to everyday outfits or for practical travel.",50.00,50.00,"50_george-gina-lucy-brown-nylon-multi-pocket-tote-bag_1.jpg, 50_george-gina-lucy-brown-nylon-multi-pocket-tote-bag_2.jpg",George Gina & Lucy,Medium-Large,Tote Bags,Very Good,Brown,true,true,Nylon,{},[],[],,,,0,0,2,0,available,,2026-04-17 15:54:52.489339,2026-04-17 15:54:52.489339
+51, Gold Croc-Embossed Logo Hobo Bag,"Gold hobo bag with a mix of croc-embossed and logo-printed faux leather. Features a prominent silver 'G' logo with rhinestones and stud detailing.
+
+Style notes: Pair this statement bag with neutral outfits to add a pop of metallic glam.",35.00,35.00,51_gold-croc-embossed-logo-hobo-bag_1.jpg,Contemporary,Medium,Shoulder Bag,"Good, with minor signs of wear consistent with age.",Gold,true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-17 20:28:09.356023,2026-04-17 20:28:09.356023
+52,Patchwork Monogram Shoulder Bag,"patchwork shoulder bag featuring various faux leather textures including monogram, patent, metallic, and animal prints in black, white, grey, and silver tones.
+Style notes: Pair this statement bag with a monochromatic outfit to let its unique patchwork design shine.",60.00,59.96,52_patchwork-monogram-shoulder-bag_1.jpg,Contemporary,Medium,Shoulder Bags,"Good, with minor wear on handles.","Black, White, Grey, Silver",true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-17 20:43:18.926419,2026-04-17 20:43:18.926419
+53,Black Faux Leather Biker Shorts,"Black faux leather shorts featuring a high-waisted fit and diagonal silver-tone zipper pockets. These short-length bottoms offer a sleek, edgy aesthetic.
+
+Style notes: Pair with a graphic tee and combat boots for a casual edgy look, or dress up with a silk cami and heels.",25.00,75.00,"53_black-faux-leather-biker-shorts_1.jpg, 53_black-faux-leather-biker-shorts_2.jpg",Contemporary,Small,Women's Shorts,Excellent,Black,true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-21 08:45:26.331802,2026-04-21 08:45:26.331802
+54,Iridescent Sequin Cami Crop Top,"Black cami crop top covered in small, iridescent sequins. Features thin spaghetti straps and a straight neckline, perfect for a party look.
+
+Style notes: Pair with high-waisted jeans or a skirt for a dazzling evening or festival outfit.",15.00,15.00,"54_iridescent-sequin-cami-crop-top_1.jpg, 54_iridescent-sequin-cami-crop-top_2.jpg",Bershka,"S, M",Crop Tops,New with tags,"Black, Iridescent",true,true,"Sequins, Polyester blend",{},[],[],,,,0,0,2,0,available,,2026-04-22 09:00:11.59208,2026-04-22 09:00:11.59208
+55,Black Pinstripe Square Neck Crop Top,"Black pinstripe crop top with a square neckline and thin spaghetti straps. Features a silver-tone O-ring detail on one strap. Made from a woven fabric.
+
+Style notes: Pair with high-waisted jeans or a skirt for a chic, casual, or edgy look.",20.00,20.00,"55_black-pinstripe-square-neck-crop-top_1.jpg, 55_black-pinstripe-square-neck-crop-top_2.jpg",Contemporary,Small/Medium,Crop Tops,Excellent,Black,true,true,Woven Fabric,{},[],[],,,,0,0,2,0,available,,2026-04-22 09:56:23.143037,2026-04-22 09:56:23.143037
+56,Black Patent Leather Knee-High Boots,"Glossy black patent leather knee-high boots featuring a pointed toe and a sturdy block heel. Equipped with an inner zipper closure for easy wear.
+
+Style notes: Perfect for adding a bold, retro-chic statement to mini dresses, skirts, or sleek skinny jeans.",40.00,40.00,"56_black-patent-leather-knee-high-boots_1.jpg, 56_black-patent-leather-knee-high-boots_2.jpg, 56_black-patent-leather-knee-high-boots_3.jpg, 56_black-patent-leather-knee-high-boots_4.jpg",Generic Fashion Brand,Women's US 7 / UK 5,Boots,"Excellent, appears new or gently used with minimal wear.",Black,true,true,Patent Faux Leather,{},[],[],,,,1,0,2,0,available,,2026-04-22 10:50:30.130785,2026-04-24 19:51:30.659073
+57,Black Chain-Embellished Knee-High Combat Boots,"Black knee-high boots with decorative silver-tone chains and studs up the shaft. Features a rounded toe, chunky lug sole, and inner zipper closure. Faux leather construction.
+
+Style notes: Pair these edgy boots with skinny jeans and a leather jacket for a rebellious look, or with a flowy dress to add contrast.",50.00,50.00,57_black-chain-embellished-knee-high-combat-boots_1.jpg,Fashion Brand,"39, 40",Boots,"Good, used condition with minor creasing.",Black,true,false,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-22 12:26:55.294806,2026-04-22 12:26:55.294806
+58,Diesel Light Blue Washed Denim Oval D Crossbody Bag,"Light blue washed denim crossbody bag with a prominent silver-toned oval 'D' logo on the flap. Features a slim, adjustable shoulder strap and a rounded silhouette.
+
+Style notes: Pair this Y2K-inspired denim bag with casual outfits for a trendy, retro touch.",80.00,80.00,58_diesel-light-blue-washed-denim-oval-d-crossbody-ba_1.jpg,Diesel,Small,Bags,New,Light Blue,true,true,Denim,{},[],[],,,,0,0,2,0,available,,2026-04-23 14:33:38.0064,2026-04-23 14:33:38.0064
+59,Brown Shaggy Faux Fur Shoulder Bag,"A unique brown shaggy faux fur shoulder bag with curly texture. Features dark brown braided handles with white lacing detail. A statement piece.
+
+Style notes: This statement bag adds a touch of bohemian luxury to any outfit, perfect for elevating simple looks.",60.00,60.00,59_brown-shaggy-faux-fur-shoulder-bag_1.jpg,Camomilla,Medium,Bags,New with Tags,Multi-tonal Brown,true,true,"Faux Fur, Faux Leather",{},[],[],,,,0,0,2,0,available,,2026-04-24 15:09:24.335678,2026-04-24 15:09:24.335678
+60,Navy Suede Drawstring Bucket Bag,"Dark navy suede bucket bag with a drawstring closure and single shoulder strap. Features a decorative silver-tone chain with unique charms and zig-zag stitching.
+
+Style notes: Perfect for adding a touch of bohemian chic to casual or dressy ensembles.",40.00,40.00,"60_navy-suede-drawstring-bucket-bag_1.jpg, 60_navy-suede-drawstring-bucket-bag_2.jpg",Boutique Brand,Medium,Bags,Excellent,Navy Blue,true,true,Suede,{},[],[],,,,0,0,2,0,available,,2026-04-24 15:12:13.263491,2026-04-24 15:12:13.263491
+61,Brown Curly Faux Fur Shoulder Bag,"Shaggy brown curly faux fur shoulder bag with black faux leather handles. The handles feature decorative white stitching, adding a contrasting detail.
+
+Style notes: Pair this statement bag with minimalist outfits to let its unique texture shine.",60.00,60.00,61_brown-curly-faux-fur-shoulder-bag_1.jpg,Camomilla,Medium,Bags,New with Tags,Brown,true,true,"Faux Fur, Faux Leather",{},[],[],,,,0,0,2,0,available,,2026-04-24 15:15:10.614639,2026-04-24 15:15:10.614639
+62,Black Faux Leather Corset Waist Belt,"Wide black faux leather corset belt with front lacing and gold-tone eyelets. Features elasticated sides and snap button closure for a comfortable, cinched waist.
+
+Style notes: Perfect for cinching the waist over dresses, tunics, or oversized shirts for a defined silhouette.",20.00,20.00,62_black-faux-leather-corset-waist-belt_1.jpg,Contemporary,Adjustable (Elasticated),Belts,Like New,Black,true,true,"Faux Leather, Elastic",{},[],[],,,,0,0,2,0,available,,2026-04-24 15:17:55.394069,2026-04-24 15:17:55.394069
+63,Cream Crinkled Faux Leather Shoulder Bag,"Cream crinkled faux leather shoulder bag with dual canvas straps. Features multiple exterior zip pockets and silver-tone hardware, offering a casual, utilitarian style.
+
+Style notes: Pair with casual denim and a simple top for an effortless, everyday look.",30.00,30.00,"63_cream-crinkled-faux-leather-shoulder-bag_1.jpg, 63_cream-crinkled-faux-leather-shoulder-bag_2.jpg",No visible brand,Medium,Bags,Excellent,Cream,true,true,Faux Leather and Canvas,{},[],[],,,,0,0,2,0,available,,2026-04-24 19:57:19.026534,2026-04-24 19:57:19.026534
+64,Navy Blue Dragon & Phoenix Cheongsam,"Navy blue satin cheongsam dress with intricate gold dragon and phoenix embroidery. Features a mandarin collar, short sleeves, and white piping detail. Fitted, floor-length silhouette.
+
+Style notes: Pair with simple heels and minimal jewelry to let this elegant dress be the statement piece for special occasions.",40.00,40.00,"64_navy-blue-dragon-phoenix-cheongsam_1.jpg, 64_navy-blue-dragon-phoenix-cheongsam_2.jpg",Unbranded,Small,Cheongsam Dresses,"Good, with minor creasing visible in the fabric.",Navy Blue,true,true,Satin,{},[],[],,,,0,0,2,0,available,,2026-04-24 22:31:29.750657,2026-04-24 22:31:29.750657
+65,Black Faux Leather Moto Mini Skirt,"Black faux leather mini skirt featuring an asymmetrical front zipper and a wide belted waist. It has silver-tone hardware and a slightly crinkled texture.
+
+Style notes: Pair with a band tee and combat boots for an edgy look, or a silk cami and heels for a night out.",25.00,24.96,"65_black-faux-leather-moto-mini-skirt_1.jpg, 65_black-faux-leather-moto-mini-skirt_2.jpg",Contemporary / Fast Fashion,Small/Medium,Skirts,"Good, with natural creasing in the faux leather.",Black,true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-24 22:33:55.322683,2026-04-24 22:33:55.322683
+66,Black Zip-Front Bustier Crop Top,"Black bustier-style crop top with wide straps and a square neckline. It features a full-length silver front zipper and visible seaming for structure. Made from a matte, stretchy knit fabric.
+
+Style notes: Pair with high-waisted jeans or a skirt for a chic, edgy look.",20.00,20.00,"66_black-zip-front-bustier-crop-top_1.jpg, 66_black-zip-front-bustier-crop-top_2.jpg",SHEIN,Small/Medium,Tops,Excellent,Black,true,true,Knit fabric,{},[],[],,,,0,0,2,0,available,,2026-04-24 22:41:04.880321,2026-04-24 22:41:04.880321
+67,Black Glitter Mesh Corset Top,"Black mesh corset top with iridescent glitter dots. Features a sweetheart neckline, adjustable spaghetti straps, and visible boning for structure.
+
+Style notes: Pair with high-waisted leather pants or a mini skirt for a chic evening look.",25.00,25.00,"67_black-glitter-mesh-corset-top_1.jpg, 67_black-glitter-mesh-corset-top_2.jpg",Fast Fashion,"L, XL",Corsets & Bustiers,Excellent,Black,true,true,"Mesh, Glitter",{},[],[],,,,0,0,2,0,available,,2026-04-26 20:54:16.947396,2026-04-26 20:54:16.947396
+68,Blue Brocade Overbust Corset,"Vibrant blue brocade overbust corset with a floral pattern. Features a front busk closure, black ruffled trim, and back lacing for an adjustable fit.
+
+Style notes: Pair with a high-waisted skirt or jeans for a striking evening or casual-chic look.",35.00,35.00,"68_blue-brocade-overbust-corset_1.jpg, 68_blue-brocade-overbust-corset_2.jpg",Fashion Corset,Small/Medium,Corsets & Bustiers,Excellent,Blue,true,true,Brocade (Polyester blend),{},[],[],,,,0,0,2,0,available,,2026-04-26 20:56:16.455782,2026-04-26 20:56:16.455782
+69,Red Patent Faux Leather Biker Mini Skirt,"Vibrant red patent faux leather mini skirt with an A-line silhouette. Features an asymmetrical front zipper and two decorative diagonal zippers on the left hip. Edgy and chic.
+
+Style notes: Pair with a band tee and combat boots for a rebellious look, or a sleek black top and heels for a night out.",30.00,30.00,"69_red-patent-faux-leather-biker-mini-skirt_1.jpg, 69_red-patent-faux-leather-biker-mini-skirt_2.jpg",Bershka,Small (S),Mini Skirts,Excellent,Red,true,true,Patent Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-28 20:02:59.286042,2026-04-28 20:02:59.286042
+70,Metallic Silver Coated Denim Mini Skirt,"Shimmering silver metallic-coated denim mini skirt with a classic 5-pocket design. Features a high-waisted A-line cut, button closure, and belt loops for a trendy look.
+
+Style notes: Pair this statement skirt with a simple black top and boots for an edgy evening look, or a white tee and sneakers for a casual daytime outfit.",35.00,35.00,"70_metallic-silver-coated-denim-mini-skirt_1.jpg, 70_metallic-silver-coated-denim-mini-skirt_2.jpg",Contemporary Fashion Brand,Small (US 4-6),Skirts,Excellent,Metallic Silver,true,true,Coated Denim,{},[],[],,,,0,0,2,0,available,,2026-04-28 20:04:02.920559,2026-04-28 20:04:02.920559
+71,Black Leather Western Ankle Boots with White Embroidery,"Black leather ankle cowboy boots with white western-style embroidery on the shaft. Features a pointed toe and low block heel.
+
+Style notes: Perfect for adding a touch of Western flair to any outfit, from jeans to dresses.",50.00,49.98,71_black-leather-western-ankle-boots-with-white-embro_1.jpg,Unknown,Unspecified,Bags,"Good, pre-owned condition with minor sole and heel wear.","Black, White",true,true,Leather,{},[],[],,,,0,0,2,0,available,,2026-04-28 20:11:30.561221,2026-04-28 20:11:30.561221
+72,George Gina & Lucy Tan Fabric Satchel Handbag,"Tan fabric satchel handbag with multiple pockets and silver-tone hardware. Features a unique front clasp, embroidered details, and sturdy woven handles.
+
+Style notes: Pair this versatile bag with casual outfits for an effortlessly cool, functional look.",60.00,60.00,72_george-gina-lucy-tan-fabric-satchel-handbag_1.jpg,George Gina & Lucy,Medium,Handbags & Purses,"Good, pre-owned condition",Tan,true,true,Durable fabric,{},[],[],,,,0,0,2,0,available,,2026-04-28 20:32:48.447058,2026-04-28 20:32:48.447058
+73,Black Croc-Embossed Bowling Bag,"Black faux croc-embossed bowling bag with a glossy finish. Features dual top handles and a top zipper closure, accented with silver-tone hardware.
+
+Style notes: A versatile accessory, perfect for adding a touch of classic sophistication to both casual and semi-formal outfits.",45.00,45.00,"73_black-croc-embossed-bowling-bag_1.jpg, 73_black-croc-embossed-bowling-bag_2.jpg",Forever Young,Medium,Handbags,Very Good,Black,true,true,Faux Leather (Croc-Embossed),{},[],[],,,,0,0,2,0,available,,2026-04-28 20:36:11.166727,2026-04-28 20:36:11.166727
+74,Black Faux Leather Lace-Up Mini Skirt,"Black faux leather mini skirt with a textured finish. Features side lacing, a front zip pocket, and buckle details for an edgy look. New with tags.
+
+Style notes: Pair with a band tee and combat boots for a rebellious, grunge-inspired outfit.",45.00,45.00,"74_black-faux-leather-lace-up-mini-skirt_1.jpg, 74_black-faux-leather-lace-up-mini-skirt_2.jpg",Pull&Bear,Medium (M),Skirts,New with tags (NWT),Black,true,true,Faux Leather,{},[],[],,,,0,0,2,0,available,,2026-04-28 21:06:01.235944,2026-04-28 21:06:01.235944
+75,Black Faux Suede Zipper Front Mini Dress,"Black strappy mini dress with a full-length gold-tone zipper down the front. Features a matte, possibly faux suede, fabric and two front patch pockets.
+
+Style notes: Pair with combat boots for an edgy daytime look or heels for a night out.",40.00,39.97,"75_black-faux-suede-zipper-front-mini-dress_1.jpg, 75_black-faux-suede-zipper-front-mini-dress_2.jpg",Contemporary,Small/Medium,Dresses,Excellent,Black,true,true,Faux Suede / Polyester Blend,{},[],[],,,,0,0,2,0,available,,2026-04-28 21:10:32.780952,2026-04-28 21:10:32.780952
+76,Silver Glitter Triangle Bikini Top,"Shimmering silver-grey triangle bikini top with all-over glitter. Features adjustable tie-neck and tie-back straps for a custom fit. Perfect for a dazzling beach look.
+
+Style notes: Pair with matching glitter bottoms or solid black/white for a chic, sparkling beach ensemble.",25.00,24.98,"76_silver-glitter-triangle-bikini-top_1.jpg, 76_silver-glitter-triangle-bikini-top_2.jpg",PrettyLittleThing,XXS,Swimwear / Bikini Tops,Excellent,Silver,true,true,Glitter stretch fabric,{},[],[],,,,0,0,2,0,available,,2026-04-28 21:48:34.590129,2026-04-28 21:48:34.590129
+77,Black Strapless Tiered Ruffle Mini Dress,"Chic black strapless mini dress with a structured bodice featuring vertical seam details. The skirt boasts playful tiered ruffles, creating a fun, voluminous silhouette.
+
+Style notes: Pair with heels and statement jewelry for a night out, or sandals for a casual summer look.",30.00,29.98,77_black-strapless-tiered-ruffle-mini-dress_1.jpg,Generic,Small/Medium,Dresses,"Good, minor wrinkles",Black,true,true,Cotton Blend,{},[],[],,,,0,0,2,0,available,,2026-04-28 21:51:08.317546,2026-04-28 21:51:08.317546
+78,Magenta Crinkled Bandeau High-Waist Bikini,"Vibrant magenta two-piece bikini featuring a crinkled texture. The bandeau top has a central O-ring, complemented by high-waist bottoms with a side O-ring detail.
+
+Style notes: This vibrant bikini is perfect for a stylish beach day or poolside lounging, pair with oversized sunglasses and a wide-brim hat.",40.00,40.00,"78_magenta-crinkled-bandeau-high-waist-bikini_1.jpg, 78_magenta-crinkled-bandeau-high-waist-bikini_2.jpg, 78_magenta-crinkled-bandeau-high-waist-bikini_3.jpg",SHEIN,M,Swimwear,New,Magenta,true,true,Crinkled Swim Fabric,{},[],[],,,,0,0,2,0,available,,2026-05-01 21:17:31.759842,2026-05-01 21:17:31.759842
+79,Ed Hardy Tiger & Skull Print Bikini Set,"Cream Ed Hardy bikini with vibrant tiger face and skull graphics. Features metal O-ring details and self-tie straps, embodying a Y2K tattoo art aesthetic.
+
+Style notes: Pair with oversized sunglasses and denim shorts for a bold, retro beach look.",40.00,40.00,"79_ed-hardy-tiger-skull-print-bikini-set_1.jpg, 79_ed-hardy-tiger-skull-print-bikini-set_2.jpg",Ed Hardy,Small,Bikini Sets,Good pre-owned condition with minor signs of wear.,Cream Multi,true,true,Polyester Blend,{},[],[],,,,0,0,2,0,available,,2026-05-01 21:23:08.186859,2026-05-01 21:23:08.186859
+80,Olive Green Shimmer Ribbed Triangle Bikini Set,"Olive green two-piece bikini set with subtle gold shimmer stripes. Features a classic triangle top and tie-side high-cut bottoms in a ribbed texture.
+
+Style notes: Perfect for a chic beach look, pair with oversized sunglasses and a wide-brim hat.",35.00,35.00,"80_olive-green-shimmer-ribbed-triangle-bikini-set_1.jpg, 80_olive-green-shimmer-ribbed-triangle-bikini-set_2.jpg",Contemporary Fashion,S,Swimwear,Excellent,Olive Green with Gold Shimmer,true,true,Ribbed Knit (Polyester/Spandex Blend),{},[],[],,,,0,0,2,0,available,,2026-05-01 21:25:26.930986,2026-05-01 21:25:26.930986
+81,Black Sequin Triangle Bikini Top,"Sparkling black triangle bikini top with all-over sequin embellishment. Features adjustable tie-neck and tie-back straps. Ideal for a glamorous beach or pool look.
+
+Style notes: Pair with matching sequin bottoms or solid black high-waisted briefs for a chic poolside statement.",30.00,30.00,"81_black-sequin-triangle-bikini-top_1.jpg, 81_black-sequin-triangle-bikini-top_2.jpg",Contemporary,Small/Medium (Adjustable),Bikini Tops,Excellent,Black,true,true,"Sequins, Fabric",{},[],[],,,,0,0,2,0,available,,2026-05-01 21:27:57.532501,2026-05-01 21:27:57.532501
+82,Dark Brown Embroidered Two-Piece Swimsuit,"Dark brown two-piece bikini with underwire top and classic brief bottom. Features delicate pink and gold paisley embroidery on both pieces and silver-tone hardware.
+
+Style notes: Pair this sophisticated dark brown bikini with a wide-brimmed hat and oversized sunglasses for a chic poolside look.",35.00,35.00,"82_dark-brown-embroidered-two-piece-swimsuit_1.jpg, 82_dark-brown-embroidered-two-piece-swimsuit_2.jpg",Boutique Brand,Small/Medium,Swimwear Set,Excellent,Dark Brown with Pink/Gold Embroidery,true,true,Nylon/Spandex Blend (Swimwear Fabric),{},[],[],,,,0,0,2,0,available,,2026-05-01 21:31:20.729856,2026-05-01 21:31:20.729856
+83,Olive Green Floral Halter One-Piece Swimsuit,"Olive green and cream floral print one-piece swimsuit. Features a halter neck with wooden beads, a deep V-neck, and a lace-up front cut-out. High-cut leg style.
+
+Style notes: Pair with a wide-brimmed hat and oversized sunglasses for a chic resort look.",35.00,35.00,"83_olive-green-floral-halter-one-piece-swimsuit_1.jpg, 83_olive-green-floral-halter-one-piece-swimsuit_2.jpg",Contemporary Brand,Small/Medium,One-Piece Swimsuits,Excellent,Olive Green and Cream,true,true,Stretch Swim Fabric (Polyester/Spandex Blend),{},[],[],,,,0,0,2,0,available,,2026-05-01 21:35:34.69209,2026-05-01 21:35:34.69209

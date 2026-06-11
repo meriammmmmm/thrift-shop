@@ -1,4 +1,10 @@
 // API configuration for connecting to separate backend
+import {
+  useSupabaseProducts,
+  getCompanyProductsFromSupabase,
+  getProductFromSupabase,
+} from './supabaseProducts';
+
 const BACKEND_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
 
 // Ensure the URL is absolute and properly formatted
@@ -149,6 +155,10 @@ class ApiClient {
     maxPrice?: number;
     companyId?: number;
   } = {}) {
+    if (useSupabaseProducts()) {
+      return getCompanyProductsFromSupabase(params.companyId || 2, params);
+    }
+
     const queryString = new URLSearchParams(
       Object.entries(params).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && (typeof value === 'number' || value !== '')) {
@@ -177,7 +187,11 @@ class ApiClient {
       console.warn(`Invalid company ID: ${companyId}, using fallback company ID: 2`);
       validCompanyId = 2; // Fallback to Mery Rose
     }
-    
+
+    if (useSupabaseProducts()) {
+      return getCompanyProductsFromSupabase(validCompanyId, params);
+    }
+
     const queryString = new URLSearchParams(
       Object.entries(params).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && (typeof value === 'number' || value !== '')) {
@@ -191,6 +205,9 @@ class ApiClient {
   }
 
   async getProduct(id: string) {
+    if (useSupabaseProducts()) {
+      return getProductFromSupabase(id);
+    }
     return this.request(`/products/${id}`);
   }
 

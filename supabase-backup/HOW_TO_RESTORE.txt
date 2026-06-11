@@ -1,0 +1,62 @@
+HOW TO GET YOUR SHOP BACK ON A FREE DATABASE
+=============================================
+
+You have everything you need in this folder. Follow these steps slowly,
+one at a time. You do NOT have to pay.
+
+WHAT'S IN THIS FOLDER
+---------------------
+- products_rows.csv ........ the original full backup (with images inside it)
+- products_clean.csv ....... light version, opens in Excel, images = filenames
+- product_images/ .......... all 148 product photos as real .jpg files
+- 01_create_products_table.sql .. the file that builds your table
+- HOW_TO_RESTORE.txt ....... this file
+
+
+STEP 1 — MAKE A NEW FREE PROJECT
+--------------------------------
+1. Go to supabase.com and log in.
+2. Click "New project".
+3. Pick your free organization, give it a name (e.g. mery-rose-clothing-2),
+   choose a password, click Create. Wait ~2 minutes for it to be ready.
+
+   ** IMPORTANT: this new project is FREE, same as before. **
+
+
+STEP 2 — BUILD THE TABLE
+------------------------
+1. In the new project, click "SQL Editor" on the left.
+2. Open the file 01_create_products_table.sql, copy ALL of it.
+3. Paste it into the SQL Editor and click RUN.
+   You now have an empty "products" table.
+
+
+STEP 3 — PUT THE PRODUCTS IN
+----------------------------
+1. Click "Table Editor" on the left, open the "products" table.
+2. Click "Insert" -> "Import data from CSV".
+3. Choose products_clean.csv from this folder. Import it.
+   Your 78 products are now in the new database.
+
+
+STEP 4 — PUT THE PHOTOS IN  (this is the part that keeps it free)
+-----------------------------------------------------------------
+1. Click "Storage" on the left -> "New bucket".
+2. Name it exactly:  product-images   and make it Public. Create.
+3. Open the bucket, click Upload, and upload everything inside the
+   product_images folder.
+4. Your photos now live as files (cheap) instead of inside the database.
+
+   The "images" column already lists the matching filenames for each
+   product, so your app can find them.
+
+
+WHY THE OLD ONE BROKE
+---------------------
+The old database stored each photo as a giant block of text inside the
+database itself. That filled up the free limit fast. Storing photos as
+files in Storage (Step 4) keeps the database tiny, so the free plan is
+plenty.
+
+If you get stuck on any step, come back to the chat and tell me which
+step number you're on.
