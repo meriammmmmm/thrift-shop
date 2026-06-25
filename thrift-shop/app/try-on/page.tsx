@@ -109,15 +109,18 @@ export default function TryOnPage() {
     setMessage('Creating your try-on… this usually takes 10–20 seconds.');
 
     try {
-      const res = await fetch('/api/tryon/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model_image: selfie,
-          garment_image: selected.images[0],
-          category,
-        }),
-      });
+      const res = await fetch(
+        'https://thrift-shop-backend-production-dbea.up.railway.app/api/tryon',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model_image: selfie,
+            garment_image: selected.images[0],
+            category,
+          }),
+        },
+      );
       const data = await res.json();
       if (!res.ok || data.error || !data.image) {
         throw new Error(data?.error || 'The try-on could not be generated. Try another photo.');

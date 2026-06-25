@@ -17,6 +17,7 @@ const companiesRoutes = require('./routes/companies');
 const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
 const aiRoutes = require('./routes/ai');
+const tryonRoutes = require('./routes/tryon');
 const db = require('./database/db');
 
 const app = express();
@@ -81,6 +82,7 @@ app.use('/api/companies', companiesRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/tryon', tryonRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
