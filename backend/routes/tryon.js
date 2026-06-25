@@ -95,6 +95,12 @@ router.get('/health', async (req, res) => {
     keyPrefix: apiKey ? apiKey.slice(0, 4) : null,
     keyLength: apiKey ? apiKey.length : 0,
     model: MODEL,
+    // Diagnostics (names only, never values):
+    geminiRelatedNames: Object.keys(process.env).filter((k) => /gemini|api[_]?key/i.test(k)),
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasAdminEmail: !!process.env.ADMIN_EMAIL,
+    nodeEnv: process.env.NODE_ENV || null,
+    totalEnvVars: Object.keys(process.env).length,
   };
   if (!apiKey) return res.json(out);
   try {
