@@ -55,6 +55,7 @@ router.post('/', async (req, res) => {
             ],
           },
         ],
+        generationConfig: { responseModalities: ['IMAGE'] },
       },
       {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -85,4 +86,33 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Diagnostic: confirms the key is loaded and the model is reachable.
+// Does NOT expose the key value. Visit /api/tryon/health in a browser.
+router.get('/health', async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const out = {
+    hasKey: !!apiKey,
+    keyPrefix: apiKey ? apiKey.slice(0, 4) : null,
+    keyLength: apiKey ? apiKey.length : 0,
+    model: MODEL,
+  };
+  if (!apiKey) return res.json(out);
+  try {
+    const r = await axios.get('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: { 'x-goog-api-key': apiKey },
+      timeout: 20000,
+    });
+    const names = (r.data?.models || []).map((m) => m.name || '');
+    out.keyValid = true;
+    out.modelAvailable = names.some((n) => n.includes(MODEL));
+    out.imageModels = names.filter((n) => /image/i.test(n));
+  } catch (err) {
+    out.keyValid = false;
+    out.authStatus = err.response?.status || null;
+    out.authError = err.response?.data?.error?.message || err.message;
+  }
+  return res.json(out);
+});
+
 module.exports = router;
+
