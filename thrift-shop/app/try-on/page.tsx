@@ -106,10 +106,10 @@ export default function TryOnPage() {
     if (!selfie || !selected) return;
     setStatus('running');
     setResult(null);
-    setMessage('Creating your try-on… this usually takes 20–40 seconds.');
+    setMessage('Creating your try-on… this usually takes 10–20 seconds.');
 
     try {
-      const startRes = await fetch('/api/tryon/run', {
+      const res = await fetch('/api/tryon/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,28 +118,13 @@ export default function TryOnPage() {
           category,
         }),
       });
-      const start = await startRes.json();
-      if (!startRes.ok || start.error || !start.id) {
-        throw new Error(start?.error?.message || start?.error || 'Could not start the try-on.');
+      const data = await res.json();
+      if (!res.ok || data.error || !data.image) {
+        throw new Error(data?.error || 'The try-on could not be generated. Try another photo.');
       }
-
-      const id = start.id;
-      // Poll up to ~90s.
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 3000));
-        const sRes = await fetch(`/api/tryon/status/${id}`);
-        const s = await sRes.json();
-        if (s.status === 'completed' && s.output?.[0]) {
-          setResult(s.output[0]);
-          setStatus('done');
-          setMessage('');
-          return;
-        }
-        if (s.status === 'failed' || s.status === 'canceled') {
-          throw new Error(s?.error?.message || 'The try-on could not be generated. Try another photo.');
-        }
-      }
-      throw new Error('This is taking longer than usual. Please try again.');
+      setResult(data.image);
+      setStatus('done');
+      setMessage('');
     } catch (err) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Something went wrong.');
