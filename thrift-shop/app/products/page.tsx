@@ -693,11 +693,17 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between gap-1 sm:gap-3 md:gap-6 h-20 sm:h-24 md:h-28 lg:h-32">
               {/* Left - Navigation */}
               <div className="flex items-center space-x-1.5 sm:space-x-3 md:space-x-6">
-                <button 
+                <button
                   onClick={() => window.location.href = '/products'}
                   className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
                 >
                   SHOP
+                </button>
+                <button
+                  onClick={() => window.location.href = '/try-on'}
+                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
+                >
+                  TRY-ON
                 </button>
               </div>
 
