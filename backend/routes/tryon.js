@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
       toBlob(garment_image),
     ]);
 
-    const client = await withTimeout(getClient(), 30000, 'Connecting to the try-on service');
+    const client = await withTimeout(getClient(), 60000, 'Connecting to the try-on service');
 
     // Kolors "/tryon" signature:
     //   person_img (image), garment_img (image), seed (number), randomize_seed (bool)
@@ -77,7 +77,7 @@ router.post('/', async (req, res) => {
         seed: 0,
         randomize_seed: true,
       }),
-      110000,
+      240000,
       'The try-on',
     );
 
