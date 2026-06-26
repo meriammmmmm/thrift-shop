@@ -65,39 +65,25 @@ router.post('/', async (req, res) => {
       toBlob(garment_image),
     ]);
 
-    // The free GPU often needs a "wake-up" run: the first attempt boots the
-    // Space, the second runs on the now-warm GPU. We do that automatically here
-    // (up to 2 attempts) so the customer only clicks once.
-    let result;
-    let lastErr;
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        const client = await withTimeout(
-          getClient(),
-          60000,
-          'Connecting to the try-on service',
-        );
-        // Kolors "/tryon" signature:
-        //   person_img (image), garment_img (image), seed (number), randomize_seed (bool)
-        //   -> returns [ resultImage (FileData), usedSeed ]
-        result = await withTimeout(
-          client.predict('/tryon', {
-            person_img: personBlob,
-            garment_img: garmentBlob,
-            seed: 0,
-            randomize_seed: true,
-          }),
-          150000,
-          'The try-on',
-        );
-        break; // success
-      } catch (e) {
-        lastErr = e;
-        console.error(`Try-on attempt ${attempt} failed:`, (e && e.message) || e);
-        if (attempt < 2) await new Promise((r) => setTimeout(r, 2000));
-      }
-    }
-    if (!result) throw lastErr || new Error('Try-on failed.');
+    // Single attempt with sane timeouts. We keep the total well under Railway's
+    // proxy limit so the request returns a real result or a clean error fast,
+    // instead of hanging for minutes (which Railway turns into a 502).
+    // If the GPU was asleep, the first click wakes it and the user clicks again.
+    const client = await withTimeout(getClient(), 30000, 'Connecting to the try-on service');
+
+    // Kolors "/tryon" signature:
+    //   person_img (image), garment_img (image), seed (number), randomize_seed (bool)
+    //   -> returns [ resultImage (FileData), usedSeed ]
+    const result = await withTimeout(
+      client.predict('/tryon', {
+        person_img: personBlob,
+        garment_img: garmentBlob,
+        seed: 0,
+        randomize_seed: true,
+      }),
+      100000,
+      'The try-on',
+    );
 
     const out = Array.isArray(result?.data) ? result.data[0] : null;
     // FileData from a Space is usually { url, path, ... }; sometimes a plain string.
