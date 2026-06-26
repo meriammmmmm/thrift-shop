@@ -1,124 +1,125 @@
 const express = require('express');
 const axios = require('axios');
+const { Blob } = require('buffer'); // works on Node 18+ regardless of global
 const router = express.Router();
 
-// Virtual try-on via Google's free Gemini image model.
-// Reuses the backend's existing GEMINI_API_KEY (no new variable needed).
-const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+// ---------------------------------------------------------------------------
+// Virtual try-on via Hugging Face "Kolors Virtual Try-On" — 100% FREE.
+// No billing, no credit card. It runs on a shared public GPU Space, so it can
+// occasionally be slow or busy; we retry and return clear messages when it is.
+//
+// Optional: set HF_TOKEN (a free token from https://huggingface.co/settings/tokens)
+// for higher priority / fewer "GPU busy" errors. It is NOT required.
+// ---------------------------------------------------------------------------
 
-function parseDataUrl(input) {
-  const m = /^data:(.+?);base64,([\s\S]*)$/.exec(input);
-  if (m) return { mime: m[1], data: m[2] };
-  return { mime: 'image/jpeg', data: input };
+const HF_SPACE = process.env.HF_TRYON_SPACE || 'Kwai-Kolors/Kolors-Virtual-Try-On';
+const HF_TOKEN = process.env.HF_TOKEN || undefined;
+
+// Turn a data URL or raw base64 string into a Buffer + mime type.
+function parseImageInput(input) {
+  const m = /^data:(.+?);base64,([\s\S]*)$/.exec(String(input));
+  if (m) return { mime: m[1], buffer: Buffer.from(m[2], 'base64') };
+  // raw base64 (no data: prefix)
+  return { mime: 'image/jpeg', buffer: Buffer.from(String(input), 'base64') };
 }
 
-async function urlToBase64(url) {
+// Download a remote image (e.g. the product photo) into a Buffer.
+async function urlToBuffer(url) {
   const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000 });
   const mime = res.headers['content-type'] || 'image/jpeg';
-  return { mime, data: Buffer.from(res.data).toString('base64') };
+  return { mime, buffer: Buffer.from(res.data) };
+}
+
+// Resolve a model_image / garment_image (data URL OR http URL) into a Blob.
+async function toBlob(input) {
+  const { mime, buffer } =
+    String(input).startsWith('http') ? await urlToBuffer(input) : parseImageInput(input);
+  return new Blob([buffer], { type: mime });
+}
+
+// Connect to the Gradio Space. @gradio/client is ESM-only, so we import it
+// dynamically from this CommonJS file.
+async function getClient() {
+  const { Client } = await import('@gradio/client');
+  return Client.connect(HF_SPACE, HF_TOKEN ? { hf_token: HF_TOKEN } : undefined);
 }
 
 router.post('/', async (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Try-on is not configured (missing GEMINI_API_KEY).' });
-  }
-
   const { model_image, garment_image } = req.body || {};
   if (!model_image || !garment_image) {
     return res.status(400).json({ error: 'A photo and a product are both required.' });
   }
 
   try {
-    const person = parseDataUrl(model_image);
-    const garment = String(garment_image).startsWith('data:')
-      ? parseDataUrl(garment_image)
-      : await urlToBase64(garment_image);
+    const [personBlob, garmentBlob] = await Promise.all([
+      toBlob(model_image),
+      toBlob(garment_image),
+    ]);
 
-    const prompt =
-      'You are a virtual clothing try-on tool. The FIRST image is a person. ' +
-      'The SECOND image is a clothing item. Generate a single photorealistic image ' +
-      'of the same person wearing the clothing item from the second image. Keep the ' +
-      "person's face, hair, body shape, pose, skin tone and the background unchanged. " +
-      'Replace only the relevant clothing so it fits naturally with realistic folds, ' +
-      'lighting and shadows. Return only the resulting image.';
+    const client = await getClient();
 
-    const gRes = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: person.mime, data: person.data } },
-              { inline_data: { mime_type: garment.mime, data: garment.data } },
-            ],
-          },
-        ],
-        generationConfig: { responseModalities: ['IMAGE'] },
-      },
-      {
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        timeout: 120000,
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-      },
-    );
+    // Kolors "/tryon" signature:
+    //   person_img (image), garment_img (image), seed (number), randomize_seed (bool)
+    //   -> returns [ resultImage (FileData), usedSeed ]
+    const result = await client.predict('/tryon', {
+      person_img: personBlob,
+      garment_img: garmentBlob,
+      seed: 0,
+      randomize_seed: true,
+    });
 
-    const parts = gRes.data?.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find((p) => p.inlineData?.data || p.inline_data?.data);
-    const inline = imgPart && (imgPart.inlineData || imgPart.inline_data);
+    const out = Array.isArray(result?.data) ? result.data[0] : null;
+    // FileData from a Space is usually { url, path, ... }; sometimes a plain string.
+    const imageUrl =
+      (out && (out.url || out.path)) || (typeof out === 'string' ? out : null);
 
-    if (!inline || !inline.data) {
-      const txt = parts.find((p) => p.text);
+    if (!imageUrl) {
       return res.status(422).json({
-        error: (txt && txt.text) || 'Could not generate a try-on for this combination. Try another photo or item.',
+        error: 'Could not generate a try-on for this combination. Try another photo or item.',
       });
     }
 
-    const mime = inline.mimeType || inline.mime_type || 'image/png';
-    return res.json({ image: `data:${mime};base64,${inline.data}` });
+    // Convert the temporary Space URL into a self-contained data URL so the
+    // browser can show it even after the Space cleans the file up.
+    const img = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
+    const mime = img.headers['content-type'] || 'image/png';
+    const dataUrl = `data:${mime};base64,${Buffer.from(img.data).toString('base64')}`;
+
+    return res.json({ image: dataUrl });
   } catch (err) {
-    const status = err.response?.status || 500;
-    const msg = err.response?.data?.error?.message || err.message || 'Try-on failed.';
-    console.error('Try-on error:', msg);
-    return res.status(status).json({ error: msg });
+    const raw = (err && (err.message || String(err))) || 'Try-on failed.';
+    console.error('Try-on error:', raw);
+
+    // Friendlier messages for the common shared-GPU situations.
+    let msg = raw;
+    if (/quota|gpu|exceeded/i.test(raw)) {
+      msg = 'The free try-on service is busy right now (shared GPU limit). Please try again in a minute.';
+    } else if (/queue|full|429/i.test(raw)) {
+      msg = 'The free try-on queue is full at the moment. Please try again shortly.';
+    } else if (/connect|fetch|ENOTFOUND|timeout|ETIMEDOUT/i.test(raw)) {
+      msg = 'Could not reach the try-on service. It may be waking up — please try again in a moment.';
+    }
+    return res.status(503).json({ error: msg });
   }
 });
 
-// Diagnostic: confirms the key is loaded and the model is reachable.
-// Does NOT expose the key value. Visit /api/tryon/health in a browser.
+// Diagnostic: confirms the route is live and which Space it uses.
+// Visit /api/tryon/health in a browser. Never exposes any secret value.
 router.get('/health', async (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY;
   const out = {
-    hasKey: !!apiKey,
-    keyPrefix: apiKey ? apiKey.slice(0, 4) : null,
-    keyLength: apiKey ? apiKey.length : 0,
-    model: MODEL,
-    // Diagnostics (names only, never values):
-    geminiRelatedNames: Object.keys(process.env).filter((k) => /gemini|api[_]?key/i.test(k)),
-    hasDatabaseUrl: !!process.env.DATABASE_URL,
-    hasAdminEmail: !!process.env.ADMIN_EMAIL,
-    nodeEnv: process.env.NODE_ENV || null,
-    totalEnvVars: Object.keys(process.env).length,
+    provider: 'huggingface',
+    space: HF_SPACE,
+    hasHfToken: !!HF_TOKEN, // optional, only affects priority
+    free: true,
   };
-  if (!apiKey) return res.json(out);
   try {
-    const r = await axios.get('https://generativelanguage.googleapis.com/v1beta/models', {
-      headers: { 'x-goog-api-key': apiKey },
-      timeout: 20000,
-    });
-    const names = (r.data?.models || []).map((m) => m.name || '');
-    out.keyValid = true;
-    out.modelAvailable = names.some((n) => n.includes(MODEL));
-    out.imageModels = names.filter((n) => /image/i.test(n));
+    await getClient();
+    out.spaceReachable = true;
   } catch (err) {
-    out.keyValid = false;
-    out.authStatus = err.response?.status || null;
-    out.authError = err.response?.data?.error?.message || err.message;
+    out.spaceReachable = false;
+    out.error = (err && err.message) || String(err);
   }
   return res.json(out);
 });
 
 module.exports = router;
-

@@ -1,38 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Client } from '@gradio/client';
 
-// Virtual try-on using Google's free Gemini 2.5 Flash Image model.
-// Free tier: ~500 images/day, no credit card. Set GEMINI_API_KEY in the
-// storefront's environment. The key never reaches the browser.
+// Virtual try-on via Hugging Face "Kolors Virtual Try-On" — 100% FREE.
+// No billing, no credit card. Runs on a shared public GPU Space, so it can be
+// slow/busy at times. Optional HF_TOKEN (free) reduces "GPU busy" errors.
 export const runtime = 'nodejs';
+export const maxDuration = 120;
 
-const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+const HF_SPACE = process.env.HF_TRYON_SPACE || 'Kwai-Kolors/Kolors-Virtual-Try-On';
+const HF_TOKEN = process.env.HF_TOKEN as `hf_${string}` | undefined;
 
-// Pull base64 + mime out of a data URL, or pass through a raw base64 string.
-function parseDataUrl(input: string): { data: string; mime: string } {
+function parseImageInput(input: string): { mime: string; buffer: Buffer } {
   const m = /^data:(.+?);base64,([\s\S]*)$/.exec(input);
-  if (m) return { mime: m[1], data: m[2] };
-  return { mime: 'image/jpeg', data: input };
+  if (m) return { mime: m[1], buffer: Buffer.from(m[2], 'base64') };
+  return { mime: 'image/jpeg', buffer: Buffer.from(input, 'base64') };
 }
 
-// Fetch a remote image (e.g. the product photo) and return it as base64.
-async function urlToBase64(url: string): Promise<{ data: string; mime: string }> {
+async function urlToBuffer(url: string): Promise<{ mime: string; buffer: Buffer }> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Could not load the product image (${res.status}).`);
   const mime = res.headers.get('content-type') || 'image/jpeg';
-  const buf = Buffer.from(await res.arrayBuffer());
-  return { data: buf.toString('base64'), mime };
+  return { mime, buffer: Buffer.from(await res.arrayBuffer()) };
+}
+
+async function toBlob(input: string): Promise<Blob> {
+  const { mime, buffer } = input.startsWith('http')
+    ? await urlToBuffer(input)
+    : parseImageInput(input);
+  return new Blob([buffer], { type: mime });
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'Try-on is not configured yet (missing GEMINI_API_KEY).' },
-      { status: 500 },
-    );
-  }
-
-  let body: { model_image?: string; garment_image?: string; category?: string };
+  let body: { model_image?: string; garment_image?: string };
   try {
     body = await req.json();
   } catch {
@@ -48,68 +47,48 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const person = parseDataUrl(model_image);
-    const garment = garment_image.startsWith('data:')
-      ? parseDataUrl(garment_image)
-      : await urlToBase64(garment_image);
+    const [personBlob, garmentBlob] = await Promise.all([
+      toBlob(model_image),
+      toBlob(garment_image),
+    ]);
 
-    const prompt =
-      'You are a virtual clothing try-on tool. The FIRST image is a person. ' +
-      'The SECOND image is a clothing item. Generate a single photorealistic image ' +
-      'of the same person wearing the clothing item from the second image. Keep the ' +
-      "person's face, hair, body shape, pose, skin tone and the background unchanged. " +
-      'Replace only the relevant clothing so it fits naturally with realistic folds, ' +
-      'lighting and shadows. Return only the resulting image.';
+    const client = await Client.connect(HF_SPACE, HF_TOKEN ? { hf_token: HF_TOKEN } : undefined);
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: person.mime, data: person.data } },
-                { inline_data: { mime_type: garment.mime, data: garment.data } },
-              ],
-            },
-          ],
-        }),
-      },
-    );
+    const result = await client.predict('/tryon', {
+      person_img: personBlob,
+      garment_img: garmentBlob,
+      seed: 0,
+      randomize_seed: true,
+    });
 
-    const data = await geminiRes.json().catch(() => null);
-    if (!geminiRes.ok) {
-      const msg = data?.error?.message || 'The try-on service returned an error.';
-      return NextResponse.json({ error: msg }, { status: geminiRes.status });
-    }
+    const data = result?.data as unknown[];
+    const out = Array.isArray(data) ? data[0] : null;
+    const imageUrl =
+      (out && typeof out === 'object'
+        ? (out as { url?: string; path?: string }).url || (out as { path?: string }).path
+        : null) || (typeof out === 'string' ? out : null);
 
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find(
-      (p: { inlineData?: { data: string; mimeType?: string }; inline_data?: { data: string; mime_type?: string } }) =>
-        p.inlineData?.data || p.inline_data?.data,
-    );
-    const inline = imgPart?.inlineData || imgPart?.inline_data;
-
-    if (!inline?.data) {
-      const textPart = parts.find((p: { text?: string }) => p.text)?.text;
+    if (!imageUrl) {
       return NextResponse.json(
-        { error: textPart || 'The model could not generate a try-on for this combination. Try another photo or item.' },
+        { error: 'Could not generate a try-on for this combination. Try another photo or item.' },
         { status: 422 },
       );
     }
 
-    const mime = inline.mimeType || inline.mime_type || 'image/png';
-    return NextResponse.json({ image: `data:${mime};base64,${inline.data}` });
+    const img = await fetch(imageUrl);
+    const mime = img.headers.get('content-type') || 'image/png';
+    const b64 = Buffer.from(await img.arrayBuffer()).toString('base64');
+    return NextResponse.json({ image: `data:${mime};base64,${b64}` });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Something went wrong generating the try-on.' },
-      { status: 500 },
-    );
+    const raw = err instanceof Error ? err.message : 'Try-on failed.';
+    let msg = raw;
+    if (/quota|gpu|exceeded/i.test(raw)) {
+      msg = 'The free try-on service is busy right now (shared GPU limit). Please try again in a minute.';
+    } else if (/queue|full|429/i.test(raw)) {
+      msg = 'The free try-on queue is full at the moment. Please try again shortly.';
+    } else if (/connect|fetch|ENOTFOUND|timeout|ETIMEDOUT/i.test(raw)) {
+      msg = 'Could not reach the try-on service. It may be waking up — please try again in a moment.';
+    }
+    return NextResponse.json({ error: msg }, { status: 503 });
   }
 }
