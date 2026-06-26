@@ -44,6 +44,15 @@ async function getClient() {
   return Client.connect(HF_SPACE, HF_TOKEN ? { hf_token: HF_TOKEN } : undefined);
 }
 
+// Reject (instead of hanging or crashing) if a step takes too long.
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, reject) => {
+    t = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
 router.post('/', async (req, res) => {
   const { model_image, garment_image } = req.body || {};
   if (!model_image || !garment_image) {
@@ -56,17 +65,21 @@ router.post('/', async (req, res) => {
       toBlob(garment_image),
     ]);
 
-    const client = await getClient();
+    const client = await withTimeout(getClient(), 30000, 'Connecting to the try-on service');
 
     // Kolors "/tryon" signature:
     //   person_img (image), garment_img (image), seed (number), randomize_seed (bool)
     //   -> returns [ resultImage (FileData), usedSeed ]
-    const result = await client.predict('/tryon', {
-      person_img: personBlob,
-      garment_img: garmentBlob,
-      seed: 0,
-      randomize_seed: true,
-    });
+    const result = await withTimeout(
+      client.predict('/tryon', {
+        person_img: personBlob,
+        garment_img: garmentBlob,
+        seed: 0,
+        randomize_seed: true,
+      }),
+      110000,
+      'The try-on',
+    );
 
     const out = Array.isArray(result?.data) ? result.data[0] : null;
     // FileData from a Space is usually { url, path, ... }; sometimes a plain string.
@@ -96,8 +109,8 @@ router.post('/', async (req, res) => {
       msg = 'The free try-on service is busy right now (shared GPU limit). Please try again in a minute.';
     } else if (/queue|full|429/i.test(raw)) {
       msg = 'The free try-on queue is full at the moment. Please try again shortly.';
-    } else if (/connect|fetch|ENOTFOUND|timeout|ETIMEDOUT/i.test(raw)) {
-      msg = 'Could not reach the try-on service. It may be waking up — please try again in a moment.';
+    } else if (/timed out|connect|fetch|ENOTFOUND|timeout|ETIMEDOUT/i.test(raw)) {
+      msg = 'The try-on service is taking too long (it may be waking up). Please try again in a moment.';
     }
     return res.status(503).json({ error: msg });
   }

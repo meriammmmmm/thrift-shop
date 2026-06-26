@@ -4,6 +4,17 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Safety net: keep the backend alive even if a background async task (e.g. the
+// try-on provider's streaming client) emits a stray error. Without these, Node
+// would crash the WHOLE server on one bad try-on and Railway returns 502 for
+// every request. We log and keep serving instead.
+process.on('unhandledRejection', (reason) => {
+  console.error('UnhandledRejection:', (reason && reason.message) || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('UncaughtException:', (err && err.message) || err);
+});
+
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
