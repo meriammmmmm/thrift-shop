@@ -20,11 +20,15 @@ const router = express.Router();
 // Primary first, then fallbacks. Override the primary with HF_TRYON_SPACE.
 // All are free Kolors Virtual Try-On Spaces (the fallbacks are public mirrors).
 const PRIMARY_SPACE = process.env.HF_TRYON_SPACE || 'Kwai-Kolors/Kolors-Virtual-Try-On';
-const SPACES = [
-  PRIMARY_SPACE,
-  'zhengchong/Kolors-Virtual-Try-On',
-  'fffiloni/Kolors-Virtual-Try-On',
-].filter((s, i, arr) => s && arr.indexOf(s) === i); // de-dupe, keep order
+// Optional extra Spaces, comma-separated, via HF_TRYON_FALLBACKS. We do NOT
+// hard-code unverified mirrors here — a wrong Space id just fails the same way.
+const EXTRA_SPACES = (process.env.HF_TRYON_FALLBACKS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const SPACES = [PRIMARY_SPACE, ...EXTRA_SPACES].filter(
+  (s, i, arr) => s && arr.indexOf(s) === i,
+); // de-dupe, keep order
 
 const HF_TOKEN = process.env.HF_TOKEN || undefined;
 
@@ -68,8 +72,10 @@ function withTimeout(promise, ms, label) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Errors that mean "shared GPU is busy / waking up" — worth retrying.
-const RETRYABLE = /quota|gpu|exceeded|queue|full|429|timed out|timeout|ETIMEDOUT|ENOTFOUND|fetch|connect|busy|waking|503|502|loading/i;
+// Errors that mean "shared GPU is busy / asleep / waking up" — worth retrying.
+// IMPORTANT: "Space metadata could not be loaded" is the error a SLEEPING Space
+// returns while it boots, so it MUST be retryable (the first request wakes it).
+const RETRYABLE = /quota|gpu|exceeded|queue|full|429|timed out|timeout|ETIMEDOUT|ENOTFOUND|fetch|connect|busy|waking|503|502|loading|metadata|could not be loaded|not be loaded|config|starting|building|sleep|unavailable/i;
 
 // Pull a usable image URL out of whatever shape the Space returns.
 function extractImageUrl(result) {
@@ -191,9 +197,13 @@ router.post('/', async (req, res) => {
         'The free try-on service is very busy right now (shared GPU). Please try again in a minute.';
     } else if (/queue|full|429/i.test(lastErr)) {
       msg = 'The free try-on queue is full at the moment. Please try again shortly.';
-    } else if (/timed out|connect|fetch|ENOTFOUND|timeout|ETIMEDOUT|loading/i.test(lastErr)) {
+    } else if (
+      /timed out|connect|fetch|ENOTFOUND|timeout|ETIMEDOUT|loading|metadata|could not be loaded|not be loaded|config|starting|building|sleep|unavailable/i.test(
+        lastErr,
+      )
+    ) {
       msg =
-        'The free GPU is taking longer than usual to wake up. Please tap "Try it on me" once more.';
+        'The free GPU was asleep and is still waking up. Please wait ~30 seconds and tap "Try it on me" once more — the next try usually goes through.';
     }
     return res.status(503).json({ error: msg });
   } catch (err) {
