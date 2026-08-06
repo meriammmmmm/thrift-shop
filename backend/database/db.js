@@ -283,6 +283,22 @@ class DatabaseWrapper {
         FOREIGN KEY (company_id) REFERENCES companies (id)
       )`,
 
+      // Articles table for "what to do" guides / blog posts
+      `CREATE TABLE IF NOT EXISTS articles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT,
+        content TEXT NOT NULL,
+        image TEXT,
+        author TEXT,
+        is_active BOOLEAN DEFAULT 1,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies (id)
+      )`,
+
       // Email verification codes table
       `CREATE TABLE IF NOT EXISTS verification_codes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -254,6 +254,23 @@ class PostgresDatabase {
       `);
 
       await client.query(`
+        CREATE TABLE IF NOT EXISTS articles (
+          id SERIAL PRIMARY KEY,
+          company_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          summary TEXT,
+          content TEXT NOT NULL,
+          image TEXT,
+          author TEXT,
+          is_active BOOLEAN DEFAULT true,
+          display_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (company_id) REFERENCES companies (id)
+        )
+      `);
+
+      await client.query(`
         CREATE TABLE IF NOT EXISTS verification_codes (
           id SERIAL PRIMARY KEY,
           email TEXT NOT NULL,

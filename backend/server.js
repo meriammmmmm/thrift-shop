@@ -27,6 +27,7 @@ const transactionsRoutes = require('./routes/transactions');
 const companiesRoutes = require('./routes/companies');
 const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
+const articlesRoutes = require('./routes/articles');
 const aiRoutes = require('./routes/ai');
 const tryonRoutes = require('./routes/tryon');
 const db = require('./database/db');
@@ -92,6 +93,7 @@ app.use('/api/transactions', transactionsRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
+app.use('/api/articles', articlesRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/tryon', tryonRoutes);
 

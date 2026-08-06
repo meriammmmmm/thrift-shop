@@ -102,25 +102,27 @@ function extractImageUrl(result) {
 // One predict attempt against an already-connected client. Tries the named
 // signature first, then a positional fallback if the Space rejects the params.
 async function runPredict(client, personBlob, garmentBlob) {
-  const named = {
-    person_img: personBlob,
-    garment_img: garmentBlob,
-    seed: 0,
-    randomize_seed: true,
-  };
+  // Kolors disabled its named API (config shows api_name:false on the Run
+  // button), so '/tryon' no longer exists. The Run function is fn_index 2 with
+  // inputs [person, garment, seed, randomize_seed]; call it by index. Only fall
+  // back to a named endpoint on an endpoint/index mismatch (not on "busy").
+  const positional = [personBlob, garmentBlob, 0, true];
   try {
     return await withTimeout(
-      client.predict('/tryon', named),
+      client.predict(2, positional),
       PREDICT_TIMEOUT_MS,
       'The try-on',
     );
   } catch (e) {
     const m = (e && e.message) || '';
-    // If it looks like a parameter / endpoint mismatch (not a busy GPU),
-    // retry once with positional args, which most Kolors mirrors accept.
-    if (/param|argument|endpoint|api_name|not found|unexpected|fn_index/i.test(m)) {
+    if (/param|argument|endpoint|api_name|not found|unexpected|fn_index|index/i.test(m)) {
       return await withTimeout(
-        client.predict('/tryon', [personBlob, garmentBlob, 0, true]),
+        client.predict('/tryon', {
+          person_img: personBlob,
+          garment_img: garmentBlob,
+          seed: 0,
+          randomize_seed: true,
+        }),
         PREDICT_TIMEOUT_MS,
         'The try-on',
       );
