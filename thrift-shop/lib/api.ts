@@ -5,7 +5,7 @@ import {
   getProductFromSupabase,
 } from './supabaseProducts';
 
-const BACKEND_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
   }
   
   // Default to Render backend for production
-  return 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+  return 'https://thrift-shop-backend-production.up.railway.app/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

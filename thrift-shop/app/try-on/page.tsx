@@ -110,7 +110,7 @@ export default function TryOnPage() {
 
     try {
       const res = await fetch(
-        'https://thrift-shop-backend-production-dbea.up.railway.app/api/tryon',
+        'https://thrift-shop-backend-production.up.railway.app/api/tryon',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
