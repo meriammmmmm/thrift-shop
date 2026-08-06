@@ -27,7 +27,7 @@ async function toBlob(input: string): Promise<Blob> {
   const { mime, buffer } = input.startsWith('http')
     ? await urlToBuffer(input)
     : parseImageInput(input);
-  return new Blob([buffer], { type: mime });
+  return new Blob([new Uint8Array(buffer)], { type: mime });
 }
 
 export async function POST(req: NextRequest) {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       toBlob(garment_image),
     ]);
 
-    const client = await Client.connect(HF_SPACE, HF_TOKEN ? { hf_token: HF_TOKEN } : undefined);
+    const client = await Client.connect(HF_SPACE, HF_TOKEN ? { token: HF_TOKEN } : undefined);
 
     const result = await client.predict('/tryon', {
       person_img: personBlob,
