@@ -50,7 +50,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/images/logo-192.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/images/logo-192.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#D4A5A5" />
+        <meta name="theme-color" content="#731528" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />

@@ -25,14 +25,14 @@ interface ThemeContextType {
 }
 
 const defaultTheme: ThemeColors = {
-  primary: '#0d9488', // teal-600
-  primaryHover: '#0f766e', // teal-700
-  primaryLight: '#5eead4', // teal-300
-  secondary: '#64748b', // slate-500
-  accent: '#f59e0b', // amber-500
+  primary: '#731528', // logo burgundy
+  primaryHover: '#5A1020', // deeper burgundy
+  primaryLight: '#F6E8EB', // pale wine tint
+  secondary: '#9B3550', // muted wine
+  accent: '#C98C9C', // dusty rose accent
   background: '#ffffff',
-  text: '#1f2937', // gray-800
-  textLight: '#6b7280', // gray-500
+  text: '#3f2a30', // deep plum-brown
+  textLight: '#8B6B6B', // soft rose-brown
   success: '#10b981', // emerald-500
   error: '#ef4444', // red-500
   warning: '#f59e0b', // amber-500
