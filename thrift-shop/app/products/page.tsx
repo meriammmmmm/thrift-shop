@@ -347,19 +347,30 @@ export default function ProductsPage() {
     }
   };
 
-  // Load user's cart from API
+  // Load the server cart and keep all cart state in sync together.
   const loadUserCart = async () => {
     try {
       const cartData = await api.getCart();
-      const items = cartData.items || [];
-      setCart(items);
-      setCartTotal(cartData.total || 0);
-      // Track which product IDs are in cart
-      const itemIds = new Set<number>(items.map((item: any) => item.id));
-      setCartItemIds(itemIds);
-    } catch (error) {
+      const items = Array.isArray(cartData?.items) ? cartData.items : [];
+      const normalizedItems = items
+        .map((item: any) => ({
+          ...item,
+          id: Number(item.product_id ?? item.productId ?? item.id),
+          price: Number(item.price ?? 0),
+          images: Array.isArray(item.images) ? item.images : [],
+        }))
+        .filter((item: Product) => Number.isFinite(item.id));
+
+      setCart(normalizedItems);
+      setCartTotal(Number(cartData?.total ?? normalizedItems.reduce((sum: number, item: Product) => sum + item.price, 0)));
+      setCartItemIds(new Set(normalizedItems.map((item: Product) => item.id)));
+    } catch (error: any) {
       console.error('Load cart error:', error);
-      // If cart loading fails, keep local cart
+      if (error?.status === 401) {
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('user');
+        setUser(null);
+      }
     }
   };
 
