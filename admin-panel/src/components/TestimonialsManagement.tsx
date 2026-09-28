@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { REAL_API_BASE_URL } from '../config';
 
 interface Testimonial {
   id: number;
@@ -56,7 +57,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       setLoading(true);
       
       // Load testimonials from API
-      const response = await fetch('/api/testimonials', {
+      const response = await fetch(`${REAL_API_BASE_URL}/testimonials`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -87,7 +88,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       }
       
       // Load testimonials visibility setting
-      const settingsResponse = await fetch('/api/companies/me', {
+      const settingsResponse = await fetch(`${REAL_API_BASE_URL}/companies/me`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -115,7 +116,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
 
   const handleToggleTestimonials = async () => {
     try {
-      const response = await fetch('/api/testimonials/section/visibility', {
+      const response = await fetch(`${REAL_API_BASE_URL}/testimonials/section/visibility`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +160,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     try {
       if (isAddingNew) {
         // Add new testimonial
-        const response = await fetch('/api/testimonials', {
+        const response = await fetch(`${REAL_API_BASE_URL}/testimonials`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
         }
       } else {
         // Update existing testimonial
-        const response = await fetch(`/api/testimonials/${testimonial.id}`, {
+        const response = await fetch(`${REAL_API_BASE_URL}/testimonials/${testimonial.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -244,7 +245,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
   const handleDeleteTestimonial = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this testimonial?')) {
       try {
-        const response = await fetch(`/api/testimonials/${id}`, {
+        const response = await fetch(`${REAL_API_BASE_URL}/testimonials/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`
@@ -269,7 +270,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     console.log('📊 Current testimonials state:', testimonials.map(t => ({ id: t.id, title: t.title, isActive: t.isActive })));
     
     try {
-      const response = await fetch(`/api/testimonials/${id}/toggle`, {
+      const response = await fetch(`${REAL_API_BASE_URL}/testimonials/${id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authToken}`
