@@ -94,6 +94,21 @@ class ApiClient {
   }
 
   // Auth endpoints
+  private async authRequest(endpoint: string, body: unknown) {
+    const response = await fetch(`/api/auth${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => ({ error: 'Authentication request failed' }));
+    if (!response.ok) {
+      const error = new Error(data.error || 'Authentication request failed');
+      (error as any).status = response.status;
+      throw error;
+    }
+    return data;
+  }
+
   async register(userData: { 
     email: string; 
     password: string; 
@@ -112,17 +127,11 @@ class ApiClient {
       country: string;
     }
   }) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    return this.authRequest('/register', userData);
   }
 
   async login(credentials: { email: string; password: string }) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
+    return this.authRequest('/login', credentials);
   }
 
   async logout() {
