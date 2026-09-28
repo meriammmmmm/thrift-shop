@@ -3,9 +3,7 @@ import { useNotifications } from '../hooks/useNotifications';
 
 // Use relative URL when on admin panel so the proxy forwards to backend; otherwise direct backend
 const getChatImageUrl = () =>
-  typeof window !== 'undefined' && window.location.port === '3005'
-    ? '/api/admin/ai/chat-image'
-    : 'https://mery-rose-backend.onrender.comapi/admin/ai/chat-image';
+  '/api/admin/ai/chat-image';
 
 interface ImageChatProps {
   authToken: string;

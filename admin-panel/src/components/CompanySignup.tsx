@@ -123,7 +123,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = '/api';
 
 const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackToLogin }) => {
   const [loading, setLoading] = useState(false);
@@ -187,7 +187,7 @@ const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackTo
     'PH': { currency: 'PHP', symbol: '₱' },
     'VN': { currency: 'VND', symbol: '₫' },
     'ZA': { currency: 'ZAR', symbol: 'R' },
-    'EG': { currency: 'EGP', symbol: 'E£' },
+    'EG': { currency: 'EGP', symbol: 'E��' },
     'NG': { currency: 'NGN', symbol: '₦' },
     'KE': { currency: 'KES', symbol: 'KSh' },
     'MA': { currency: 'MAD', symbol: 'DH' },
