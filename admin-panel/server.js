@@ -22,8 +22,12 @@ app.use((req, res, next) => {
 });
 
 // Proxy API requests to backend
+const configuredBackendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+const backendTarget = (configuredBackendUrl || 'http://localhost:5001').replace(/\/api\/?$/, '');
+
 app.use('/api', createProxyMiddleware({
-  target: process.env.BACKEND_URL || 'http://localhost:5001',
+  // Use the deployed API when configured; localhost is only a development fallback.
+  target: backendTarget,
   changeOrigin: true,
   timeout: 60000, // 60 seconds timeout for large image uploads
   proxyTimeout: 60000,
