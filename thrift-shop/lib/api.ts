@@ -5,28 +5,18 @@ import {
   getProductFromSupabase,
 } from './supabaseProducts';
 
-const BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+const BACKEND_URL = 'https://mery-rose-backend.onrender.com/api';
 
-// Ensure the URL is absolute and properly formatted
+// Keep one canonical API base URL so auth requests never target the retired
+// Railway deployment or accidentally produce `/api/api/...` paths.
+const normalizeApiBaseUrl = (value: string) => {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
 const getApiBaseUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
-  // If in production (Render, Railway, Vercel), use env var or fallback to Render backend
-  if (typeof window !== 'undefined' && 
-      (window.location.hostname.includes('onrender.com') || 
-       window.location.hostname.includes('railway.app') || 
-       window.location.hostname.includes('vercel.app'))) {
-    const productionUrl = envUrl || BACKEND_URL;
-    return productionUrl;
-  }
-  
-  // Use env var if set
-  if (envUrl) {
-    return envUrl;
-  }
-  
-  // Default to Render backend for production
-  return 'https://thrift-shop-backend-production.up.railway.app/api';
+  return normalizeApiBaseUrl(envUrl || BACKEND_URL);
 };
 
 const API_BASE_URL = getApiBaseUrl();
