@@ -5,18 +5,21 @@ import {
   getProductFromSupabase,
 } from './supabaseProducts';
 
-const BACKEND_URL = 'https://mery-rose-backend.onrender.com/api';
+// Route browser requests through Next.js so auth and cart calls stay same-origin.
+const BACKEND_URL = '/backend-api';
 
 // Keep one canonical API base URL so auth requests never target the retired
 // Railway deployment or accidentally produce `/api/api/...` paths.
 const normalizeApiBaseUrl = (value: string) => {
   const trimmed = value.trim().replace(/\/+$/, '');
-  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  if (trimmed === '/backend-api' || trimmed.endsWith('/api')) return trimmed;
+  return `${trimmed}/api`;
 };
 
 const getApiBaseUrl = () => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  return normalizeApiBaseUrl(envUrl || BACKEND_URL);
+  // Prefer the same-origin rewrite. This prevents browser CORS failures even
+  // when an old deployment URL remains in NEXT_PUBLIC_API_URL.
+  return normalizeApiBaseUrl(BACKEND_URL);
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -95,7 +98,7 @@ class ApiClient {
 
   // Auth endpoints
   private async authRequest(endpoint: string, body: unknown) {
-    const response = await fetch(`/api/auth${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}/auth${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

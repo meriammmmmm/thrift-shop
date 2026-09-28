@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: 'https://mery-rose-backend.onrender.com/api/:path*',
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
