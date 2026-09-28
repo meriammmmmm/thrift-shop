@@ -35,31 +35,20 @@ const db = require('./database/db');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS configuration - MUST come first, before any other middleware
-app.options('*', cors()); // Enable pre-flight for all routes
-
-app.use(cors({
-  origin: true, // Allow all origins
+// CORS configuration. Reflect the requesting origin so credentials work without
+// ever sending the invalid combination of `*` and Allow-Credentials: true.
+const corsOptions = {
+  origin: (requestOrigin, callback) => callback(null, requestOrigin || true),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  optionsSuccessStatus: 200,
-  maxAge: 86400 // 24 hours
-}));
+  optionsSuccessStatus: 204,
+  maxAge: 86400
+};
 
-// Additional CORS headers as backup
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 // Security middleware - configured to not interfere with CORS
 app.use(helmet({
