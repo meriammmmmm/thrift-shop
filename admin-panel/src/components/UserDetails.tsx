@@ -46,7 +46,7 @@ interface OrderItem {
   size?: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const UserDetails: React.FC<UserDetailsProps> = ({ userId, authToken, onBack }) => {
   const [user, setUser] = useState<UserDetails | null>(null);

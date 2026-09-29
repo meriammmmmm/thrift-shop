@@ -156,7 +156,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, onBack }) => {
   const [product, setProduct] = useState<ProductDetails | null>(null);

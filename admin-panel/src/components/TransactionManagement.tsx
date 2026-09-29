@@ -14,7 +14,7 @@ interface Transaction {
   created_at: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const TransactionManagement: React.FC<TransactionManagementProps> = ({ authToken }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

@@ -23,7 +23,7 @@ interface User {
   country?: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const UserManagement: React.FC<UserManagementProps> = ({ authToken }) => {
   const [users, setUsers] = useState<User[]>([]);

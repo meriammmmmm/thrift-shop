@@ -24,7 +24,7 @@ interface Company {
   created_at: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const CompanyManagement: React.FC<CompanyManagementProps> = ({ authToken }) => {
   const [companies, setCompanies] = useState<Company[]>([]);

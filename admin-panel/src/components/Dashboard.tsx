@@ -24,7 +24,7 @@ interface Company {
   logo?: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
   const [stats, setStats] = useState<DashboardStats>({

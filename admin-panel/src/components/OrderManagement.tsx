@@ -26,7 +26,7 @@ interface Order {
   items?: OrderItem[];
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
   const [orders, setOrders] = useState<Order[]>([]);

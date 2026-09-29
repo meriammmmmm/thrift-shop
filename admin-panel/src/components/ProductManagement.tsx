@@ -19,7 +19,7 @@ interface Product {
   images?: string[];
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [products, setProducts] = useState<Product[]>([]);

@@ -140,7 +140,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const AdminProfile: React.FC<AdminProfileProps> = ({ authToken, user }) => {
   const [loading, setLoading] = useState(false);

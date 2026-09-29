@@ -5,7 +5,7 @@ interface ThemeSettingsProps {
   authToken: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const presetThemes = [
   { id: 'mery-rose', name: '💋 Mery Rose', primary: '#8B1538', description: 'Bold Burgundy - Your Brand!' },

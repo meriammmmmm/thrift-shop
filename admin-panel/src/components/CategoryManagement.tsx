@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);
