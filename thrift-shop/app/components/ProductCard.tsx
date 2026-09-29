@@ -31,7 +31,7 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
 
   return (
     <div 
-      className="group rounded-2xl overflow-hidden border relative bg-white shadow-sm hover:shadow-xl transition-all duration-300 scroll-animate scroll-fadeInUp"
+      className="product-card-3d group rounded-2xl overflow-hidden border relative bg-white shadow-sm hover:shadow-xl transition-all duration-300 scroll-animate scroll-fadeInUp"
       style={{ borderColor: '#e5e7eb' }}
     >
       {/* Wishlist Heart */}
