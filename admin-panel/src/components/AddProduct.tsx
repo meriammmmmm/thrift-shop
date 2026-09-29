@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
+import { API_BASE_URL } from '../config';
 
 interface AddProductProps {
   authToken: string;
@@ -132,8 +133,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     </div>
   );
 };
-
-const API_BASE_URL = '/api';
 
 const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   const [formData, setFormData] = useState({
