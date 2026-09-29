@@ -35,10 +35,36 @@ const db = require('./database/db');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS configuration. Reflect the requesting origin so credentials work without
-// ever sending the invalid combination of `*` and Allow-Credentials: true.
+// CORS configuration. Only allow known app origins; reflecting arbitrary origins
+// is unsafe and can still fail credentialed preflight requests.
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+);
+
+const isAllowedOrigin = (requestOrigin) => {
+  if (!requestOrigin) return true;
+  if (allowedOrigins.has(requestOrigin)) return true;
+  try {
+    const url = new URL(requestOrigin);
+    return (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname.endsWith('.v0.build') ||
+      url.hostname.endsWith('.vercel.app')
+    );
+  } catch {
+    return false;
+  }
+};
+
 const corsOptions = {
-  origin: (requestOrigin, callback) => callback(null, requestOrigin || true),
+  origin: (requestOrigin, callback) => {
+    if (isAllowedOrigin(requestOrigin)) return callback(null, requestOrigin || true);
+    return callback(new Error('Origin not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
