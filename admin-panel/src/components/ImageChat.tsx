@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 
-// Use relative URL when on admin panel so the proxy forwards to backend; otherwise direct backend
-const getChatImageUrl = () =>
-  '/api/admin/ai/chat-image';
+import { REAL_API_BASE_URL } from '../config';
+
+  const getChatImageUrl = () =>
+    `${REAL_API_BASE_URL}/admin/ai/chat-image`;
 
 interface ImageChatProps {
   authToken: string;

@@ -14,8 +14,7 @@ import LoginForm from './components/LoginForm';
 import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
-
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from './config';
 
 interface User {
   id: number;
