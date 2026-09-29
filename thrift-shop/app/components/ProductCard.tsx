@@ -15,10 +15,6 @@ interface ProductCardProps {
 export default function ProductCard({ product, onAddToCart, onToggleWishlist, onViewDetails, isWishlisted, isInCart, currencySymbol = '$' }: ProductCardProps) {
   const { theme } = useTheme();
   
-  console.log('ProductCard - Product:', product.name);
-  console.log('ProductCard - Reservation Status:', product.reservation_status);
-  console.log('ProductCard - In Stock:', product.inStock);
-  
   const discountPercentage = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -30,10 +26,11 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
   const isTrending = product.likes && product.likes > 10;
 
   return (
-    <div 
-      className="product-card-3d group rounded-2xl overflow-hidden border relative bg-white shadow-sm hover:shadow-xl transition-all duration-300 scroll-animate scroll-fadeInUp"
-      style={{ borderColor: '#e5e7eb' }}
+    <article
+      className="product-card-3d group relative scroll-animate scroll-fadeInUp"
     >
+      <div className="product-card-face rounded-2xl overflow-hidden border relative bg-white shadow-sm">
+        <div className="product-card-glow" aria-hidden="true" />
       {/* Wishlist Heart */}
       <button
         onClick={() => onToggleWishlist(product.id)}
@@ -160,7 +157,8 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
               : 'Add to Bag'}
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
