@@ -928,7 +928,14 @@ router.put('/profile', requireAdmin, async (req, res) => {
       company_logo
     } = req.body;
 
+    console.log('📝 Admin profile update request:', { 
+      adminUser: { id: adminUser.id, email: adminUser.email }, 
+      companyId,
+      updates: { admin_name, admin_email, company_name, company_description }
+    });
+
     if (!companyId) {
+      console.error('❌ Admin not associated with any company');
       return res.status(403).json({ error: 'Admin not associated with any company' });
     }
 
@@ -944,6 +951,7 @@ router.put('/profile', requireAdmin, async (req, res) => {
       // Check if email is already taken by another user
       const emailExists = await db.get('SELECT id FROM users WHERE email = ? AND id != ?', [admin_email, adminUser.id]);
       if (emailExists) {
+        console.error('❌ Email already taken:', admin_email);
         return res.status(400).json({ error: 'Email is already taken by another user' });
       }
       adminUpdateFields.push('email = ?');
@@ -957,13 +965,14 @@ router.put('/profile', requireAdmin, async (req, res) => {
     }
 
     if (adminUpdateFields.length > 0) {
-      adminUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
+      // Add updated_at before the id parameter
+      const updateQuery = `UPDATE users SET ${adminUpdateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
       adminUpdateValues.push(adminUser.id);
 
-      await db.run(
-        `UPDATE users SET ${adminUpdateFields.join(', ')} WHERE id = ?`,
-        adminUpdateValues
-      );
+      console.log('🔄 Updating admin user:', { query: updateQuery, values: adminUpdateValues.map(v => typeof v === 'string' && v.length > 50 ? v.substring(0, 20) + '...' : v) });
+
+      await db.run(updateQuery, adminUpdateValues);
+      console.log('✅ Admin user updated');
     }
 
     // Update company info
@@ -1008,18 +1017,21 @@ router.put('/profile', requireAdmin, async (req, res) => {
     }
 
     if (companyUpdateFields.length > 0) {
-      companyUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
+      // Add updated_at before the id parameter
+      const updateQuery = `UPDATE companies SET ${companyUpdateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
       companyUpdateValues.push(companyId);
 
-      await db.run(
-        `UPDATE companies SET ${companyUpdateFields.join(', ')} WHERE id = ?`,
-        companyUpdateValues
-      );
+      console.log('🔄 Updating company:', { query: updateQuery, valuesCount: companyUpdateValues.length });
+
+      await db.run(updateQuery, companyUpdateValues);
+      console.log('✅ Company updated');
     }
 
     // Get updated user and company info
-    const updatedUser = await db.get('SELECT id, email, name, role FROM users WHERE id = ?', [adminUser.id]);
+    const updatedUser = await db.get('SELECT id, email, name, role, admin_company_id FROM users WHERE id = ?', [adminUser.id]);
     const updatedCompany = await db.get('SELECT * FROM companies WHERE id = ?', [companyId]);
+
+    console.log('✅ Profile updated successfully');
 
     res.json({
       message: 'Profile updated successfully',
@@ -1029,8 +1041,12 @@ router.put('/profile', requireAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Admin profile update error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Admin profile update error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -175,6 +175,7 @@ class PostgresDatabase {
           address TEXT,
           city TEXT,
           country TEXT,
+          currency TEXT DEFAULT 'USD',
           status TEXT DEFAULT 'active',
           commission_rate DECIMAL(5,2) DEFAULT 0.05,
           show_testimonials BOOLEAN DEFAULT true,
@@ -321,6 +322,15 @@ class PostgresDatabase {
         console.log(`✅ Updated ${updateResult.rowCount} products to be visible by default`);
       } catch (err) {
         console.log('⚠️ visible column migration:', err.message);
+      }
+
+      try {
+        await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD'`);
+        console.log('✅ Added currency column to companies table');
+        const updateResult = await client.query(`UPDATE companies SET currency = 'USD' WHERE currency IS NULL`);
+        console.log(`✅ Updated ${updateResult.rowCount} companies with default currency`);
+      } catch (err) {
+        console.log('⚠️ currency column migration:', err.message);
       }
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');
