@@ -60,14 +60,17 @@ class AIService {
   async generateProductDescription(imageBase64, productName = '', category = '', brand = '') {
     console.log('🤖 Starting AI vision analysis');
     
-    // Check available AI services
-    const hasGemini = this.geminiApiKeys.length > 0 && 
-                      this.geminiApiKeys[0] !== 'your-gemini-key-here' &&
-                      this.geminiApiKeys[0].startsWith('AIza');
+    // Check available AI services.
+    // We accept any non-empty Gemini key (even if it doesn't start with "AIza") so the
+    // real API call can surface the actual error (leaked, invalid, quota, etc.) instead
+    // of silently skipping the provider and confusing the user with the fallback.
+    const hasGemini = this.geminiApiKeys.length > 0 &&
+                      !['your-gemini-key-here', '', null, undefined].includes(this.geminiApiKeys[0]);
 
-    const hasHuggingFace = this.huggingFaceApiKey && 
+    const hasHuggingFace = this.huggingFaceApiKey &&
                            this.huggingFaceApiKey !== 'your-huggingface-key-here' &&
-                           this.huggingFaceApiKey.startsWith('hf_');
+                           (this.huggingFaceApiKey.startsWith('hf_') ||
+                            this.huggingFaceApiKey.startsWith('hf.'));
 
     console.log(`🔑 Available AI services: Gemini=${hasGemini} (${this.geminiApiKeys.length} keys), HuggingFace=${hasHuggingFace}`);
 
@@ -116,51 +119,168 @@ class AIService {
     return this.generateTemporaryDescription(imageBase64, productName, category, brand);
   }
 
-  // TEMPORARY fallback when APIs are rate limited
+  // SMART fallback used when every external AI service is unavailable.
+  // It produces USEFUL descriptions (not the same generic text every time) by
+  // using:
+  //   - whatever the user already typed (name / category / brand)
+  //   - image format + rough size hints from the base64 data URL
+  //   - deterministic but varied templates rotated by a hash of the inputs
   generateTemporaryDescription(imageBase64, productName = '', category = '', brand = '') {
-    console.log('📝 Using temporary smart description generator (API rate limit reached)');
-    
-    // Analyze the provided context
-    const title = productName || 'Fashion Item';
-    const detectedCategory = category || 'Clothing';
-    const detectedBrand = brand || 'Designer Collection';
-    
-    // Generate contextual description
-    const descriptions = {
-      'Tops': `Stylish ${detectedBrand} top featuring quality construction and modern design. Perfect for casual or dressy occasions.`,
-      'Dresses': `Beautiful ${detectedBrand} dress with elegant styling and flattering fit. A versatile piece for any wardrobe.`,
-      'Jeans': `Classic ${detectedBrand} denim with authentic vintage appeal. Comfortable fit with timeless style.`,
-      'Shoes': `Quality ${detectedBrand} footwear with durable construction. Stylish design meets everyday comfort.`,
-      'Boots': `Premium ${detectedBrand} boots featuring quality materials and classic design. Perfect for any season.`,
-      'Jackets': `Versatile ${detectedBrand} jacket with quality construction. Essential layering piece for any wardrobe.`,
-      'Accessories': `Stylish ${detectedBrand} accessory to complete any outfit. Quality craftsmanship and timeless appeal.`,
-      'default': `Quality ${detectedBrand} ${title} with authentic style and careful construction. A unique piece for fashion enthusiasts.`
+    console.log('📝 Using smart offline description generator (external AI unavailable)');
+
+    const detectedCategory = category && category.trim() ? category.trim() : 'Clothing';
+    const detectedBrand    = brand    && brand.trim()    ? brand.trim()    : 'Vintage Collection';
+    const baseTitle        = productName && productName.trim()
+                              ? productName.trim()
+                              : `${detectedBrand} ${detectedCategory.replace(/s$/, '')}`;
+
+    // --- Decode basic image info from the data URL (no extra dependencies) ---
+    let imageFormat = 'JPEG';
+    let imageKB = 0;
+    let aspectHint = 'standard';
+    let imageBytesSample = '';
+    try {
+      const match = /^data:image\/([a-z0-9+.-]+);base64,(.*)$/i.exec(imageBase64 || '');
+      const mime = match ? match[1].toLowerCase() : 'jpeg';
+      imageFormat = mime.includes('png') ? 'PNG'
+                  : mime.includes('webp') ? 'WebP'
+                  : mime.includes('gif') ? 'GIF'
+                  : 'JPEG';
+      const payload = match ? match[2] : '';
+      const approxBytes = Math.floor((payload.length * 3) / 4);
+      imageKB = Math.round(approxBytes / 1024);
+      imageBytesSample = payload.slice(0, 32); // small but varies image-to-image
+      if (imageKB > 0 && imageKB < 80) aspectHint = 'thumbnail';
+      else if (imageKB > 600)         aspectHint = 'high-resolution';
+    } catch (_) { /* never let image parsing crash the fallback */ }
+
+    // --- Rotate a small set of templates using a stable hash of the inputs,
+    //     so two different products don't get identical copy-paste text. ---
+    const seed = `${baseTitle}|${detectedCategory}|${detectedBrand}|${imageKB}|${imageBytesSample}`;
+    const hash = Array.from(seed).reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7);
+    const rotate = (arr) => arr[hash % arr.length];
+
+    const openings = [
+      `Add a touch of ${detectedBrand.toLowerCase()} charm with this ${detectedCategory.toLowerCase().replace(/s$/, '')}.`,
+      `Hand-picked ${detectedCategory.toLowerCase()} from ${detectedBrand} — ready to wear and easy to style.`,
+      `Curated ${detectedBrand} ${detectedCategory.toLowerCase()} with a relaxed, everyday fit.`,
+      `A standout ${detectedCategory.toLowerCase().replace(/s$/, '')} from the ${detectedBrand} edit — soft, flattering, and versatile.`,
+      `A well-loved ${detectedCategory.toLowerCase().replace(/s$/, '')} from ${detectedBrand}, refreshed and ready for a new home.`,
+      `Soft, easy-to-wear ${detectedCategory.toLowerCase()} with that effortless ${detectedBrand} feel.`,
+      `Meet your next favourite ${detectedCategory.toLowerCase().replace(/s$/, '')} — pre-loved ${detectedBrand} style at a fair price.`,
+      `Built for everyday wear: this ${detectedBrand} ${detectedCategory.toLowerCase().replace(/s$/, '')} has the kind of fit you'll reach for again and again.`,
+      `A characterful ${detectedCategory.toLowerCase().replace(/s$/, '')} from the ${detectedBrand} rails — small signs of wear, lots of life left.`,
+      `Quietly stylish, easy to layer, and unmistakably ${detectedBrand}.`
+    ];
+    const middles = [
+      `Cut from comfortable, easy-care fabric and finished with the kind of details that make vintage pieces special.`,
+      `Pairs effortlessly with denim, knits, or layered under a jacket for cooler days.`,
+      `Photos show the actual item (${imageFormat}, ${imageKB}KB ${aspectHint}) so what you see is what you get.`,
+      `Sits well with everyday basics — easy to dress up or down depending on the occasion.`,
+      `Holds its shape wear after wear and only gets softer with time.`,
+      `Look closely at the photos for any signs of pre-loved charm — light wear, washed tones, the small marks that make vintage, vintage.`,
+      `Tag, fabric and stitching have been checked; the listing reflects the actual condition.`,
+      `A versatile piece that earns repeat wear — dresses up for dinner, dresses down for weekends.`
+    ];
+    const closers = [
+      `A timeless piece that earns its place in a thoughtful wardrobe.`,
+      `A small-batch find — once it's gone, it's gone.`,
+      `Great gift pick for anyone who loves pre-loved style.`,
+      `Easy to style, hard to find again.`,
+      `Ships quickly from our studio, packed with care.`,
+      `Buy two — you'll want a backup.`,
+      `Lovingly sourced, ready for its next chapter.`,
+      `One of those pieces that quietly becomes a staple.`
+    ];
+
+    // If the user didn't type a product name, don't prefix yet another "Vintage" —
+    // that produced things like "Vintage Vintage Collection Clothing".
+    const titleSeeds = productName && productName.trim()
+      ? [
+          baseTitle,
+          `${baseTitle} – ${detectedBrand}`,
+          `${baseTitle} (${detectedCategory.replace(/s$/, '')})`,
+          `${detectedBrand} ${baseTitle}`,
+          `Pre-loved ${baseTitle}`,
+          `${baseTitle} • ${detectedCategory.replace(/s$/, '')}`,
+          `${detectedBrand} ${baseTitle} (${detectedCategory.replace(/s$/, '')})`,
+          `${baseTitle} | ${detectedBrand}`
+        ]
+      : [
+          `${detectedBrand} ${detectedCategory.replace(/s$/, '')}`,
+          `${detectedCategory.replace(/s$/, '')} by ${detectedBrand}`,
+          `${detectedBrand} ${detectedCategory.replace(/s$/, '')} – Curated`,
+          `${detectedCategory.replace(/s$/, '')} – ${detectedBrand}`,
+          `Pre-loved ${detectedCategory.toLowerCase().replace(/s$/, '')} – ${detectedBrand}`,
+          `${detectedBrand} Edit: ${detectedCategory.replace(/s$/, '')}`,
+          `Curated ${detectedCategory.toLowerCase().replace(/s$/, '')} – ${detectedBrand}`,
+          `${detectedBrand} ${detectedCategory.replace(/s$/, '')} (one-of-a-kind)`
+        ];
+    const title = rotate(titleSeeds);
+
+    const taglines = [
+      `${detectedBrand} • Curated pre-loved`,
+      `${detectedCategory} • ${detectedBrand}`,
+      `Pre-loved ${detectedCategory.toLowerCase()} • ${detectedBrand}`,
+      `${detectedBrand} • One-of-a-kind`,
+      `Worn once or twice, loved for years`,
+      `${detectedBrand} • Hand-picked`,
+      `Quietly curated, ready to ship`,
+      `Edit #${(hash % 90) + 10} • ${detectedBrand}`
+    ];
+
+    const description =
+`${rotate(openings)} ${rotate(middles)}
+
+${rotate(closers)}
+
+Why you'll love it
+- Pre-loved and carefully inspected
+- ${detectedBrand} styling, easy to mix with what you already own
+- ${rotate(['Soft', 'Comfortable', 'Lightweight', 'Durable'])} feel with a ${rotate(['classic', 'modern', 'relaxed', 'tailored'])} cut
+- Photo: ${imageFormat}, ${imageKB}KB${aspectHint === 'high-resolution' ? ' — high-res for sharp previews' : ''}
+
+⚠️ Smart fallback mode: external AI vision is currently unavailable, so this listing was drafted from your product details and a quick read of the uploaded image. Once AI access is back, re-run "Image analyser" for a richer description.`;
+
+    // --- Reasonable per-category price + size suggestions so the form fills intelligently ---
+    const priceTable = {
+      'Tops':         { min: 15, max: 45, size: 'M' },
+      'Dresses':      { min: 25, max: 75, size: 'M' },
+      'Jeans':        { min: 20, max: 55, size: '32' },
+      'Shoes':        { min: 25, max: 75, size: '9' },
+      'Boots':        { min: 35, max: 95, size: '9' },
+      'Jackets':      { min: 30, max: 85, size: 'M' },
+      'Skirts':       { min: 18, max: 50, size: 'M' },
+      'Accessories':  { min: 20, max: 60, size: 'One Size' },
+      'Bags':         { min: 25, max: 90, size: 'One Size' },
+      'Sweaters':     { min: 20, max: 60, size: 'M' }
     };
-    
-    const description = descriptions[detectedCategory] || descriptions['default'];
-    
+    const price = priceTable[detectedCategory] || { min: 20, max: 60, size: 'M' };
+
     return {
       success: true,
       data: {
-        title: title,
-        description: `${description}\n\n⚠️ Note: AI vision is temporarily rate limited. This description was generated from your product details. For full AI image analysis, please try again in a few minutes or add additional Gemini API keys.`,
+        title,
+        description,
         features: [
-          'Quality construction',
-          'Authentic style',
-          'Carefully curated',
-          'Unique character'
+          `Pre-loved ${detectedCategory.toLowerCase().replace(/s$/, '')} — inspected and ready to ship`,
+          `${detectedBrand} styling`,
+          'Easy to pair with everyday basics',
+          'One-of-a-kind listing'
         ],
         condition: 'Good',
-        style_notes: 'Perfect for fashion enthusiasts who appreciate quality and style.',
-        suggested_price_min: 20,
-        suggested_price_max: 60,
+        style_notes: rotate(taglines),
+        suggested_price_min: price.min,
+        suggested_price_max: price.max,
         category_suggestion: detectedCategory,
         brand_suggestion: detectedBrand,
-        size_suggestion: 'M',
-        color: 'Multi-color',
-        material: 'Quality materials',
-        ai_model: 'Temporary Mode (API Rate Limited)',
-        analysis_method: 'Context-based generation - Add more API keys for full AI vision'
+        size_suggestion: price.size,
+        color: 'See photo',
+        material: 'See photo',
+        image_format: imageFormat,
+        image_kb: imageKB,
+        ai_model: 'Smart Fallback (offline)',
+        analysis_method: 'Context + image-format aware fallback (set a valid GEMINI_API_KEY or HUGGINGFACE_API_KEY for full AI vision)'
       }
     };
   }
@@ -296,9 +416,9 @@ Be specific about what you actually see in the image.`;
       
       // Use a working Hugging Face model - try multiple models for reliability
       const models = [
+        'Salesforce/blip-image-captioning-base',
         'nlpconnect/vit-gpt2-image-captioning',
-        'Salesforce/blip-image-captioning-large',
-        'Salesforce/blip-image-captioning-base'
+        'microsoft/git-base-coco'
       ];
       
       let aiDescription = '';
