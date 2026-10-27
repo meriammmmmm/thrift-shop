@@ -28,6 +28,7 @@ const companiesRoutes = require('./routes/companies');
 const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
 const articlesRoutes = require('./routes/articles');
+const looksRoutes = require('./routes/looks');
 const aiRoutes = require('./routes/ai');
 const tryonRoutes = require('./routes/tryon');
 const db = require('./database/db');
@@ -94,6 +95,7 @@ app.use('/api/companies', companiesRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 app.use('/api/articles', articlesRoutes);
+app.use('/api/looks', looksRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/tryon', tryonRoutes);
 
@@ -362,6 +364,29 @@ if (process.env.VERCEL) {
     console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
     console.log(`📁 Database path: ${process.env.DB_PATH || './database/thrift_shop.db'}`);
     console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+
+    // ── Keep-alive: ping self every 4 minutes so Fly.io never sleeps ──────
+    // Fly.io free machines shut down after ~5 min of no traffic, causing the
+    // 15-20 second cold-start the user sees. Pinging ourselves keeps it warm.
+    if (process.env.NODE_ENV !== 'development') {
+      const SELF_URL = process.env.SELF_URL || `https://backend-wild-skylark-9834.fly.dev/api/health`;
+      const PING_INTERVAL_MS = 4 * 60 * 1000; // every 4 minutes
+
+      const keepAlive = () => {
+        fetch(SELF_URL)
+          .then(() => console.log('🏓 Keep-alive ping sent'))
+          .catch((err) => console.warn('⚠️ Keep-alive ping failed:', err.message));
+      };
+
+      // First ping after 1 minute (server needs time to fully start)
+      setTimeout(() => {
+        keepAlive();
+        setInterval(keepAlive, PING_INTERVAL_MS);
+      }, 60 * 1000);
+
+      console.log(`⚡ Keep-alive enabled — pinging every 4 minutes`);
+    }
+    // ── End keep-alive ─────────────────────────────────────────────────────
     
     // Run async initialization tasks without blocking server startup
     setImmediate(async () => {

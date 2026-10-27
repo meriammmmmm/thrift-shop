@@ -108,79 +108,99 @@ export default function Home() {
     }
   };
 
+  const CACHE_KEY = 'meryrose_products_cache';
+
+  const transformProduct = (product: any) => ({
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    originalPrice: product.original_price,
+    images: normalizeImageList(product.images),
+    brand: product.brand,
+    size: product.size,
+    category: product.category,
+    condition: product.condition,
+    color: product.color,
+    inStock: product.in_stock === 1 || product.in_stock === true || product.in_stock === '1',
+    reservation_status: product.reservation_status || 'available',
+    reserved_by_order_id: product.reserved_by_order_id || null,
+    material: product.material,
+    measurements: product.measurements || {},
+    careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    seller: {
+      name: product.seller_name || 'Unknown',
+      rating: product.seller_rating || 4.5,
+      location: product.seller_location || 'Unknown'
+    },
+    company: product.company ? {
+      id: product.company.id,
+      name: product.company.name,
+      description: product.company.description
+    } : null,
+    dateAdded: product.created_at,
+    views: product.views || 0,
+    likes: product.likes || 0
+  });
+
   // Load products from API
   const loadProducts = async () => {
     try {
-      setLoading(true);
       setError(null);
-      
-      // Get company ID with better fallback handling
+
+      // ── Step 1: Show cached products instantly ──────────────────────────
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { products: cachedProducts, company: cachedCompany, currency: cachedCurrency } = JSON.parse(cached);
+          if (cachedProducts?.length) {
+            setProducts(cachedProducts);
+            if (cachedCompany) {
+              setCompany(cachedCompany);
+              setShowTestimonialsSection(cachedCompany.show_testimonials !== 0);
+            }
+            if (cachedCurrency) setCompanyCurrency(cachedCurrency);
+          }
+        }
+      } catch (_) { /* ignore cache read errors */ }
+
+      // ── Step 2: Fetch fresh data in the background ──────────────────────
       const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       let companyId = parseInt(companyIdStr);
-      
-      // Validate company ID - use fallback if invalid
-      if (isNaN(companyId) || companyId <= 0) {
-        companyId = 1; // Fallback to company 1
-      }
-      
+      if (isNaN(companyId) || companyId <= 0) companyId = 1;
+
       // The Mix & Match board and the curated looks both need the whole
       // catalogue, not the first page of it — a look can reference an
       // older piece that a short list would leave out.
       const response = await api.getCompanyProducts(companyId, { limit: 100 });
-      
+
+      let freshCurrency = { currency: 'USD', symbol: '$' };
       if (response.company) {
         setCompany(response.company);
         setShowTestimonialsSection(response.company.show_testimonials !== 0);
-        
         if (response.company.country) {
-          const currencyInfo = currencyConfig[response.company.country] || { currency: 'USD', symbol: '$' };
-          setCompanyCurrency(currencyInfo);
+          freshCurrency = currencyConfig[response.company.country] || freshCurrency;
+          setCompanyCurrency(freshCurrency);
         }
       }
-      
+
       if (response.products) {
-        // Filter out hidden products (visible = 0 or visible = false)
-        const visibleProducts = response.products.filter((product: any) => {
-          return product.visible === true || product.visible === 1 || product.visible === '1' || product.visible === null || product.visible === undefined;
-        });
-        
-        const transformedProducts = visibleProducts.map((product: any) => {
-          return {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            originalPrice: product.original_price,
-            images: normalizeImageList(product.images),
-            brand: product.brand,
-            size: product.size,
-            category: product.category,
-            condition: product.condition,
-            color: product.color,
-            inStock: product.in_stock === 1 || product.in_stock === true || product.in_stock === '1',
-            reservation_status: product.reservation_status || 'available',
-            reserved_by_order_id: product.reserved_by_order_id || null,
-            material: product.material,
-            measurements: product.measurements || {},
-            careInstructions: Array.isArray(product.care_instructions) ? product.care_instructions : [],
-            tags: Array.isArray(product.tags) ? product.tags : [],
-            seller: {
-              name: product.seller_name || 'Unknown',
-              rating: product.seller_rating || 4.5,
-              location: product.seller_location || 'Unknown'
-            },
-            company: product.company ? {
-              id: product.company.id,
-              name: product.company.name,
-              description: product.company.description
-            } : null,
-            dateAdded: product.created_at,
-            views: product.views || 0,
-            likes: product.likes || 0
-          };
-        });
+        const visibleProducts = response.products.filter((product: any) =>
+          product.visible === true || product.visible === 1 || product.visible === '1' || product.visible === null || product.visible === undefined
+        );
+        const transformedProducts = visibleProducts.map(transformProduct);
         setProducts(transformedProducts);
         console.log('Products loaded successfully:', transformedProducts.length);
+
+        // ── Step 3: Save to cache for next visit ────────────────────────
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            products: transformedProducts,
+            company: response.company || null,
+            currency: freshCurrency,
+          }));
+        } catch (_) { /* ignore storage quota errors */ }
       }
 
       // Looks live in the admin panel — fetch them alongside the products.
@@ -188,7 +208,7 @@ export default function Home() {
       if (apiUrl) {
         fetchLooks(apiUrl, companyId).then(setLooks).catch(() => setLooks([]));
       }
-      
+
       // Load testimonials in background without blocking
       loadTestimonials(companyId.toString()).catch(err => {
         console.error('Testimonials load failed:', err);
@@ -1198,31 +1218,19 @@ export default function Home() {
 </div>
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6">
           {newArrivals.length === 0 ? (
-            /* Coming Soon Message when no products */
-            <div className="text-center animate-fadeIn px-4 py-8">
-              <div className="text-6xl sm:text-8xl mb-6 animate-bounce">💕</div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 tracking-tight">New Drop Coming Soon</h2>
-              <div className="inline-block px-6 py-3 rounded-full bg-white/20 backdrop-blur-sm text-white font-semibold text-base sm:text-lg mb-6 shadow-lg">
-                Friday at 21:00 Tunis Time
-              </div>
-              <p className="text-sm sm:text-base mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
-                Get ready for the hottest fashion drop! We're bringing you stunning pieces perfect for parties, 
-                nights out, and making unforgettable memories. Cute, trendy, and absolutely fabulous! ✨
-              </p>
-              <div className="flex flex-wrap justify-center gap-4 text-sm sm:text-base">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
-                  <span>Party Ready</span>
+            /* Skeleton shimmer cards while products are loading */
+            <div className="flex justify-center gap-4 sm:gap-6 px-4 py-8 overflow-hidden">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-28 sm:w-36 md:w-44 rounded-2xl overflow-hidden"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="w-full aspect-[3/4] bg-white/20 animate-pulse rounded-2xl" />
+                  <div className="mt-2 h-3 bg-white/20 animate-pulse rounded-full w-3/4 mx-auto" />
+                  <div className="mt-1.5 h-3 bg-white/20 animate-pulse rounded-full w-1/2 mx-auto" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
-                  <span>Trendy Styles</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-white/80 shadow-lg"></span>
-                  <span>Fashion Forward</span>
-                </div>
-              </div>
+              ))}
             </div>
           ) : (
             /* Regular carousel when products exist */
