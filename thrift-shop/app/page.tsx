@@ -72,7 +72,7 @@ export default function Home() {
 
   // Products
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Mix & Match board (shared with the Shop-the-Look gallery above it)
@@ -263,6 +263,9 @@ export default function Home() {
     loadProducts();
     loadProfilePicture();
     loadCustomCategories();
+
+    // Dismiss the splash screen after 1ms
+    setTimeout(() => setLoading(false), 1);
   }, []);
 
   const loadProfilePicture = () => {
@@ -552,6 +555,19 @@ export default function Home() {
       //image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&h=700&fit=crop"
     }
   ];
+
+  // Splash screen — shown for just 1ms then gone
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <img
+          src="/images/mery-rose-logo.png"
+          alt="Loading..."
+          className="w-48 h-auto"
+        />
+      </div>
+    );
+  }
 
   console.log('Page rendering - loading:', loading, 'products:', products.length);
 
