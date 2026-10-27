@@ -149,7 +149,7 @@ export default function Home() {
     try {
       setError(null);
 
-      // ── Step 1: Show cached products instantly ──────────────────────────
+      // ── Step 1: Check cache — if hit, dismiss splash instantly ──────────
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
@@ -161,11 +161,13 @@ export default function Home() {
               setShowTestimonialsSection(cachedCompany.show_testimonials !== 0);
             }
             if (cachedCurrency) setCompanyCurrency(cachedCurrency);
+            // Cache hit → hide splash immediately, page is ready
+            setLoading(false);
           }
         }
       } catch (_) { /* ignore cache read errors */ }
 
-      // ── Step 2: Fetch fresh data in the background ──────────────────────
+      // ── Step 2: Fetch fresh data (runs even if cache hit, silently) ──────
       const companyIdStr = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       let companyId = parseInt(companyIdStr);
       if (isNaN(companyId) || companyId <= 0) companyId = 1;
@@ -217,7 +219,7 @@ export default function Home() {
       console.error('Failed to load products:', error);
       setError('Failed to load products. Please try again.');
     } finally {
-      console.log('Setting loading to false');
+      // No cache or cache miss — hide splash after API responds (with real products)
       setLoading(false);
     }
   };
@@ -283,9 +285,6 @@ export default function Home() {
     loadProducts();
     loadProfilePicture();
     loadCustomCategories();
-
-    // Dismiss the splash screen after 1ms
-    setTimeout(() => setLoading(false), 1);
   }, []);
 
   const loadProfilePicture = () => {
