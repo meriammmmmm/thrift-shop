@@ -44,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/images/logo-192.png" />
@@ -60,7 +60,7 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>

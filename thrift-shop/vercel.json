@@ -3,8 +3,8 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_COMPANY_ID": "1",
-    "NEXT_PUBLIC_COMPANY_NAME": "Pearl Box",
-    "NEXT_PUBLIC_API_URL": "https://thrift-shop-backend-production.up.railway.app/api"
+    "NEXT_PUBLIC_COMPANY_ID": "2",
+    "NEXT_PUBLIC_COMPANY_NAME": "Mery Rose",
+    "NEXT_PUBLIC_API_URL": "https://backend-wild-skylark-9834.fly.dev/api"
   }
 }

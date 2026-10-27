@@ -1,13 +1,17 @@
 # fly.toml app configuration file for thrift-shop frontend
+app = "thrift-shop"
 primary_region = "iad"
 
 [build]
   [build.args]
-    NEXT_PUBLIC_API_URL = "https://your-backend-url.fly.dev/api"
+    NEXT_PUBLIC_API_URL = "https://backend-wild-skylark-9834.fly.dev/api"
 
 [env]
   PORT = "3000"
   NODE_ENV = "production"
+  NEXT_PUBLIC_API_URL = "https://backend-wild-skylark-9834.fly.dev/api"
+  NEXT_PUBLIC_COMPANY_ID = "2"
+  NEXT_PUBLIC_COMPANY_NAME = "Mery Rose"
 
 [http_service]
   internal_port = 3000

@@ -1,72 +1,71 @@
-// Reads product + company data directly from Supabase (PostgREST Data API).
-// Only product READS go through here; cart/orders/auth still use the backend API.
+// Reads product + company data from the Fly.io backend API
+// All product operations now go through the backend
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oiwvvxyewszwwfnvsnza.supabase.co';
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
-const SUPABASE_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'sb_publishable_D4ikc6D7BJTYDL39P6WMew_hrx8jrtN';
+// Company ID for this storefront
+const STORE_COMPANY_ID = Number(process.env.NEXT_PUBLIC_COMPANY_ID || '2');
 
-// This Supabase project holds a single store's catalog (Mery Rose = company 2).
-// The old deployment sometimes requests company 1 (which has no products), so we
-// pin the storefront to this id. Override with NEXT_PUBLIC_STORE_COMPANY_ID if needed.
-const STORE_COMPANY_ID = Number(process.env.NEXT_PUBLIC_STORE_COMPANY_ID || '2');
-
-// Toggle: set NEXT_PUBLIC_PRODUCTS_SOURCE=backend to fall back to the old REST backend.
+// Always use backend now (kept for backward compatibility)
 export function useSupabaseProducts(): boolean {
-  return (process.env.NEXT_PUBLIC_PRODUCTS_SOURCE || 'supabase') !== 'backend';
+  return false; // Always use backend
 }
 
-// Some columns are stored as text holding JSON (images, tags, measurements,
-// care_instructions). Parse them safely so the shape matches the old backend.
-function parseJson<T>(value: unknown, fallback: T): T {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value !== 'string') return value as T;
+// The database stores `images`, `tags` and `care_instructions` as JSON-encoded
+// strings, but some rows come back already decoded. Parsing is best-effort: one
+// malformed row must not throw away the whole product list.
+function parseJsonField(value: unknown): any {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw) return null;
   try {
-    return JSON.parse(value) as T;
+    return JSON.parse(raw);
   } catch {
-    return fallback;
+    return null;
   }
 }
 
 function mapProduct(row: Record<string, unknown>) {
+  const images = parseJsonField(row.images);
+  const tags = parseJsonField(row.tags);
+  const careInstructions = parseJsonField(row.care_instructions);
+  const measurements = parseJsonField(row.measurements);
+
   return {
     ...row,
-    images: parseJson<string[]>(row.images, []),
-    tags: parseJson<string[]>(row.tags, []),
-    care_instructions: parseJson<string[]>(row.care_instructions, []),
-    measurements: parseJson<Record<string, string>>(row.measurements, {}),
-    in_stock:
-      row.in_stock === 1 || row.in_stock === true || row.in_stock === '1' ? 1 : 0,
+    images: (Array.isArray(images) ? images : (typeof images === 'string' ? [images] : (images ? [images] : [])))
+      .filter((url: unknown): url is string => typeof url === 'string' && url.trim().length > 0),
+    tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? [tags] : []),
+    care_instructions: Array.isArray(careInstructions) ? careInstructions : (typeof careInstructions === 'string' ? [careInstructions] : []),
+    measurements: (measurements && typeof measurements === 'object') ? measurements : {},
+    in_stock: row.in_stock === 1 || row.in_stock === true || row.in_stock === '1' ? 1 : 0,
     reservation_status: row.reservation_status || 'available',
-    company: null,
+    company: row.company || null,
   };
 }
 
-async function supabaseGet(path: string, withCount = false) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+async function backendGet(path: string) {
+  const res = await fetch(`${BACKEND_API_URL}/${path}`, {
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      ...(withCount ? { Prefer: 'count=exact' } : {}),
+      'Content-Type': 'application/json',
     },
+    cache: 'default',
   });
+  
   if (!res.ok) {
-    throw new Error(`Supabase request failed: ${res.status}`);
+    throw new Error(`Backend request failed: ${res.status}`);
   }
-  const data = await res.json();
-  const range = res.headers.get('content-range'); // e.g. "0-49/78"
-  const total = range && range.includes('/') ? parseInt(range.split('/')[1], 10) : data.length;
-  return { data, total };
+  
+  return await res.json();
 }
 
 async function fetchCompany(companyId: number) {
   try {
-    const { data } = await supabaseGet(
-      `companies?select=*&id=eq.${companyId}&limit=1`,
-    );
-    return Array.isArray(data) && data.length ? data[0] : null;
+    const response = await backendGet(`companies/public/active`);
+    const companies = response.companies || [];
+    return companies.find((c: any) => c.id === companyId) || null;
   } catch {
     return null;
   }
@@ -81,38 +80,51 @@ export async function getCompanyProductsFromSupabase(
   requestedCompanyId: number,
   params: ProductParams = {},
 ) {
-  // Always serve this store's catalog (see STORE_COMPANY_ID note above).
-  // The requested id is honored only if a store override is not configured.
+  // Use the configured company ID for this storefront
   const companyId = STORE_COMPANY_ID || requestedCompanyId;
   const limit = params.limit ?? 100;
   const page = params.page ?? 1;
-  const offset = (page - 1) * limit;
 
-  const query =
-    `products?select=*&company_id=eq.${companyId}` +
-    `&order=display_order.asc,id.asc&limit=${limit}&offset=${offset}`;
+  try {
+    // Fetch products for this company
+    const response = await backendGet(
+      `products?companyId=${companyId}&page=${page}&limit=${limit}`
+    );
 
-  const company = await fetchCompany(companyId);
-  const { data, total } = await supabaseGet(query, true);
+    // Fetch company info in parallel
+    const company = await fetchCompany(companyId);
 
-  const products = (Array.isArray(data) ? data : []).map(mapProduct);
+    const products = (response.products || []).map(mapProduct);
+    const total = response.pagination?.total || products.length;
 
-  return {
-    company,
-    products,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: limit ? Math.ceil(total / limit) : 1,
-    },
-  };
+    return {
+      company,
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: response.pagination?.pages || Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching products from backend:', error);
+    return {
+      company: null,
+      products: [],
+      pagination: { page: 1, limit, total: 0, pages: 0 },
+    };
+  }
 }
 
 export async function getProductFromSupabase(id: string) {
-  const { data } = await supabaseGet(`products?select=*&id=eq.${id}&limit=1`);
-  if (!Array.isArray(data) || data.length === 0) {
+  try {
+    const product = await backendGet(`products/${id}`);
+    if (!product || !product.id) {
+      throw Object.assign(new Error('Product not found'), { status: 404 });
+    }
+    return mapProduct(product);
+  } catch (error) {
     throw Object.assign(new Error('Product not found'), { status: 404 });
   }
-  return mapProduct(data[0]);
 }

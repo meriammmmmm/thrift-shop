@@ -1,0 +1,15 @@
+# Storefront (Next.js) image for local Docker — runs in dev mode
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3000
+
+# Bind to 0.0.0.0 so it's reachable from your browser
+CMD ["npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]

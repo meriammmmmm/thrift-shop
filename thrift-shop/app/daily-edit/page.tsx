@@ -98,7 +98,11 @@ export default function DailyEditPage() {
           description: product.description,
           price: product.price,
           originalPrice: product.original_price,
-          images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+          images: Array.isArray(product.images) 
+            ? product.images 
+            : (typeof product.images === 'string' && product.images.startsWith('['))
+              ? JSON.parse(product.images)
+              : (product.images ? [product.images] : []),
           brand: product.brand,
           size: product.size,
           category: product.category,

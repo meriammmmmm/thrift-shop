@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+
+const FIELD_CLS = "block w-full px-4 py-3 border border-rose-100 rounded-xl shadow-sm text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm";
+const FOCUS_RING = "focus:ring-[#731528]/30";
 
 interface UserInfo {
   fullName: string;
@@ -18,21 +21,10 @@ interface UserInfo {
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    fullName: '',
-    email: '',
-    phone: '',
-    optionalPhone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'Tunisia'
+    fullName: '', email: '', phone: '', optionalPhone: '',
+    address: '', city: '', state: '', zipCode: '', country: 'Tunisia'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,405 +37,283 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccess('');
-
     try {
       if (isLogin) {
-        // Login flow
         const data = await api.login({ email: formData.email, password: formData.password });
-        setSuccess('Signed in successfully!');
-
-        // Store token and user data
         localStorage.setItem('auth-token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        // Show success message briefly before redirect
-        setTimeout(() => {
-          // Redirect based on user role
-          if (data.user.role === 'ADMIN') {
-            router.push('/admin');
-          } else {
-            router.push('/');
-          }
-        }, 1500);
+        setSuccess('Welcome back! Redirecting…');
+        setTimeout(() => router.push(data.user.role === 'ADMIN' ? '/admin' : '/'), 1200);
       } else {
-        // Signup flow - NO VERIFICATION NEEDED
         const emailToUse = userInfo.email || formData.email;
         const data = await api.register({
           email: emailToUse,
           password: formData.password,
           name: userInfo.fullName || formData.name,
           companyId: process.env.NEXT_PUBLIC_COMPANY_ID ? parseInt(process.env.NEXT_PUBLIC_COMPANY_ID) : undefined,
-          userInfo: {
-            fullName: userInfo.fullName,
-            email: emailToUse,
-            phone: userInfo.phone,
-            optionalPhone: userInfo.optionalPhone,
-            address: userInfo.address,
-            city: userInfo.city,
-            state: userInfo.state,
-            zipCode: userInfo.zipCode,
-            country: userInfo.country
-          }
+          userInfo: { ...userInfo, email: emailToUse }
         });
-
-        // Store token and user data
         localStorage.setItem('auth-token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        setSuccess('Account created successfully!');
-
-        // Redirect after success
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
+        setSuccess('Account created! Welcome 🎉');
+        setTimeout(() => router.push('/'), 1200);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleUserInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setUserInfo({
-      ...userInfo,
-      [e.target.name]: e.target.value
-    });
-  };
+  const hc = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
+  const hui = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setUserInfo(p => ({ ...p, [e.target.name]: e.target.value }));
+  const switchMode = () => { setIsLogin(v => !v); setError(''); setSuccess(''); };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* Success Notification */}
-      {success && (
-        <div className="fixed top-4 right-4 z-50 animate-slideInRight">
-          <div className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="font-medium">{success}</span>
+    <>
+      <style>{`
+        @keyframes lp-fade-up {
+          from { opacity:0; transform:translateY(24px) scale(0.97); }
+          to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+        @keyframes lp-shimmer {
+          0%   { background-position:-400px 0; }
+          100% { background-position: 400px 0; }
+        }
+        @keyframes lp-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes lp-orb1 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(30px,-20px) scale(1.12); }
+        }
+        @keyframes lp-orb2 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(-20px,28px) scale(0.9); }
+        }
+        .lp-card { animation: lp-fade-up 0.55s cubic-bezier(0.23,1,0.32,1) both; }
+        .lp-btn-shimmer::after {
+          content:''; position:absolute; inset:0;
+          background: linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%);
+          background-size:200% 100%;
+          animation: lp-shimmer 1.8s linear infinite;
+          border-radius: inherit;
+        }
+      `}</style>
+
+      <div className="min-h-screen flex overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd0 30%, #fce4ec 60%, #f3e5f5 100%)'
+      }}>
+
+        {/* ── Left decorative panel ── */}
+        <div className="hidden lg:flex flex-col justify-between relative overflow-hidden py-10 px-8"
+          style={{
+            background: 'linear-gradient(160deg,#731528 0%,#9B3550 50%,#b5476a 100%)',
+            width: '38%',
+            minWidth: 320,
+            maxWidth: 420,
+          }}>
+
+          {/* Animated orbs */}
+          <div style={{ position:'absolute', top:'10%', left:'6%', width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.06)', animation:'lp-orb1 8s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', bottom:'16%', right:'3%', width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.05)', animation:'lp-orb2 10s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', top:'50%', left:'30%', width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.04)', animation:'lp-orb1 6s ease-in-out infinite reverse' }} />
+
+          {/* Brand name — no image, no white box */}
+          <div className="relative z-10">
+            <div
+              className="text-2xl font-bold tracking-wide cursor-pointer text-white hover:opacity-80 transition-opacity"
+              style={{ fontFamily: 'Georgia, serif' }}
+              onClick={() => router.push('/')}
+            >
+              Mery Rose
+            </div>
+          </div>
+
+          <div className="relative z-10">
+            <h2 className="text-white text-2xl font-bold leading-snug mb-2">
+              {isLogin ? 'Welcome back 💕' : 'Join us today ✨'}
+            </h2>
+            <p className="text-white/65 text-sm leading-relaxed">
+              {isLogin
+                ? 'Sign in to continue shopping, track orders, and save your favourites.'
+                : 'Create your account and explore hundreds of unique thrift pieces.'}
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-wrap gap-2">
+            {['🌿 Sustainable', '💸 Affordable', '✨ Unique'].map(t => (
+              <span key={t} className="text-xs font-medium px-3 py-1.5 rounded-full"
+                style={{ background: 'rgba(255,255,255,0.13)', color: '#fff' }}>{t}</span>
+            ))}
           </div>
         </div>
-      )}
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <img 
-            src="/images/mery-rose-logo.png" 
-            alt="Logo" 
-            className="h-20 w-auto cursor-pointer"
-            onClick={() => router.push('/')}
-          />
-        </div>
-        
-        <h2 className="text-center text-3xl font-bold text-gray-900">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
-        </h2>
-        <p className="mt-3 text-center text-sm text-gray-600">
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="font-semibold text-[var(--color-primary)] hover:underline"
-          >
-            {isLogin ? 'Sign up' : 'Sign in'}
-          </button>
-        </p>
-      </div>
+        {/* ── Right: form ── */}
+        <div className="flex-1 flex flex-col justify-center items-center px-4 py-8 overflow-y-auto">
+          <div className="lp-card w-full" style={{ maxWidth: 460 }}>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-gray-200 sm:rounded-lg sm:px-10">
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm">
-              {error}
-            </div>
-          )}
+            {/* Card — solid white background */}
+            <div className="rounded-3xl pt-9 pb-8 sm:pt-10 sm:pb-9 px-8 sm:px-10" style={{
+              background: '#ffffff',
+              border: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: '0 20px 60px rgba(115,21,40,0.12), 0 4px 16px rgba(115,21,40,0.08)',
+            }}>
 
-          {success && (
-            <div className="mb-6 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded text-sm">
-              {success}
-            </div>
-          )}
+              {/* Logo at top of card — clean, no filters */}
+              <div className="flex justify-center mb-5 -mt-1">
+                <img
+                  src="/images/mery-rose-logo.png"
+                  alt="Mery Rose"
+                  className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => router.push('/')}
+                />
+              </div>
 
-          {/* Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {!isLogin && (
-              <>
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Personal Information</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                          Full Name *
-                        </label>
-                        <input
-                          id="fullName"
-                          name="fullName"
-                          type="text"
-                          required={!isLogin}
-                          value={userInfo.fullName}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="Full name"
-                        />
-                      </div>
+              {/* Header */}
+              <div className="mb-6 text-center lg:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {isLogin ? 'Sign In' : 'Create Account'}
+                </h1>
+                <p className="mt-1.5 text-sm text-gray-500">
+                  {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                  <button onClick={switchMode} className="font-semibold hover:underline" style={{ color: '#731528' }}>
+                    {isLogin ? 'Sign up free' : 'Sign in'}
+                  </button>
+                </p>
+              </div>
 
-                      <div>
-                        <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700">
-                          Email *
-                        </label>
-                        <input
-                          id="userEmail"
-                          name="email"
-                          type="email"
-                          required={!isLogin}
-                          value={userInfo.email}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="Email address"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                          Phone *
-                        </label>
-                        <input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          required={!isLogin}
-                          value={userInfo.phone}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="Phone number"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="optionalPhone" className="block text-sm font-medium text-gray-700">
-                          Optional Phone
-                        </label>
-                        <input
-                          id="optionalPhone"
-                          name="optionalPhone"
-                          type="tel"
-                          value={userInfo.optionalPhone}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="Alternative phone"
-                        />
-                      </div>
-                    </div>
-                  </div>
+              {/* Alerts */}
+              {error && (
+                <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  <span className="text-base mt-0.5">⚠️</span><span>{error}</span>
                 </div>
+              )}
+              {success && (
+                <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+                  <span className="text-base">✅</span><span>{success}</span>
+                </div>
+              )}
 
-                {/* Address */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Address</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                        Street Address *
-                      </label>
-                      <input
-                        id="address"
-                        name="address"
-                        type="text"
-                        required={!isLogin}
-                        value={userInfo.address}
-                        onChange={handleUserInfoChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                        placeholder="Street address"
-                      />
+              <form onSubmit={handleSubmit} className="space-y-4">
+
+                {/* ── SIGN UP FIELDS ── */}
+                {!isLogin && (
+                  <>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 pt-1">Personal Info</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <LabelField label="Full Name *" id="fullName" name="fullName" type="text" required value={userInfo.fullName} onChange={hui} placeholder="Your full name" />
+                      <LabelField label="Email *" id="userEmail" name="email" type="email" required value={userInfo.email} onChange={hui} placeholder="you@example.com" />
+                      <LabelField label="Phone *" id="phone" name="phone" type="tel" required value={userInfo.phone} onChange={hui} placeholder="+216 XX XXX XXX" />
+                      <LabelField label="Optional Phone" id="optionalPhone" name="optionalPhone" type="tel" value={userInfo.optionalPhone} onChange={hui} placeholder="Alternative number" />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                          City *
-                        </label>
-                        <input
-                          id="city"
-                          name="city"
-                          type="text"
-                          required={!isLogin}
-                          value={userInfo.city}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="City"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                          State *
-                        </label>
-                        <input
-                          id="state"
-                          name="state"
-                          type="text"
-                          required={!isLogin}
-                          value={userInfo.state}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="State"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
-                          ZIP *
-                        </label>
-                        <input
-                          id="zipCode"
-                          name="zipCode"
-                          type="text"
-                          required={!isLogin}
-                          value={userInfo.zipCode}
-                          onChange={handleUserInfoChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                          placeholder="ZIP"
-                        />
-                      </div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 pt-2">Delivery Address</p>
+                    <LabelField label="Street Address *" id="address" name="address" type="text" required value={userInfo.address} onChange={hui} placeholder="123 Main Street" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <LabelField label="City *" id="city" name="city" type="text" required value={userInfo.city} onChange={hui} placeholder="Tunis" />
+                      <LabelField label="State *" id="state" name="state" type="text" required value={userInfo.state} onChange={hui} placeholder="Tunis" />
+                      <LabelField label="ZIP *" id="zipCode" name="zipCode" type="text" required value={userInfo.zipCode} onChange={hui} placeholder="1000" />
                     </div>
-
                     <div>
-                      <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-                        Country
-                      </label>
-                      <select
-                        id="country"
-                        name="country"
-                        value={userInfo.country}
-                        onChange={handleUserInfoChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                      >
-                        <option value="Tunisia">Tunisia</option>
-                        <option value="USA">United States</option>
-                        <option value="Canada">Canada</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="France">France</option>
-                        <option value="Germany">Germany</option>
-                        <option value="Other">Other</option>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                      <select name="country" value={userInfo.country} onChange={hui} className={`${FIELD_CLS} ${FOCUS_RING}`}>
+                        <option>Tunisia</option><option>USA</option><option>Canada</option>
+                        <option>UK</option><option>France</option><option>Germany</option><option>Other</option>
                       </select>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
+
+                {/* ── LOGIN FIELDS ── */}
+                {isLogin && (
+                  <LabelField label="Email address" id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={hc} placeholder="you@example.com" />
+                )}
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password *
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {isLogin ? 'Password' : 'Create Password *'}
                   </label>
-                  <div className="relative mt-1">
+                  <div className="relative">
                     <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                      placeholder="Create password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {showPassword ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        )}
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {isLogin && (
-              <>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                  <div className="mt-1 relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      required
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm text-gray-900"
+                      id="password" name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete={isLogin ? 'current-password' : 'new-password'}
+                      required value={formData.password} onChange={hc}
                       placeholder="••••••••"
+                      className={`${FIELD_CLS} ${FOCUS_RING} pr-11`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                    >
+                    <button type="button" onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {showPassword ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        )}
+                        {showPassword
+                          ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        }
                       </svg>
                     </button>
                   </div>
                 </div>
 
-             
-              </>
-            )}
+                {/* Forgot password */}
+                {isLogin && (
+                  <div className="text-right -mt-1">
+                    <button type="button" onClick={() => router.push('/forgot-password')}
+                      className="text-xs hover:underline" style={{ color: '#731528' }}>
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Create Account')}
-              </button>
+                {/* Submit */}
+                <button
+                  type="submit" disabled={loading}
+                  className="lp-btn-shimmer relative w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all duration-200 overflow-hidden mt-2"
+                  style={{
+                    background: loading ? '#9ca3af' : 'linear-gradient(135deg,#731528,#9B3550)',
+                    boxShadow: loading ? 'none' : '0 8px 30px rgba(115,21,40,0.35)',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span style={{ display:'inline-block', width:16, height:16, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'lp-spin 0.7s linear infinite' }} />
+                      Loading…
+                    </span>
+                  ) : (
+                    <span className="relative z-10">{isLogin ? '✨ Sign In' : '🎉 Create Account'}</span>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 my-1">
+                  <div className="flex-1 h-px" style={{ background: 'rgba(115,21,40,0.12)' }} />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="flex-1 h-px" style={{ background: 'rgba(115,21,40,0.12)' }} />
+                </div>
+
+                <button type="button" onClick={() => router.push('/')}
+                  className="w-full py-3 rounded-2xl border text-sm font-medium text-gray-600 hover:bg-white/60 transition-all"
+                  style={{ borderColor: 'rgba(115,21,40,0.2)', background: 'rgba(255,255,255,0.4)' }}>
+                  ← Continue browsing without account
+                </button>
+              </form>
             </div>
-          </form>
-
+          </div>
         </div>
       </div>
+    </>
+  );
+}
+
+function LabelField({ label, id, ...props }: { label: string; id: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <input id={id} className={`${FIELD_CLS} ${FOCUS_RING}`} {...props} />
     </div>
   );
 }

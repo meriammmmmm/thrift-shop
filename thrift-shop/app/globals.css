@@ -951,10 +951,14 @@ a {
   animation: fadeIn 0.5s ease-out;
 }
 
-/* Enhanced card hover with shadow */
+/* Enhanced card hover with shadow.
+   Only `translate` and `box-shadow` transition — `all` would also
+   transition the transform, which fights the GSAP entrance that owns it. */
 .card-hover-enhanced {
   position: relative;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: translate 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: translate;
 }
 
 .card-hover-enhanced::after {
@@ -968,8 +972,11 @@ a {
   z-index: -1;
 }
 
+/* The lift uses `translate`, not `transform`, so a GSAP entrance that
+   owns `transform` on the same element cannot cancel it. The two
+   properties compose: translate is applied before transform. */
 .card-hover-enhanced:hover {
-  transform: translateY(-12px);
+  translate: 0 -12px;
 }
 
 .card-hover-enhanced:hover::after {
@@ -2411,4 +2418,479 @@ a {
 
 .animate-twinkle {
   animation: twinkle 3s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Style Board — "Build the Look" mix & match section
+   ========================================================================== */
+
+/* Slots fade + lift into place one after another when the section is reached. */
+@keyframes slotReveal {
+  from { opacity: 0; transform: translateY(34px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* A newly picked piece drops into its slot with a slight overshoot. */
+@keyframes slotPop {
+  0%   { transform: scale(0.82) translateY(-10px); opacity: 0.2; }
+  55%  { transform: scale(1.06) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Light sweeps across the active slot border. */
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(320%) skewX(-18deg); }
+}
+
+/* The match percentage badge breathes so the eye lands on it first. */
+@keyframes matchPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201, 140, 156, 0.55); }
+  50%      { transform: scale(1.07); box-shadow: 0 0 0 7px rgba(201, 140, 156, 0); }
+}
+
+/* Suggestion cards drift gently so the rail never feels frozen. */
+@keyframes railBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+/* Sparkles thrown off the moment a piece lands in a slot. */
+@keyframes sparkleBurst {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(0deg); }
+  35%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15) rotate(120deg); }
+}
+
+/* The thread that connects a slot to the rail while a pick is in flight. */
+@keyframes threadDraw {
+  from { transform: scaleX(0); opacity: 0.9; }
+  to   { transform: scaleX(1); opacity: 0; }
+}
+
+/* Soft coloured blobs drifting behind the section. */
+@keyframes blobDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(38px, -26px) scale(1.09); }
+  66%  { transform: translate(-30px, 22px) scale(0.94); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.style-board {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.style-board__blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(68px);
+  opacity: 0.32;
+  pointer-events: none;
+  animation: blobDrift 19s ease-in-out infinite;
+  z-index: 0;
+}
+
+.style-board__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------------- slots */
+
+/* Slots start hidden and are released by the section's IntersectionObserver,
+   so the stagger plays when the board actually scrolls into view. */
+.style-slot {
+  position: relative;
+  opacity: 0;
+  transform: translateY(34px) scale(0.94);
+}
+
+.style-board--visible .style-slot {
+  animation: slotReveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--slot-delay, 0ms);
+}
+
+.style-slot__frame {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+}
+
+.style-slot--filled .style-slot__frame {
+  animation: slotPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.style-slot:hover .style-slot__frame {
+  transform: translateY(-5px);
+  box-shadow: 0 22px 44px -18px rgba(115, 21, 40, 0.45);
+}
+
+/* Empty slots read as a dashed invitation rather than a broken card. */
+.style-slot__empty {
+  border: 2px dashed rgba(115, 21, 40, 0.28);
+  background: rgba(255, 255, 255, 0.55);
+  transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease;
+}
+
+.style-slot:hover .style-slot__empty {
+  border-color: rgba(115, 21, 40, 0.65);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-5px);
+}
+
+.style-slot--active .style-slot__empty {
+  border-style: solid;
+  border-color: transparent;
+  background: rgba(246, 232, 235, 0.9);
+}
+
+/* Light that travels around the border of the slot being filled. */
+.style-slot__sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.style-slot__sweep::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  width: 42%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  animation: shimmerSweep 1.05s ease-out;
+}
+
+.style-slot__sparkle {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(201, 140, 156, 0.95);
+  animation: sparkleBurst 0.85s ease-out both;
+}
+
+/* --------------------------------------------------------------- suggestions */
+
+.style-rail {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.25rem 1rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 140, 156, 0.65) transparent;
+}
+
+.style-rail::-webkit-scrollbar { height: 6px; }
+.style-rail::-webkit-scrollbar-track { background: rgba(115, 21, 40, 0.06); border-radius: 999px; }
+.style-rail::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #c98c9c, #9b3550);
+  border-radius: 999px;
+}
+
+.style-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 8.5rem;
+  scroll-snap-align: start;
+  cursor: pointer;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 6px 18px -10px rgba(63, 42, 48, 0.45);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+  animation: railBob 4.5s ease-in-out infinite;
+}
+
+.style-card:nth-child(even) { animation-delay: -2.25s; }
+.style-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 20px 36px -16px rgba(115, 21, 40, 0.5);
+  animation-play-state: paused;
+}
+
+.style-card--picked {
+  opacity: 0.42;
+  filter: grayscale(0.55);
+  cursor: default;
+}
+
+.style-card__badge {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  z-index: 2;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: linear-gradient(135deg, #9b3550, #731528);
+  animation: matchPulse 2.6s ease-in-out infinite;
+}
+
+/* Thread drawn from the rail to the slot when a piece is chosen. */
+.style-thread {
+  position: absolute;
+  height: 2px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(201, 140, 156, 0), #c98c9c, rgba(201, 140, 156, 0));
+  animation: threadDraw 0.7s ease-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ------------------------------------------------------------------ totals */
+
+.style-total {
+  background: linear-gradient(135deg, #731528 0%, #9b3550 55%, #b8436a 100%);
+  box-shadow: 0 18px 40px -20px rgba(115, 21, 40, 0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-board *,
+  .style-slot,
+  .style-card,
+  .style-board__blob,
+  .style-slot__sparkle,
+  .style-thread {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Shop the Look — full-outfit photo + the individual pieces
+   ========================================================================== */
+
+.look-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 10px 30px -16px rgba(63, 42, 48, 0.45);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
+}
+
+.look-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 28px 52px -22px rgba(115, 21, 40, 0.5);
+}
+
+/* Slides in as the gallery scrolls into view. */
+.look-card__reveal {
+  opacity: 0;
+  transform: translateY(38px) scale(0.96);
+}
+
+.gallery--visible .look-card__reveal {
+  animation: slotReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--look-delay, 0ms);
+}
+
+/*
+ * Fallback flat-lay: used until a worn photo is supplied. The panels fan out
+ * and straighten on hover, which reads as "styled" rather than "missing".
+ */
+.look-collage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(150deg, #fdf5f7 0%, #f3e2e7 100%);
+  overflow: hidden;
+}
+
+.look-collage__panel {
+  position: absolute;
+  top: 8%;
+  height: 84%;
+  width: 42%;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  box-shadow: 0 14px 30px -14px rgba(63, 42, 48, 0.55);
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: collageBob 6s ease-in-out infinite;
+}
+
+.look-collage__panel:nth-child(1) {
+  left: 2%;
+  transform: rotate(-7deg) translateX(-10%);
+  animation-delay: -1s;
+  z-index: 1;
+}
+.look-collage__panel:nth-child(2) {
+  left: 29%;
+  transform: translateY(3%) scale(1.06);
+  z-index: 3;
+}
+.look-collage__panel:nth-child(3) {
+  right: 2%;
+  transform: rotate(7deg) translateX(10%);
+  animation-delay: -3s;
+  z-index: 2;
+}
+
+/* A fourth panel tucks in behind the middle one. */
+.look-collage__panel:nth-child(4) {
+  left: 29%;
+  transform: translateY(14%) scale(0.94);
+  opacity: 0.55;
+  z-index: 0;
+  animation-delay: -5s;
+}
+
+.look-card:hover .look-collage__panel:nth-child(1) { transform: rotate(-4deg) translateX(-4%); }
+.look-card:hover .look-collage__panel:nth-child(3) { transform: rotate(4deg) translateX(4%); }
+.look-card:hover .look-collage__panel:nth-child(2) { transform: translateY(0) scale(1.1); }
+
+@keyframes collageBob {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -6px; }
+}
+
+/* Piece chips under the outfit photo. */
+.look-piece {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(115, 21, 40, 0.08);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, background 0.3s ease;
+}
+
+.look-piece:hover {
+  transform: translateX(5px);
+  border-color: rgba(115, 21, 40, 0.35);
+  background: #fff;
+}
+
+.look-piece__thumb {
+  width: 2.75rem;
+  height: 3.4rem;
+  flex: 0 0 auto;
+  border-radius: 0.45rem;
+  overflow: hidden;
+  background: #f3e2e7;
+}
+
+/* Ribbon that slides down over the outfit photo on hover. */
+.look-card__worn-badge {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(115, 21, 40, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .look-card,
+  .look-card__reveal,
+  .look-collage__panel,
+  .look-piece {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+  .gallery--visible .look-card__reveal { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   CINEMATIC LAYER — GSAP / ScrollTrigger
+   --------------------------------------------------------------------------
+   GSAP takes over the scroll reveals once it boots. These rules hand it
+   the stage and, just as importantly, keep the page readable if it never
+   boots at all:
+
+   - `.gsap-motion` is the safety net. Anything GSAP has not claimed yet
+     is visible, so a failed import or a blocked chunk can never leave a
+     section blank.
+   - The legacy CSS transforms are neutralised for the elements GSAP now
+     animates, so the two systems never fight over `transform`.
+   ========================================================================== */
+
+.gsap-motion .scroll-animate {
+  opacity: 1;
+}
+
+.gsap-motion .reveal-on-scroll,
+.gsap-motion .zoom-on-scroll {
+  transition: none !important;
+  transform: none !important;
+  opacity: 1;
+}
+
+/* Word masks — the kinetic typography in the hero.
+   The mask is an inline block that grows with its content, so a late
+   webfont can never leave the headline sliced. The padding/margin pair
+   gives descenders room to breathe without shifting the baseline. */
+.cinematic-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+.cinematic-word {
+  display: inline-block;
+  will-change: transform;
+  transform-origin: 50% 100%;
+}
+
+/* Cursor spotlight on product media.
+   Purely CSS — the pointer position arrives as two custom properties, so
+   the effect never competes with GSAP for an element's transform. */
+[data-spotlight] {
+  position: relative;
+}
+
+[data-spotlight]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    220px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(255, 255, 255, 0.26),
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+}
+
+[data-spotlight][data-spotlight-active='true']::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsap-motion .scroll-animate,
+  .gsap-motion .reveal-on-scroll,
+  .gsap-motion .zoom-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+
+  [data-spotlight]::after {
+    display: none;
+  }
 }

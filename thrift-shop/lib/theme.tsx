@@ -39,9 +39,34 @@ const defaultTheme: ThemeColors = {
   info: '#3b82f6' // blue-500
 };
 
+const THEME_CACHE_KEY = 'app-theme-cache';
+const THEME_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function getCachedTheme(): ThemeColors | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(THEME_CACHE_KEY);
+    if (!raw) return null;
+    const { theme, ts } = JSON.parse(raw);
+    if (Date.now() - ts < THEME_CACHE_TTL) return theme as ThemeColors;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedTheme(theme: ThemeColors) {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({ theme, ts: Date.now() }));
+  } catch {
+    // ignore
+  }
+}
+
 const ThemeContext = createContext<ThemeContextType>({
   theme: defaultTheme,
-  isLoading: true,
+  isLoading: false,
   refreshTheme: async () => {}
 });
 
@@ -57,58 +82,68 @@ interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
+const applyThemeToDocument = (themeColors: ThemeColors) => {
+  if (typeof document !== 'undefined') {
+    const root = document.documentElement;
+    root.style.setProperty('--color-primary', themeColors.primary);
+    root.style.setProperty('--color-primary-hover', themeColors.primaryHover);
+    root.style.setProperty('--color-primary-light', themeColors.primaryLight);
+    root.style.setProperty('--color-secondary', themeColors.secondary);
+    root.style.setProperty('--color-accent', themeColors.accent);
+    root.style.setProperty('--color-background', themeColors.background);
+    root.style.setProperty('--color-text', themeColors.text);
+    root.style.setProperty('--color-text-light', themeColors.textLight);
+    root.style.setProperty('--color-success', themeColors.success);
+    root.style.setProperty('--color-error', themeColors.error);
+    root.style.setProperty('--color-warning', themeColors.warning);
+    root.style.setProperty('--color-info', themeColors.info);
+  }
+};
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<ThemeColors>(defaultTheme);
-  const [isLoading, setIsLoading] = useState(true);
+  // Start with cached or default theme — NO loading delay, page renders instantly
+  const [theme, setTheme] = useState<ThemeColors>(() => {
+    const cached = getCachedTheme();
+    return cached || defaultTheme;
+  });
+  // isLoading is always false — we never block rendering on theme
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadTheme = async () => {
     try {
-      setIsLoading(true);
+      // Apply what we have immediately first
+      applyThemeToDocument(theme);
+
       const response = await api.getSetting('theme');
       if (response.theme) {
         setTheme(response.theme);
         applyThemeToDocument(response.theme);
+        setCachedTheme(response.theme);
       } else {
-        // If no theme is set, use default
-        setTheme(defaultTheme);
         applyThemeToDocument(defaultTheme);
       }
-    } catch (error) {
-      console.error('Failed to load theme:', error);
-      // Use default theme on error
-      setTheme(defaultTheme);
-      applyThemeToDocument(defaultTheme);
+    } catch {
+      // Backend unreachable — keep using default/cached theme silently
+      applyThemeToDocument(theme);
+    }
+  };
+
+  const refreshTheme = async () => {
+    setIsLoading(true);
+    try {
+      await loadTheme();
     } finally {
       setIsLoading(false);
     }
   };
 
-  const applyThemeToDocument = (themeColors: ThemeColors) => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      
-      // Set CSS custom properties for the theme colors
-      root.style.setProperty('--color-primary', themeColors.primary);
-      root.style.setProperty('--color-primary-hover', themeColors.primaryHover);
-      root.style.setProperty('--color-primary-light', themeColors.primaryLight);
-      root.style.setProperty('--color-secondary', themeColors.secondary);
-      root.style.setProperty('--color-accent', themeColors.accent);
-      root.style.setProperty('--color-background', themeColors.background);
-      root.style.setProperty('--color-text', themeColors.text);
-      root.style.setProperty('--color-text-light', themeColors.textLight);
-      root.style.setProperty('--color-success', themeColors.success);
-      root.style.setProperty('--color-error', themeColors.error);
-      root.style.setProperty('--color-warning', themeColors.warning);
-      root.style.setProperty('--color-info', themeColors.info);
-    }
-  };
-
-  const refreshTheme = async () => {
-    await loadTheme();
-  };
-
   useEffect(() => {
-    loadTheme();
+    // Apply theme immediately on mount (no await, no blocking)
+    applyThemeToDocument(theme);
+
+    // Then fetch updated theme from backend in background — does NOT block render
+    loadTheme().catch(() => {/* silently ignore */});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="Product image unavailable">
+  <rect width="300" height="300" fill="#f7eef0"/>
+  <g fill="none" stroke="#c9a3ad" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.75">
+    <!-- Hanger -->
+    <path d="M150 74c-7 0-12 5-12 11 0 5 3 9 8 11"/>
+    <path d="M150 96 92 138a8 8 0 0 0 5 14h106a8 8 0 0 0 5-14l-58-42Z"/>
+  </g>
+  <!-- Garment -->
+  <path d="M126 152h48l10 52v34a8 8 0 0 1-8 8h-52a8 8 0 0 1-8-8v-34l10-52Z" fill="#8c1f3d" opacity="0.85"/>
+  <path d="M126 152l24 20 24-20" fill="none" stroke="#f7eef0" stroke-width="4" stroke-linejoin="round"/>
+</svg>

@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import ProductCard from './components/ProductCard';
+import SafeImage, { normalizeImageList } from './components/SafeImage';
+import StyleBoard from './components/StyleBoard';
+import LookGallery from './components/LookGallery';
+import { LookDefinition, LookState, fetchLooks } from '../lib/looks';
 import Cart from './components/Cart';
 import Wishlist from './components/Wishlist';
 import Notification from './components/Notification';
 import ProductDetails from './components/ProductDetails';
 import UserOrders from './components/UserOrders';
+import ScrollProgress from './components/ScrollProgress';
+import MarqueeBand from './components/MarqueeBand';
+import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
 import { useTheme, useThemeStyles } from '../lib/theme';
+import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
 
 export default function Home() {
   // Theme hooks
@@ -64,8 +72,15 @@ export default function Home() {
 
   // Products
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Mix & Match board (shared with the Shop-the-Look gallery above it)
+  const [styledLook, setStyledLook] = useState<LookState>({});
+  const [activeLookId, setActiveLookId] = useState<string | null>(null);
+
+  // Looks are managed in the admin panel, not in code.
+  const [looks, setLooks] = useState<LookDefinition[]>([]);
   
   // Custom categories (occasions)
   const [customCategories, setCustomCategories] = useState<Array<{id: number, name: string, description?: string, icon?: string}>>([]);
@@ -108,7 +123,10 @@ export default function Home() {
         companyId = 1; // Fallback to company 1
       }
       
-      const response = await api.getCompanyProducts(companyId, { limit: 50 });
+      // The Mix & Match board and the curated looks both need the whole
+      // catalogue, not the first page of it — a look can reference an
+      // older piece that a short list would leave out.
+      const response = await api.getCompanyProducts(companyId, { limit: 100 });
       
       if (response.company) {
         setCompany(response.company);
@@ -133,7 +151,7 @@ export default function Home() {
             description: product.description,
             price: product.price,
             originalPrice: product.original_price,
-            images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+            images: normalizeImageList(product.images),
             brand: product.brand,
             size: product.size,
             category: product.category,
@@ -164,6 +182,12 @@ export default function Home() {
         setProducts(transformedProducts);
         console.log('Products loaded successfully:', transformedProducts.length);
       }
+
+      // Looks live in the admin panel — fetch them alongside the products.
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      if (apiUrl) {
+        fetchLooks(apiUrl, companyId).then(setLooks).catch(() => setLooks([]));
+      }
       
       // Load testimonials in background without blocking
       loadTestimonials(companyId.toString()).catch(err => {
@@ -180,7 +204,8 @@ export default function Home() {
 
   const loadTestimonials = async (companyId: string) => {
     try {
-      const response = await fetch(`https://mery-rose-backend.onrender.com/testimonials/active?companyId=${companyId}`);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
+      const response = await fetch(`${API_URL}/testimonials/active?companyId=${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data.testimonials || []);
@@ -294,35 +319,13 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Webflow-style scroll animations
-  useEffect(() => {
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -100px 0px'
-    };
+  // Cinematic scroll choreography (GSAP + ScrollTrigger).
+  // Re-built whenever the page's content changes shape, so every trigger
+  // is measured against the layout that is actually on screen.
+  useCinematicScroll([products, testimonials, customCategories]);
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-in');
-          // Add revealed class for reveal-on-scroll elements
-          if (entry.target.classList.contains('reveal-on-scroll')) {
-            entry.target.classList.add('revealed');
-          }
-          // Add zoomed class for zoom-on-scroll elements
-          if (entry.target.classList.contains('zoom-on-scroll')) {
-            entry.target.classList.add('zoomed');
-          }
-        }
-      });
-    }, observerOptions);
-
-    // Observe all scroll-animate elements
-    const animateElements = document.querySelectorAll('.scroll-animate, .reveal-on-scroll, .zoom-on-scroll');
-    animateElements.forEach(el => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, [products, testimonials, customCategories]);
+  // Hero kinetic typography — re-run on every slide change.
+  useHeroCinematic(currentHeroSlide);
 
   // Auto-rotate hero
   useEffect(() => {
@@ -550,23 +553,12 @@ export default function Home() {
     }
   ];
 
-  // Show loading for initial product load only (not theme)
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <img 
-          src="/images/mery-rose-logo.png" 
-          alt="Loading..." 
-          className="w-48 h-auto animate-pulse"
-        />
-      </div>
-    );
-  }
-
   console.log('Page rendering - loading:', loading, 'products:', products.length);
 
   return (
     <div className="min-h-screen bg-white">
+      <ScrollProgress />
+
       {/* Header */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'}`} style={{ backgroundColor: theme.background }}>
         {/* Top Promo Banner */}
@@ -688,38 +680,65 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-white overflow-hidden">
+      <section data-cinematic="hero" className="relative bg-white overflow-hidden">
         <div className="relative h-[250px] sm:h-[400px] md:h-[600px]">
-          <div className="absolute inset-0">
-            <img 
+          {/* The media wrapper persists across slides so the scroll
+              parallax has a stable target to measure against. */}
+          <div data-cinematic="hero-media-wrap" className="absolute inset-0 overflow-hidden">
+            <img
               key={currentHeroSlide}
+              data-cinematic="hero-media"
               src={heroSlides[currentHeroSlide].image}
-              alt="Hero"
-              className="w-full h-full object-cover animate-fadeIn"
+              alt={heroSlides[currentHeroSlide].title}
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
           </div>
-          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+
           <div className="relative z-10 h-full flex items-end pb-6 sm:pb-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-              <div key={currentHeroSlide} className="max-w-xl animate-slideInLeft">
-                <p className="text-white/80 text-[9px] sm:text-xs md:text-sm font-medium mb-1 sm:mb-3 tracking-[0.1em] sm:tracking-[0.2em] uppercase animate-fadeIn stagger-1">
-                  {heroSlides[currentHeroSlide].subtitle}
-                </p>
-                <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-light text-white mb-2 sm:mb-5 leading-tight tracking-tight animate-fadeIn stagger-2">
-                  {heroSlides[currentHeroSlide].title}
-                </h1>
-                <p className="text-white/85 text-[10px] sm:text-sm md:text-base mb-3 sm:mb-8 leading-relaxed font-light animate-fadeIn stagger-3 hidden sm:block">
-                  {heroSlides[currentHeroSlide].description}
-                </p>
-                <button 
-                  onClick={() => window.location.href = '/products'}
-                  className="px-4 sm:px-10 py-2 sm:py-3.5 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase border border-white/80 hover:bg-white hover:text-gray-900 transition-all duration-300 animate-fadeIn stagger-4"
-                >
-                  {heroSlides[currentHeroSlide].buttonText}
-                </button>
+            {/* The layer persists across slides so the scroll parallax has
+                a stable target; the copy itself is swapped every 5s. */}
+            <div data-cinematic="hero-copy-layer" className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+              <div className="relative min-h-[132px] sm:min-h-[200px] md:min-h-[270px] lg:min-h-[290px]">
+                <div key={currentHeroSlide} data-cinematic="hero-copy" className="absolute inset-x-0 bottom-0 max-w-xl">
+                  <p
+                    data-hero-part
+                    className="text-white/80 text-[9px] sm:text-xs md:text-sm font-medium mb-1 sm:mb-3 tracking-[0.1em] sm:tracking-[0.2em] uppercase"
+                  >
+                    {heroSlides[currentHeroSlide].subtitle}
+                  </p>
+                  <h1
+                    data-cinematic="hero-title"
+                    className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-light text-white mb-2 sm:mb-5 leading-tight tracking-tight"
+                  >
+                    {heroSlides[currentHeroSlide].title}
+                  </h1>
+                  <p
+                    data-hero-part
+                    className="text-white/85 text-[10px] sm:text-sm md:text-base mb-3 sm:mb-8 leading-relaxed font-light hidden sm:block"
+                  >
+                    {heroSlides[currentHeroSlide].description}
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/products'}
+                    data-hero-part
+                    className="px-4 sm:px-10 py-2 sm:py-3.5 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase border border-white/80 hover:bg-white hover:text-gray-900 transition-all duration-300"
+                  >
+                    {heroSlides[currentHeroSlide].buttonText}
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Scroll cue */}
+          <div
+            data-cinematic="hero-cue"
+            aria-hidden="true"
+            className="hidden sm:flex absolute bottom-6 right-6 sm:right-10 z-20 flex-col items-center gap-2"
+          >
+            <span className="text-[9px] tracking-[0.25em] uppercase text-white/60">Scroll</span>
+            <span className="block w-px h-10 bg-white/60 origin-top animate-pulse" />
           </div>
         </div>
       </section>
@@ -1059,7 +1078,7 @@ export default function Home() {
                 className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
                 onClick={() => handleViewDetails(product)}
               >
-                <div className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4`}>
+                <div data-spotlight className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4`}>
                   <img 
                     src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                     alt={product.name}
@@ -1114,7 +1133,9 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
+
+      {/* Brand band — the ticker leans into the scroll speed */}
+      <MarqueeBand />
 
       {/* Clean Out Service Section */}
      
@@ -1122,18 +1143,19 @@ export default function Home() {
       {/* New Arrivals Section - With Animated Stars */}
       <section className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
         {/* Original Background Image */}
-        <div className="absolute inset-0">
-          <img 
-            src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&h=500&fit=crop" 
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            data-cinematic="parallax-media"
+            src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&h=500&fit=crop"
             alt="New Arrivals background"
-            className="w-full h-full object-cover opacity-50"
+            className="w-full h-full object-cover opacity-50 will-change-transform"
           />
           <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${theme.primary}99, ${theme.primary}aa)` }}></div>
         </div>
-        
+
         {/* Animated Stars Layer - 4-Pointed Sparkle Stars */}
        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
-  <div className="absolute inset-0">
+  <div data-cinematic="starfield" className="absolute inset-0 will-change-transform">
     {[...Array(80)].map((_, i) => {
       const animations = ['twinkle', 'float', 'pulse', 'drift'];
       const randomAnimation = animations[i % animations.length];
@@ -1255,10 +1277,11 @@ export default function Home() {
                           boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
                         }}
                       >
-                        <img 
-                          src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=300&h=300&fit=crop'} 
+                        <SafeImage
+                          images={product.images}
                           alt={product.name}
                           className="w-full h-full object-cover"
+                          loading="eager"
                         />
                         {/* Sold Out Badge for circular images */}
                         {!product.inStock && (
@@ -1309,25 +1332,64 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Complete looks — curated in the admin panel's "Shop the Look" section */}
+      {/* <LookGallery
+        looks={looks}
+        products={products}
+        currencySymbol={companyCurrency.symbol}
+        activeLookId={activeLookId}
+        onPickLook={(lookId, state) => {
+          // Load the admin-curated look straight onto the board below.
+          setActiveLookId(lookId);
+          setStyledLook(state);
+        }}
+        onSelect={handleViewDetails}
+      /> */}
+
+     
+
+      {/* The Craft — scroll-based storytelling */}
+
       {/* Why Mery Rose Section */}
-      <section className="py-12 sm:py-20 bg-white">
+      <section data-cinematic="why-rose" className="relative py-16 sm:py-24 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-16 reveal-on-scroll">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: theme.primary }}>
-              WHY MERY ROSE?
+          <div className="text-center mb-10 sm:mb-16">
+            <p
+              data-cinematic="why-rose-eyebrow"
+              className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-5"
+              style={{ color: theme.primary }}
+            >
+              Why Mery Rose?
             </p>
-            <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-6">
-              Luxury Meets <span className="italic font-serif">Sustainability</span>
+            <h2
+              data-cinematic="why-rose-heading"
+              className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-[1.15]"
+            >
+              Luxury Meets{' '}
+              <span className="relative inline-block">
+                <span data-cinematic="why-rose-accent" className="italic font-serif">
+                  Sustainability
+                </span>
+                <span
+                  data-cinematic="why-rose-underline"
+                  aria-hidden="true"
+                  className="absolute left-0 -bottom-1 h-px w-full origin-left"
+                  style={{ backgroundColor: theme.primary, transform: 'scaleX(0)' }}
+                />
+              </span>
             </h2>
-            <p className="text-gray-600 text-base max-w-3xl mx-auto leading-relaxed">
+            <p
+              data-cinematic="why-rose-lede"
+              className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed"
+            >
               Every piece in our collection is carefully curated to bring you designer quality at accessible prices, while making a positive impact on our planet.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
             {/* Hand-Selected Quality */}
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInLeft stagger-1 card-hover-enhanced">
-              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15` }}>
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
                 <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1341,8 +1403,8 @@ export default function Home() {
             </div>
 
             {/* Like-New Condition */}
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInUp stagger-2 card-hover-enhanced">
-              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.3s' }}>
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
                 <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
@@ -1356,8 +1418,8 @@ export default function Home() {
             </div>
 
             {/* Sustainable Fashion */}
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInUp stagger-3 card-hover-enhanced">
-              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.6s' }}>
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
                 <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1371,8 +1433,8 @@ export default function Home() {
             </div>
 
             {/* Designer Brands */}
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 scroll-animate scroll-fadeInRight stagger-4 card-hover-enhanced">
-              <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center animate-float" style={{ backgroundColor: `${theme.primary}15`, animationDelay: '0.9s' }}>
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
                 <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>

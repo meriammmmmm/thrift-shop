@@ -167,7 +167,16 @@ export default function ProductDetails({
                 className="flex transition-transform duration-500 ease-out h-full"
                 style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
               >
-                {product.images.map((image, index) => (
+                {product.images.filter((image) => {
+                  try {
+                    // Validate that the image is a valid URL
+                    if (!image || typeof image !== 'string') return false;
+                    new URL(image);
+                    return true;
+                  } catch {
+                    return false;
+                  }
+                }).map((image, index) => (
                   <div key={index} className="flex-shrink-0 w-full h-full relative bg-white pointer-events-none">
                     <Image
                       src={image}
@@ -244,9 +253,25 @@ export default function ProductDetails({
             </div>
 
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {product.images.filter((image) => {
+              try {
+                if (!image || typeof image !== 'string') return false;
+                new URL(image);
+                return true;
+              } catch {
+                return false;
+              }
+            }).length > 1 && (
               <div className="flex gap-2 p-4 overflow-x-auto">
-                {product.images.map((image, index) => (
+                {product.images.filter((image) => {
+                  try {
+                    if (!image || typeof image !== 'string') return false;
+                    new URL(image);
+                    return true;
+                  } catch {
+                    return false;
+                  }
+                }).map((image, index) => (
                   <button
                     key={index}
                     onClick={() => {

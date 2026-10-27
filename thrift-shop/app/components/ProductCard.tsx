@@ -79,7 +79,8 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
       ) : null}
 
       {/* Image Container */}
-      <div 
+      <div
+        data-spotlight
         className="relative h-[500px] cursor-pointer overflow-hidden bg-white"
         onClick={() => onViewDetails(product)}
       >

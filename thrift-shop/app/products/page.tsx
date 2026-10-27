@@ -11,6 +11,32 @@ import SizeSelector from '../components/SizeSelector';
 import { Product, User } from '../types';
 import { api } from '../../lib/api';
 import { useTheme } from '../../lib/theme';
+import { useCinematicScroll } from '../../lib/motion/useCinematicMotion';
+import ScrollProgress from '../components/ScrollProgress';
+
+// --- Session-level product cache for the /products page ---
+const PRODUCTS_CACHE_KEY = 'shop-products-cache';
+const PRODUCTS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedProducts(): { products: Product[]; company: any; currency: any } | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = sessionStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts < PRODUCTS_CACHE_TTL) return data;
+    return null;
+  } catch { return null; }
+}
+
+function setCachedProducts(data: { products: Product[]; company: any; currency: any }) {
+  try {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+
 
 export default function ProductsPage() {
   const { theme, isLoading: themeLoading } = useTheme();
@@ -97,24 +123,34 @@ export default function ProductsPage() {
     }, 3000);
   };
 
-  // Optimized load products function
+  // Optimized load products function — shows cache instantly, refreshes in background
   const loadProducts = useCallback(async () => {
+    // 1. Hit cache first — zero wait time, page appears instantly
+    const cached = getCachedProducts();
+    if (cached) {
+      setProducts(cached.products);
+      if (cached.company) setCompany(cached.company);
+      if (cached.currency) setCompanyCurrency(cached.currency);
+      setLoading(false);
+    }
+
     try {
-      setLoading(true);
+      if (!cached) setLoading(true);
       setError(null);
-      
+
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
       const response = await api.getCompanyProducts(parseInt(companyId), { limit: 100 });
-      
+
+      let currency = { currency: 'USD', symbol: '$' };
       if (response.company) {
         setCompany(response.company);
-        
         if (response.company.country) {
           const currencyInfo = currencyConfig[response.company.country as keyof typeof currencyConfig] || { currency: 'USD', symbol: '$' };
           setCompanyCurrency(currencyInfo);
+          currency = currencyInfo;
         }
       }
-      
+
       if (response.products) {
         // Filter out hidden products (visible = 0 or visible = false)
         const visibleProducts = response.products.filter((product: any) => {
@@ -130,7 +166,11 @@ export default function ProductsPage() {
             description: product.description,
             price: parseFloat(product.price),
             originalPrice: product.original_price ? parseFloat(product.original_price) : undefined,
-            images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+            images: Array.isArray(product.images) 
+              ? product.images 
+              : (typeof product.images === 'string' && product.images.startsWith('['))
+                ? JSON.parse(product.images)
+                : (product.images ? [product.images] : []),
             brand: product.brand,
             size: product.size,
             category: product.category,
@@ -155,14 +195,18 @@ export default function ProductsPage() {
         });
         
         setProducts(transformedProducts);
+        // Cache for fast repeat visits
+        setCachedProducts({ products: transformedProducts, company: response.company, currency });
       }
     } catch (error) {
       console.error('Failed to load products:', error);
-      setError('Failed to load products. Please try again.');
+      if (!cached) setError('Failed to load products. Please try again.');
     } finally {
       setLoading(false);
     }
   }, [currencyConfig]);
+
+
 
   // Memoized price range parser
   const priceRangeMap = useMemo(() => {
@@ -313,12 +357,15 @@ export default function ProductsPage() {
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map(p => p.category)))], [products]);
   const sizes = useMemo(() => ['All', ...Array.from(new Set(products.map(p => p.size))).sort()], [products]);
 
-  // Check if user is logged in on component mount
+  // Check if user is logged in on component mount — kick off all loads in parallel
   useEffect(() => {
     const token = localStorage.getItem('auth-token');
     const userData = localStorage.getItem('user');
+    const savedPicture = localStorage.getItem('profile-picture');
+    if (savedPicture) setProfilePicture(savedPicture);
     if (token && userData) {
       setUser(JSON.parse(userData));
+      // Cart + wishlist in parallel — don't await either
       loadUserCart();
       loadUserWishlist();
     }
@@ -326,19 +373,16 @@ export default function ProductsPage() {
     // Check URL parameters for filters
     const urlParams = new URLSearchParams(window.location.search);
     const occasionParam = urlParams.get('occasion');
-    if (occasionParam) {
-      setSelectedOccasion(occasionParam);
-    }
-    
+    if (occasionParam) setSelectedOccasion(occasionParam);
     const brandParam = urlParams.get('brand');
-    if (brandParam) {
-      setSelectedBrand(brandParam);
-    }
+    if (brandParam) setSelectedBrand(brandParam);
     
-    // Load products from API
+    // Load products — shows cache immediately, refreshes in background
     loadProducts();
-    loadProfilePicture();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+
 
   const loadProfilePicture = () => {
     const savedPicture = localStorage.getItem('profile-picture');
@@ -384,32 +428,10 @@ export default function ProductsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Webflow-style scroll animations
-  useEffect(() => {
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -100px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-in');
-          if (entry.target.classList.contains('reveal-on-scroll')) {
-            entry.target.classList.add('revealed');
-          }
-          if (entry.target.classList.contains('zoom-on-scroll')) {
-            entry.target.classList.add('zoomed');
-          }
-        }
-      });
-    }, observerOptions);
-
-    const animateElements = document.querySelectorAll('.scroll-animate, .reveal-on-scroll, .zoom-on-scroll');
-    animateElements.forEach(el => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, [sortedProducts]);
+  // Cinematic scroll choreography (GSAP + ScrollTrigger).
+  // Rebuilt whenever the filtered grid changes so the reveals are
+  // measured against the layout that is actually on screen.
+  useCinematicScroll([sortedProducts]);
 
   // Optimized dropdown handlers
   const closeAllDropdowns = useCallback(() => {
@@ -665,21 +687,30 @@ export default function ProductsPage() {
     ];
   }, [companyCurrency]);
 
-  // Show loading for theme or products
-  if (themeLoading || loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <img 
-          src="/images/mery-rose-logo.png" 
-          alt="Loading..." 
-          className="w-48 h-auto animate-pulse"
-        />
+  // Skeleton card for loading state — shown inline (not a full-page blocker)
+  const SkeletonCard = () => (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+      <div className="aspect-[3/4] bg-gray-200 animate-pulse" />
+      <div className="p-4 space-y-2.5">
+        <div className="flex justify-between">
+          <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+          <div className="h-4 w-8 bg-gray-200 rounded-full animate-pulse" />
+        </div>
+        <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+        <div className="h-5 w-14 bg-gray-200 rounded animate-pulse" />
+        <div className="flex gap-2 pt-1">
+          <div className="h-9 flex-1 bg-gray-200 rounded-xl animate-pulse" />
+          <div className="h-9 w-14 bg-gray-200 rounded-xl animate-pulse" />
+          <div className="h-9 flex-1 bg-gray-200 rounded-xl animate-pulse" />
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-white">
+      <ScrollProgress />
       {/* Header */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'}`} style={{ backgroundColor: theme.background }}>
         {/* Top Promo Banner */}
@@ -1111,7 +1142,12 @@ export default function ProductsPage() {
           </div>
 
           {/* Products Grid */}
-          {sortedProducts.length === 0 ? (
+          {loading ? (
+            // Skeleton grid while products are loading
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : sortedProducts.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No Items Found</h3>
@@ -1152,6 +1188,7 @@ export default function ProductsPage() {
               ))}
             </div>
           )}
+
 
           {/* Load More / Pagination */}
           {sortedProducts.length > 0 && (
