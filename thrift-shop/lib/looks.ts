@@ -154,6 +154,9 @@ export const stateFullPrice = (state: LookState): number =>
 
 /* ------------------------------------------------------------------ fetch */
 
+/** How long the storefront waits for the looks before giving up on them. */
+const LOOKS_TIMEOUT_MS = 8000;
+
 interface ApiLookItem {
   product_id: number;
   name?: string;
@@ -244,11 +247,18 @@ function apiLookToDefinition(raw: any, apiBaseUrl: string): LookDefinition {
 /**
  * Looks are owned by the admin panel. If the endpoint is unavailable the
  * storefront simply hides the section rather than showing stale content.
+ *
+ * The request is given a deadline: the section is nice to have, so a slow or
+ * wedged endpoint must never keep the page waiting.
  */
 export async function fetchLooks(apiBaseUrl: string, companyId: number): Promise<LookDefinition[]> {
+  const controller = new AbortController();
+  const deadline = setTimeout(() => controller.abort(), LOOKS_TIMEOUT_MS);
+
   try {
     const res = await fetch(`${apiBaseUrl}/looks/active?companyId=${companyId}`, {
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -256,5 +266,7 @@ export async function fetchLooks(apiBaseUrl: string, companyId: number): Promise
     return list.map((raw: any) => apiLookToDefinition(raw, apiBaseUrl));
   } catch {
     return [];
+  } finally {
+    clearTimeout(deadline);
   }
 }

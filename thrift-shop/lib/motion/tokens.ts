@@ -18,15 +18,15 @@ export const DURATION = {
   /** State swaps that should feel immediate but not abrupt. */
   fast: 0.25,
   /** Standard UI transition. */
-  base: 0.45,
+  base: 0.28,
   /** Large element entrance. */
-  slow: 0.8,
+  slow: 0.42,
   /** Scroll-triggered reveal — long enough to read as intentional. */
-  reveal: 1.05,
+  reveal: 0.42,
   /** Hero / sequence choreography. */
-  cinematic: 1.4,
+  cinematic: 0.7,
   /** Scrubbed parallax transit across a full viewport. */
-  transit: 1,
+  transit: 0.55,
 } as const;
 
 export const EASE = {
@@ -54,7 +54,7 @@ export const BRAND = {
 } as const;
 
 /** Gap between siblings in a staggered group. */
-export const STAGGER_STEP = 0.09;
+export const STAGGER_STEP = 0.035;
 
 /** Upper bound so the last item of a long list never feels broken. */
 export const STAGGER_MAX_INDEX = 6;

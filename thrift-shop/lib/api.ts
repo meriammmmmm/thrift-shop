@@ -5,7 +5,9 @@ import {
   getProductFromSupabase,
 } from './supabaseProducts';
 
-const BACKEND_URL = 'https://thrift-shop-backend-production.up.railway.app/api';
+// The Railway app this used to point at has been deleted (every route now
+// answers "Application not found"), so the live backend is the fly.dev host.
+const BACKEND_URL = 'https://backend-wild-skylark-9834.fly.dev/api';
 
 // Ensure the URL is absolute and properly formatted
 const getApiBaseUrl = () => {
@@ -25,8 +27,8 @@ const getApiBaseUrl = () => {
     return envUrl;
   }
   
-  // Default to Render backend for production
-  return 'https://thrift-shop-backend-production.up.railway.app/api';
+  // Default to the live backend
+  return BACKEND_URL;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -169,6 +171,55 @@ class ApiClient {
     ).toString();
 
     return this.request(`/products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Virtual try-on.
+   *
+   * The free provider is a shared GPU: a generation can take 10-90s while
+   * the Space wakes up, so this uses its own generous timeout instead of
+   * the short one the rest of the API uses.
+   */
+  async tryOn(
+    payload: {
+      model_image: string;
+      garment_image: string;
+      garment_type?: 'upper' | 'lower' | 'overall';
+      garment_description?: string;
+    },
+    timeoutMs = 150000,
+  ): Promise<{ image: string; attempts?: number; space?: string; garment_type?: string }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseURL}/tryon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message = (data as { error?: string })?.error || `Try-on failed (HTTP ${response.status}).`;
+        const error = new Error(message) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
+      }
+
+      return data as { image: string; attempts?: number; space?: string };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(
+          'The try-on took too long. The free GPU is busy right now — please try again in a minute.',
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async getCompanyProducts(companyId: number, params: {

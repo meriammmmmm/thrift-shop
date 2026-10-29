@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ProductCard from './components/ProductCard';
+import BrandCarousel from './components/BrandCarousel';
 import SafeImage, { normalizeImageList } from './components/SafeImage';
 import StyleBoard from './components/StyleBoard';
 import LookGallery from './components/LookGallery';
@@ -15,6 +16,7 @@ import MarqueeBand from './components/MarqueeBand';
 import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
+import { buildBrandIndex } from '../lib/brands';
 import { useTheme, useThemeStyles } from '../lib/theme';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
 
@@ -202,16 +204,27 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
         } catch (_) { /* ignore */ }
       }
 
-      // Fetch looks in background
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      if (apiUrl) {
-        fetchLooks(apiUrl, companyId).then(setLooks).catch(() => setLooks([]));
-      }
-
       // Load testimonials in background
       loadTestimonials(companyId.toString()).catch(() => {});
     } catch (error) {
       console.error('Background refresh failed:', error);
+    }
+  };
+
+  /**
+   * Looks are fetched in parallel with the products, not after them.
+   *
+   * The products response is by far the bigger of the two, so waiting for it
+   * meant the looks request only started once the catalogue had finished
+   * downloading — long after the page itself had settled.
+   */
+  const loadLooks = async (companyId: number) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    if (!apiUrl) return;
+    try {
+      setLooks(await fetchLooks(apiUrl, companyId));
+    } catch {
+      setLooks([]);
     }
   };
 
@@ -256,7 +269,8 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
   });
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
-  const brands = ['All', ...Array.from(new Set(products.map(p => p.brand)))];
+  // Brand tiles for the carousel — case-folded, de-duplicated and ordered.
+  const brandIndex = useMemo(() => buildBrandIndex(products), [products]);
 
   // Get newest products (last 2 weeks) for New Arrivals section
   const newArrivals = products
@@ -274,6 +288,11 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
     
     // Load products and wait for completion
     loadProducts();
+
+    // The looks go out at the same time as the products, not after them.
+    const companyId = Number(process.env.NEXT_PUBLIC_COMPANY_ID) || 1;
+    loadLooks(companyId);
+
     loadProfilePicture();
     loadCustomCategories();
   }, []);
@@ -831,145 +850,15 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
         </section>
       )}
 
-      {/* Featured Brands Section */}
-      {(() => {
-        // List of well-known fashion brands to display
-        const famousBrands = [
-          'Zara', 'H&M', 'Mango', 'Nike', 'Adidas', 'Gucci', 'Prada', 'Chanel', 
-          'Dior', 'Louis Vuitton', 'Versace', 'Armani', 'Burberry', 'Fendi',
-          'Balenciaga', 'Givenchy', 'Valentino', 'Saint Laurent', 'Hermès',
-          'Celine', 'Loewe', 'Bottega Veneta', 'Alexander McQueen', 'Dolce & Gabbana',
-          'Ralph Lauren', 'Tommy Hilfiger', 'Calvin Klein', 'Michael Kors',
-          'Coach', 'Kate Spade', 'Tory Burch', 'Marc Jacobs', 'Diane von Furstenberg',
-          'Stella McCartney', 'Isabel Marant', 'Acne Studios', 'Ganni', 'Reformation',
-          'Rag & Bone', 'Theory', 'Vince', 'Equipment', 'Frame', 'Paige',
-          'AG Jeans', 'Citizens of Humanity', '7 For All Mankind', 'J Brand',
-          'Levi\'s', 'Wrangler', 'Lee', 'Diesel', 'G-Star', 'True Religion',
-          'Massimo Dutti', 'COS', 'Arket', '& Other Stories', 'Monki',
-          'Uniqlo', 'Muji', 'Everlane', 'Madewell', 'J.Crew', 'Banana Republic',
-          'Gap', 'Old Navy', 'American Eagle', 'Abercrombie & Fitch', 'Hollister',
-          'Urban Outfitters', 'Free People', 'Anthropologie', 'Topshop', 'ASOS',
-          'Boohoo', 'PrettyLittleThing', 'Missguided', 'Nasty Gal', 'Revolve',
-          'Zimmermann', 'Ulla Johnson', 'Staud', 'Réalisation Par', 'Faithfull',
-          'For Love & Lemons', 'Lovers + Friends', 'NBD', 'Superdown', 'Song of Style',
-          'House of CB', 'Oh Polly', 'Meshki', 'Sabo Skirt', 'Princess Polly',
-          'Showpo', 'Tiger Mist', 'Beginning Boutique', 'White Fox', 'Peppermayo',
-          'Bershka', 'Pull&Bear', 'Stradivarius', 'Oysho', 'Lefties',
-          'Reserved', 'Sinsay', 'Cropp', 'House', 'Mohito',
-          'New Look', 'River Island', 'Dorothy Perkins', 'Miss Selfridge', 'Warehouse',
-          'Karen Millen', 'Coast', 'Oasis', 'Whistles', 'Reiss',
-          'Ted Baker', 'AllSaints', 'French Connection', 'Superdry', 'Jack Wills',
-          'Hollister Co.', 'Gilly Hicks', 'Aerie', 'Victoria\'s Secret', 'PINK',
-          'La Senza', 'Intimissimi', 'Calzedonia', 'Tezenis', 'Yamamay',
-          'Triumph', 'Wonderbra', 'Playtex', 'Maidenform', 'Wacoal',
-          'Natori', 'Hanky Panky', 'Cosabella', 'Eberjey', 'Only Hearts',
-          'Fleur du Mal', 'Agent Provocateur', 'La Perla', 'Coco de Mer', 'Bordelle',
-          'Kiki de Montparnasse', 'Journelle', 'Lonely', 'Negative Underwear', 'ThirdLove',
-          'Savage X Fenty', 'Skims', 'Yitty', 'Good American', 'Fabletics',
-          'Outdoor Voices', 'Alo Yoga', 'Lululemon', 'Athleta', 'Sweaty Betty',
-          'Gymshark', 'Beyond Yoga', 'Varley', 'Year of Ours', 'Set Active',
-          'Girlfriend Collective', 'Outdoor Voices', 'P.E Nation', 'The Upside', 'Splits59',
-          'Koral', 'Alala', 'Bandier', 'Carbon38', 'Ultracor',
-          'Puma', 'Reebok', 'New Balance', 'Asics', 'Under Armour',
-          'Columbia', 'The North Face', 'Patagonia', 'Arc\'teryx', 'Canada Goose',
-          'Moncler', 'Stone Island', 'CP Company', 'Barbour', 'Belstaff',
-          'Mackage', 'Moose Knuckles', 'Nobis', 'Rudsak', 'Soia & Kyo',
-          'Aritzia', 'Wilfred', 'Babaton', 'TNA', 'Sunday Best',
-          'Dynamite', 'Garage', 'Ardene', 'Sirens', 'Smart Set',
-          'Ricki\'s', 'Cleo', 'Addition Elle', 'Penningtons', 'Reitmans',
-          'Shein', 'Romwe', 'Zaful', 'Cupshe', 'Chicwish',
-          'Lulus', 'Tobi', 'Shop Bop', 'Net-a-Porter', 'Farfetch',
-          'Mytheresa', 'MatchesFashion', 'Ssense', 'Luisaviaroma', 'Browns',
-          'Selfridges', 'Harrods', 'Harvey Nichols', 'Liberty', 'Fortnum & Mason',
-          'Nordstrom', 'Bloomingdale\'s', 'Neiman Marcus', 'Saks Fifth Avenue', 'Bergdorf Goodman',
-          'Barneys', 'Intermix', 'Scoop', 'Kirna Zabête', 'Fivestory'
-        ];
-        
-        // Filter brands to only show famous ones
-        const displayBrands = brands
-          .filter(brand => brand !== 'All')
-          .filter(brand => famousBrands.some(famous => 
-            brand.toLowerCase() === famous.toLowerCase()
-          ))
-          .slice(0, 12);
-        
-        // Only show section if there are famous brands
-        if (displayBrands.length === 0) return null;
-        
-        return (
-          <section className="relative py-6 sm:py-16 md:py-20 bg-gray-50 overflow-hidden scroll-animate scroll-fadeInUp">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-              {/* Header */}
-              <div className="text-center mb-4 sm:mb-8 scroll-animate scroll-fadeInDown">
-                <h2 className="text-lg sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 sm:mb-2 tracking-tight px-4">
-                  Shop by <span className="font-serif italic" style={{ color: theme.primary }}>Brand</span>
-                </h2>
-                <p className="text-gray-500 text-[10px] sm:text-sm max-w-xl mx-auto px-4">
-                  Discover your favorite designers
-                </p>
-              </div>
-              
-              {/* Brands Grid */}
-              <div className="flex flex-wrap justify-center gap-2 sm:gap-4 md:gap-6 mb-4 sm:mb-8">
-                {displayBrands.map((brand, index) => (
-                  <div 
-                    key={brand} 
-                    className={`group cursor-pointer scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)} w-[120px] sm:w-[140px] md:w-[160px]`}
-                    onClick={() => {
-                      window.location.href = `/products?brand=${encodeURIComponent(brand)}`;
-                    }}
-                  >
-                    {/* White card with border and theme colored shadow on hover */}
-                    <div 
-                      className="bg-white rounded-lg p-2 sm:p-5 md:p-8 border-2 border-gray-200 hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center min-h-[60px] sm:min-h-[100px] gap-1 sm:gap-2"
-                      style={{
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = `0 10px 25px ${theme.primary}40`;
-                        e.currentTarget.style.borderColor = theme.primary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                      }}
-                    >
-                      {/* Pretty brand icon */}
-                      <div 
-                        className="flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform duration-300"
-                        style={{ color: theme.primary }}
-                      >
-                        <svg className="w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                      </div>
-                      
-                      {/* Brand name */}
-                      <p className="text-center text-[8px] sm:text-[10px] md:text-sm font-medium tracking-tight text-gray-700 leading-tight uppercase">
-                        {brand}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Bottom CTA */}
-              <div className="text-center scroll-animate scroll-fadeInUp">
-                <button 
-                  onClick={() => window.location.href = '/products'}
-                  className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-10 py-2 sm:py-3.5 text-white font-semibold text-[10px] sm:text-sm uppercase tracking-wide rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:opacity-90"
-                  style={{ backgroundColor: theme.primary }}
-                >
-                  <span>View All Products</span>
-                  <svg className="w-2.5 h-2.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </section>
-        );
-      })()}
+      {/* Featured Brands Section — swipeable carousel, same cards as before */}
+      {brandIndex.length > 0 && (
+        <section className="relative py-6 sm:py-16 md:py-20 bg-gray-50 overflow-hidden scroll-animate scroll-fadeInUp">
+          <BrandCarousel
+            brands={brandIndex}
+            primary={theme.primary}
+          />
+        </section>
+      )}
 
       {/* Trending Now Section - Show only most_lovable products */}
       <section id="products-section" className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
@@ -1094,7 +983,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
                   <img 
                     src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
                     alt={product.name}
-                    className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-700`}
+                    className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-500`}
                   />
                   {/* Status Badges - Show only one based on priority */}
                   {product.reservation_status === 'sold' || !product.inStock ? (

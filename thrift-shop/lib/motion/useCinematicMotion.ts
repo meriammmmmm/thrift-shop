@@ -289,7 +289,7 @@ function sceneWhyRose() {
     timeline.fromTo(
       eyebrow,
       { opacity: 0, y: 14 },
-      { opacity: 1, y: 0, duration: 0.7 },
+      { opacity: 1, y: 0, duration: 0.35 },
       0,
     );
   }
@@ -298,8 +298,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       heading,
       { opacity: 0, y: 26 },
-      { opacity: 1, y: 0, duration: 0.95 },
-      0.08,
+      { opacity: 1, y: 0, duration: 0.4 },
+      0.04,
     );
   }
 
@@ -308,8 +308,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       accent,
       { opacity: 0, clipPath: 'inset(0 100% 0 0)' },
-      { opacity: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.95, ease: EASE.cinematic },
-      0.2,
+      { opacity: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.4, ease: EASE.cinematic },
+      0.1,
     );
   }
 
@@ -318,8 +318,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       underline,
       { scaleX: 0 },
-      { scaleX: 1, duration: 1.05, ease: EASE.cinematic },
-      0.6,
+      { scaleX: 1, duration: 0.45, ease: EASE.cinematic },
+      0.24,
     );
   }
 
@@ -327,8 +327,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       lede,
       { opacity: 0, y: 18 },
-      { opacity: 1, y: 0, duration: 0.85 },
-      0.38,
+      { opacity: 1, y: 0, duration: 0.38 },
+      0.16,
     );
   }
 
@@ -336,8 +336,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       cards,
       { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 1, stagger: 0.12 },
-      0.45,
+      { opacity: 1, y: 0, duration: 0.4, stagger: 0.05 },
+      0.2,
     );
   }
 
@@ -345,8 +345,8 @@ function sceneWhyRose() {
     timeline.fromTo(
       icons,
       { opacity: 0, scale: 0.6 },
-      { opacity: 1, scale: 1, duration: 0.85, stagger: 0.12, ease: EASE.spring },
-      0.62,
+      { opacity: 1, scale: 1, duration: 0.38, stagger: 0.05, ease: EASE.spring },
+      0.26,
     );
   }
 }
@@ -484,8 +484,8 @@ export function useHeroCinematic(slideIndex: number) {
         if (words.length) {
           timeline.from(
             words,
-            { yPercent: 115, duration: 1.15, stagger: 0.055, ease: EASE.expo },
-            0.22,
+            { yPercent: 115, duration: 0.5, stagger: 0.025, ease: EASE.expo },
+            0.1,
           );
         }
       }
@@ -494,8 +494,8 @@ export function useHeroCinematic(slideIndex: number) {
       if (parts?.length) {
         timeline.from(
           parts,
-          { y: 26, opacity: 0, duration: 0.95, stagger: 0.08, ease: EASE.expo },
-          0.45,
+          { y: 26, opacity: 0, duration: 0.4, stagger: 0.035, ease: EASE.expo },
+          0.2,
         );
       }
     },
