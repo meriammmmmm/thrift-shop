@@ -17,6 +17,9 @@ import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
 import { buildBrandIndex } from '../lib/brands';
+import ReviewCard from './components/ReviewCard';
+import StarRating from './components/StarRating';
+import { getVisitorKey } from '../lib/visitor';
 import { toBooleanFlag } from '../lib/flags';
 import { useTheme, useThemeStyles } from '../lib/theme';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
@@ -232,7 +235,10 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
   const loadTestimonials = async (companyId: string) => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
-      const response = await fetch(`${API_URL}/testimonials/active?companyId=${companyId}`);
+      const visitorKey = getVisitorKey();
+      const response = await fetch(`${API_URL}/testimonials/active?companyId=${companyId}`, {
+        headers: visitorKey ? { 'x-visitor-key': visitorKey } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data.testimonials || []);
@@ -241,6 +247,38 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
       console.error('Failed to load testimonials:', error);
     }
   };
+
+  /** Keep the review list in step with a vote cast on a card. */
+  const handleToggleLike = (id: number, nextLiked: boolean) => {
+    setTestimonials((current) =>
+      current.map((testimonial) =>
+        testimonial.id === id
+          ? {
+              ...testimonial,
+              liked_by_me: nextLiked,
+              likes: Math.max(0, (testimonial.likes ?? 0) + (nextLiked ? 1 : -1)),
+            }
+          : testimonial
+      )
+    );
+  };
+
+  /** The average score of the live reviews, shown at the top of the section. */
+  const averageRating = useMemo(() => {
+    const rated = testimonials.filter(
+      (testimonial) =>
+        typeof testimonial.rating === 'number' && testimonial.rating > 0
+    );
+
+    if (rated.length === 0) return 0;
+
+    const total = rated.reduce(
+      (sum, testimonial) => sum + (testimonial.rating as number),
+      0
+    );
+
+    return total / rated.length;
+  }, [testimonials]);
 
   // Filter and search
   const filteredProducts = products.filter(product => {
@@ -1350,125 +1388,64 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
           </div>
 
           <div className="max-w-7xl mx-auto px-4 relative z-10">
-            {/* Header */}
-            <div className="text-center mb-10 sm:mb-16 reveal-on-scroll">
-              <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-3 tracking-tight">
-                Fashion, meet Forever
-              </h2>
-              <p className="text-gray-500 text-sm tracking-wide">
-                Real stories from our community
+            {/* Section heading + the score the section is rated at */}
+            <div className="text-center pt-4 pb-10 sm:pb-12">
+              <p
+                className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-5"
+                style={{ color: theme.primary }}
+              >
+                Customer Reviews
               </p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-[1.15]">
+                What our clients{' '}
+                <span className="italic font-serif">say</span>
+              </h2>
+
+              {averageRating > 0 && (
+                <div className="inline-flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl font-light text-gray-900 leading-none">
+                      {averageRating.toFixed(1)}
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      <StarRating value={averageRating} size="sm" />
+                      <span className="text-xs text-gray-500">
+                        {testimonials.length}{' '}
+                        {testimonials.length === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Testimonials Grid */}
             {testimonials.length <= 3 ? (
-              <div className={`flex items-stretch justify-center gap-8 max-w-7xl mx-auto ${testimonials.length === 1 ? 'flex-col' : testimonials.length === 2 ? 'flex-row' : 'flex-row'}`}>
+              <div className={`grid items-stretch gap-6 sm:gap-8 ${testimonials.length === 1 ? 'max-w-xl mx-auto grid-cols-1' : testimonials.length === 2 ? 'max-w-3xl mx-auto grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                 {testimonials.map((testimonial, index) => (
-                  <div 
+                  <div
                     key={testimonial.id}
-                    className={`group flex-shrink-0 ${testimonials.length === 3 && index === 1 ? 'w-[320px] sm:w-[380px]' : 'w-[280px] sm:w-[340px]'} scroll-animate scroll-zoomIn stagger-${index + 1}`}
+                    className={`scroll-animate scroll-zoomIn stagger-${index + 1}`}
                   >
-                    <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 relative overflow-hidden h-full card-hover-enhanced">
-                      {/* Quote Icon - Top Left Corner */}
-                      <div className="absolute top-0 left-0 rounded-tl-3xl" style={{ backgroundColor: theme.primary }}>
-                        <div className="w-16 h-16 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
-                          </svg>
-                        </div>
-                      </div>
-                      
-                      <div className="p-8 pt-20">
-                        {/* Image */}
-                        <div className="flex justify-center mb-6">
-                          <div className="relative">
-                            <div className="absolute inset-0 rounded-full blur-xl opacity-30 animate-pulse" style={{ backgroundColor: theme.primary }}></div>
-                            <div className={`relative ${testimonials.length === 3 && index === 1 ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-16 h-16 sm:w-20 sm:h-20'} rounded-full overflow-hidden ring-4 ring-white shadow-xl`}>
-                              <img 
-                                src={testimonial.image || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face'} 
-                                alt={testimonial.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face';
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-sm font-medium text-gray-900 text-center mb-4 uppercase tracking-wide">
-                          {testimonial.title}
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-gray-500 text-xs text-center leading-relaxed">
-                          "{testimonial.description}"
-                        </p>
-
-                        {/* Decorative Line */}
-                        <div className="mt-6 flex justify-center">
-                          <div className="w-16 h-1 rounded-full" style={{ backgroundColor: theme.primary }}></div>
-                        </div>
-                      </div>
-                    </div>
+                    <ReviewCard
+                      testimonial={testimonial}
+                      featured={testimonials.length === 3 && index === 1}
+                      onToggleLike={handleToggleLike}
+                    />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="relative">
                 <div 
-                  className="flex gap-8 overflow-x-auto pb-8 px-4 snap-x snap-mandatory scrollbar-hide"
+                  className="flex gap-6 sm:gap-8 overflow-x-auto px-4 pb-8 snap-x snap-mandatory scrollbar-hide"
                 >
                   {testimonials.map((testimonial, index) => (
-                    <div 
+                    <div
                       key={testimonial.id}
-                      className={`flex-shrink-0 w-[280px] sm:w-[340px] md:w-96 snap-center group scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)}`}
+                      className={`flex-shrink-0 w-[85vw] sm:w-[380px] snap-center scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)}`}
                     >
-                      <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 relative overflow-hidden card-hover-enhanced">
-                        {/* Quote Icon - Top Left Corner */}
-                        <div className="absolute top-0 left-0 rounded-tl-3xl" style={{ backgroundColor: theme.primary }}>
-                          <div className="w-16 h-16 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
-                            </svg>
-                          </div>
-                        </div>
-                        
-                        <div className="p-8 pt-20">
-                          {/* Image */}
-                          <div className="flex justify-center mb-6">
-                            <div className="relative">
-                              <div className="absolute inset-0 rounded-full blur-xl opacity-30 animate-pulse" style={{ backgroundColor: theme.primary }}></div>
-                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ring-white shadow-xl">
-                                <img 
-                                  src={testimonial.image || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face'} 
-                                  alt={testimonial.title}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face';
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Title */}
-                          <h3 className="text-sm font-medium text-gray-900 text-center mb-4 uppercase tracking-wide">
-                            {testimonial.title}
-                          </h3>
-
-                          {/* Description */}
-                          <p className="text-gray-500 text-xs text-center leading-relaxed">
-                            "{testimonial.description}"
-                          </p>
-
-                          {/* Decorative Line */}
-                          <div className="mt-6 flex justify-center">
-                            <div className="w-16 h-1 rounded-full" style={{ backgroundColor: theme.primary }}></div>
-                          </div>
-                        </div>
-                      </div>
+                      <ReviewCard testimonial={testimonial} onToggleLike={handleToggleLike} />
                     </div>
                   ))}
                 </div>

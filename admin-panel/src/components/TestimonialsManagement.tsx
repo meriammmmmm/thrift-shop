@@ -14,6 +14,10 @@ interface Testimonial {
   source: ReviewSource;
   submitterEmail: string | null;
   createdAt: string | null;
+  /** The stars the reviewer gave, 1-5. */
+  rating: number;
+  /** How many visitors found this review helpful. */
+  likes: number;
 }
 
 interface TestimonialsManagementProps {
@@ -22,8 +26,128 @@ interface TestimonialsManagementProps {
 
 type Filter = 'pending' | 'live' | 'hidden' | 'all';
 
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face';
+/**
+ * Placeholder photos that used to be hardcoded as the "default" avatar.
+ *
+ * They are treated as "no image" so the panel draws the same initials
+ * avatar the storefront does, instead of showing a stranger's face.
+ */
+const LEGACY_PLACEHOLDER_AVATARS = [
+  'photo-1472099645785-5658abf4ff4e',
+  'photo-1438761681033-6461ffad8d80',
+  'photo-1494790108755-2616b612b786',
+];
+
+const isPlaceholderImage = (image: string | null | undefined): boolean => {
+  if (!image) return true;
+  return LEGACY_PLACEHOLDER_AVATARS.some((id) => image.includes(id));
+};
+
+/** Curated pairs that sit well with the brand palette. */
+const AVATAR_PALETTE = [
+  { from: '#8C1F3D', to: '#C4657E' },
+  { from: '#5B2333', to: '#A34D64' },
+  { from: '#7A3B52', to: '#C98C9C' },
+  { from: '#2F4858', to: '#5C7C8A' },
+  { from: '#4A3B6B', to: '#8B7BA8' },
+  { from: '#3E5C45', to: '#7FA88C' },
+  { from: '#6B4E3D', to: '#B08D6B' },
+  { from: '#5A2E4A', to: '#A66E93' },
+];
+
+/** A stable hash so the same name always maps to the same colour. */
+const hashName = (name: string): number => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+/** "Meriam Ben Youssef" becomes "MB", "meriam" becomes "M". */
+export const getInitials = (name: string): string => {
+  const cleaned = (name || '').trim();
+  if (!cleaned) return '?';
+
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+
+  const first = words[0][0] || '';
+  const last = words.length > 1 ? words[words.length - 1][0] || '' : '';
+
+  return `${first}${last}`.toUpperCase() || '?';
+};
+
+/** The reviewer's photo when there is one, their initials when there is not. */
+const Avatar = ({
+  name,
+  image,
+  size = 64,
+}: {
+  name: string;
+  image: string | null;
+  size?: number;
+}) => {
+  if (!isPlaceholderImage(image)) {
+    return (
+      <img
+        src={image as string}
+        alt={name || 'Reviewer avatar'}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
+        onError={(e) => {
+          // A dead photo falls back to the initials avatar.
+          e.currentTarget.style.display = 'none';
+        }}
+      />
+    );
+  }
+
+  const palette = AVATAR_PALETTE[hashName(name || '?') % AVATAR_PALETTE.length];
+
+  return (
+    <div
+      role="img"
+      aria-label={name ? `${name}'s avatar` : 'Reviewer avatar'}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#FFFFFF',
+        fontWeight: 600,
+        fontSize: Math.round(size * 0.36),
+        backgroundImage: `linear-gradient(135deg, ${palette.from} 0%, ${palette.to} 100%)`,
+      }}
+    >
+      {getInitials(name)}
+    </div>
+  );
+};
+
+/** The stars of a review, drawn with Font Awesome. */
+const Stars = ({ value, size = 12 }: { value: number; size?: number }) => {
+  const rounded = Math.max(0, Math.min(5, Math.round(value)));
+
+  return (
+    <span
+      className="inline-flex items-center gap-0.5"
+      role="img"
+      aria-label={`Rated ${rounded} out of 5 stars`}
+    >
+      {[1, 2, 3, 4, 5].map((star) => (
+        <i
+          key={star}
+          className={star <= rounded ? 'fas fa-star' : 'far fa-star'}
+          style={{ color: star <= rounded ? '#F59E0B' : '#D1D5DB', fontSize: size }}
+          aria-hidden="true"
+        />
+      ))}
+    </span>
+  );
+};
 
 /**
  * SQLite hands back 0/1, Postgres hands back true/false. Reading both here is
@@ -43,11 +167,14 @@ const parseBool = (value: unknown, fallback = false): boolean => {
 const transform = (raw: any): Testimonial => {
   const isActive = parseBool(raw.isActive ?? raw.is_active, false);
   const status = (raw.status || (isActive ? 'approved' : 'pending')) as ReviewStatus;
+  const rating = Number(raw.rating);
+  const likes = Number(raw.likes);
 
   return {
     id: raw.id,
     name: raw.name || raw.title,
-    image: raw.image || DEFAULT_AVATAR,
+    // An empty image means the initials avatar is used.
+    image: raw.image || '',
     title: raw.title,
     description: raw.description,
     isActive,
@@ -55,6 +182,8 @@ const transform = (raw: any): Testimonial => {
     source: raw.source === 'customer' ? 'customer' : 'admin',
     submitterEmail: raw.submitter_email || null,
     createdAt: raw.created_at || null,
+    rating: Number.isFinite(rating) && rating > 0 ? Math.min(5, Math.round(rating)) : 5,
+    likes: Number.isFinite(likes) ? likes : 0,
   };
 };
 
@@ -151,7 +280,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     const newTestimonial: Testimonial = {
       id: Date.now(),
       name: '',
-      image: DEFAULT_AVATAR,
+      image: '',
       title: '',
       description: '',
       isActive: true,
@@ -159,6 +288,8 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       source: 'admin',
       submitterEmail: null,
       createdAt: null,
+      rating: 5,
+      likes: 0,
     };
     setEditingTestimonial(newTestimonial);
     setIsAddingNew(true);
@@ -192,6 +323,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
             description: testimonial.description,
             image: testimonial.image,
             isActive: testimonial.isActive,
+            rating: testimonial.rating,
           }),
         });
 
@@ -215,6 +347,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
             description: testimonial.description,
             image: testimonial.image,
             isActive: testimonial.isActive,
+            rating: testimonial.rating,
           }),
         });
 
@@ -500,10 +633,10 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
               return (
                 <div key={testimonial.id} className="p-6">
                   <div className="flex items-start space-x-4">
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover"
+                    <Avatar
+                      name={testimonial.name}
+                      image={testimonial.image}
+                      size={64}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
@@ -520,6 +653,15 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                               </span>
                             )}
                           </p>
+                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                            <Stars value={testimonial.rating} />
+                            {testimonial.likes > 0 && (
+                              <span className="text-xs text-gray-500 inline-flex items-center gap-1">
+                                <i className="fas fa-thumbs-up" aria-hidden="true" />
+                                {testimonial.likes} found this helpful
+                              </span>
+                            )}
+                          </div>
                           {testimonial.source === 'customer' && (
                             <p className="text-xs text-blue-600 mt-1">
                               Customer submission
@@ -842,23 +984,81 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       outline: 'none',
                     }}
                   />
-                  {editingTestimonial.image && (
-                    <div style={{ marginTop: '8px', textAlign: 'center' }}>
-                      <img
-                        src={editingTestimonial.image}
-                        alt="Preview"
+                  <p
+                    style={{
+                      fontSize: '12px',
+                      color: '#6B7280',
+                      marginTop: '6px',
+                    }}
+                  >
+                    Leave this empty and the reviewer gets an avatar built
+                    from their initials.
+                  </p>
+                  <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                    <Avatar
+                      name={editingTestimonial.name || editingTestimonial.title}
+                      image={editingTestimonial.image}
+                      size={64}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Rating
+                  </label>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() =>
+                          setEditingTestimonial({
+                            ...editingTestimonial,
+                            rating: star,
+                          })
+                        }
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                        aria-pressed={editingTestimonial.rating === star}
                         style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '2px',
+                          fontSize: '20px',
+                          lineHeight: 1,
+                          color: star <= editingTestimonial.rating ? '#F59E0B' : '#D1D5DB',
                         }}
-                        onError={(e) => {
-                          e.currentTarget.src = DEFAULT_AVATAR;
-                        }}
-                      />
-                    </div>
-                  )}
+                      >
+                        <i
+                          className={
+                            star <= editingTestimonial.rating
+                              ? 'fas fa-star'
+                              : 'far fa-star'
+                          }
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ))}
+                    <span
+                      style={{
+                        marginLeft: '8px',
+                        fontSize: '13px',
+                        color: '#6B7280',
+                        alignSelf: 'center',
+                      }}
+                    >
+                      {editingTestimonial.rating} / 5
+                    </span>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center' }}>

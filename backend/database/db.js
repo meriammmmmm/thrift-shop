@@ -284,9 +284,22 @@ class DatabaseWrapper {
         user_id INTEGER,
         submitter_email TEXT,
         display_order INTEGER DEFAULT 0,
+        rating INTEGER DEFAULT 5,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (company_id) REFERENCES companies (id)
+      )`,
+
+      // A "this review helped" vote. The visitor key identifies the browser
+      // that cast the vote so one person cannot inflate the counter by
+      // reloading the page.
+      `CREATE TABLE IF NOT EXISTS testimonial_likes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        testimonial_id INTEGER NOT NULL,
+        visitor_key TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(testimonial_id, visitor_key),
+        FOREIGN KEY (testimonial_id) REFERENCES testimonials (id) ON DELETE CASCADE
       )`,
 
       // Articles table for "what to do" guides / blog posts
@@ -406,6 +419,7 @@ class DatabaseWrapper {
       { name: 'source', ddl: 'ALTER TABLE testimonials ADD COLUMN source TEXT' },
       { name: 'user_id', ddl: 'ALTER TABLE testimonials ADD COLUMN user_id INTEGER' },
       { name: 'submitter_email', ddl: 'ALTER TABLE testimonials ADD COLUMN submitter_email TEXT' },
+      { name: 'rating', ddl: 'ALTER TABLE testimonials ADD COLUMN rating INTEGER DEFAULT 5' },
     ];
 
     for (const column of columns) {
@@ -428,6 +442,11 @@ class DatabaseWrapper {
       `);
       this.db.exec(`
         UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
+      `);
+      // Reviews written before the star rating existed get a neutral score
+      // rather than a silent zero.
+      this.db.exec(`
+        UPDATE testimonials SET rating = 5 WHERE rating IS NULL
       `);
     } catch (err) {
       console.error('Error backfilling testimonial workflow columns:', err.message);

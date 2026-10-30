@@ -252,9 +252,24 @@ class PostgresDatabase {
           user_id INTEGER,
           submitter_email TEXT,
           display_order INTEGER DEFAULT 0,
+          rating INTEGER DEFAULT 5,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (company_id) REFERENCES companies (id)
+        )
+      `);
+
+      // A "this review helped" vote. The visitor key identifies the browser
+      // that cast the vote so one person cannot inflate the counter by
+      // reloading the page.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS testimonial_likes (
+          id SERIAL PRIMARY KEY,
+          testimonial_id INTEGER NOT NULL,
+          visitor_key TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(testimonial_id, visitor_key),
+          FOREIGN KEY (testimonial_id) REFERENCES testimonials (id) ON DELETE CASCADE
         )
       `);
 
@@ -386,6 +401,7 @@ class PostgresDatabase {
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS source TEXT`);
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS user_id INTEGER`);
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS submitter_email TEXT`);
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 5`);
         console.log('✅ Added review workflow columns to testimonials table');
 
         // Legacy rows: live reviews are approved, the rest still need a
@@ -398,8 +414,30 @@ class PostgresDatabase {
         await client.query(`
           UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
         `);
+        // Reviews written before the star rating existed get a neutral score
+        // rather than a silent zero.
+        await client.query(`
+          UPDATE testimonials SET rating = 5 WHERE rating IS NULL
+        `);
       } catch (err) {
         console.log('⚠️ testimonial workflow migration:', err.message);
+      }
+
+      // Votes on a review.
+      try {
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS testimonial_likes (
+            id SERIAL PRIMARY KEY,
+            testimonial_id INTEGER NOT NULL,
+            visitor_key TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(testimonial_id, visitor_key),
+            FOREIGN KEY (testimonial_id) REFERENCES testimonials (id) ON DELETE CASCADE
+          )
+        `);
+        console.log('✅ Ensured testimonial_likes table exists');
+      } catch (err) {
+        console.log('⚠️ testimonial_likes migration:', err.message);
       }
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');

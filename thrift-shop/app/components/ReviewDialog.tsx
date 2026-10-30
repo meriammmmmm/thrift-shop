@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '../../lib/theme';
+import { StarPicker } from './StarRating';
 
 interface ReviewDialogProps {
   /** Controlled by the parent so any trigger (header, CTA card) can open it. */
@@ -25,6 +26,8 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
+  /** The stars the reviewer picked, 1-5. */
+  const [rating, setRating] = useState(5);
   const [mounted, setMounted] = useState(false);
   /** Set when the visitor is signed in — the review is then linked to their account. */
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -110,6 +113,7 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
     setName('');
     setTitle('');
     setMessage('');
+    setRating(5);
 
     // A signed-in customer gets their name filled in and their review linked
     // to their account, so the admin knows exactly who wrote it.
@@ -163,6 +167,7 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
           name: trimmedName,
           title: title.trim() || 'Customer Review',
           message: trimmedMessage,
+          rating,
           companyId: companyId || 1,
         }),
       });
@@ -177,6 +182,7 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
       setName('');
       setTitle('');
       setMessage('');
+      setRating(5);
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -285,6 +291,15 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
                     maxLength={60}
                     placeholder="e.g. Amira B."
                     className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-transparent focus:ring-2 focus:ring-[var(--color-primary)]"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <StarPicker
+                    value={rating}
+                    onChange={setRating}
+                    label="Your rating"
+                    hint="Tap the stars to rate your experience"
                   />
                 </div>
 
