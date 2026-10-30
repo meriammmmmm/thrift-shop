@@ -19,7 +19,7 @@ interface Product {
   images?: string[];
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -118,15 +118,24 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
       if (response.ok) {
         const data = await response.json();
         const productsList = data.products || data;
-        // Ensure all prices are numbers
-        const productsWithParsedPrices = productsList.map((p: any) => ({
-          ...p,
-          price: p.price !== undefined && p.price !== null ? parseFloat(p.price) : 0
-        }));
-        console.log('Loaded products with images:', productsWithParsedPrices.map((p: any) => ({ 
-          id: p.id, 
-          name: p.name, 
-          hasImages: !!p.images, 
+        // Ensure all prices are numbers and images are arrays
+        const productsWithParsedPrices = productsList.map((p: any) => {
+          // Normalize images field — handle double-serialized JSON string from DB
+          let images = p.images;
+          if (typeof images === 'string') {
+            try { images = JSON.parse(images); } catch { images = []; }
+          }
+          if (!Array.isArray(images)) images = [];
+          return {
+            ...p,
+            price: p.price !== undefined && p.price !== null ? parseFloat(p.price) : 0,
+            images
+          };
+        });
+        console.log('Loaded products with images:', productsWithParsedPrices.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          hasImages: !!p.images,
           imageCount: p.images?.length || 0,
           firstImagePreview: p.images?.[0]?.substring(0, 50)
         })));
@@ -381,10 +390,10 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-300 shadow-sm">
-                        {product.images && product.images.length > 0 && product.images[0] ? (
-                          <img 
-                            src={product.images[0]} 
-                            alt={product.name || 'Product'} 
+                        {Array.isArray(product.images) && product.images.length > 0 && product.images[0] ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name || 'Product'}
                             className="w-full h-full object-cover"
                             loading="lazy"
                             onError={(e) => {

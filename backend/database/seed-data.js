@@ -10,7 +10,7 @@ module.exports = async function seedDatabase(db) {
       // Create default company with logo
       await db.run(`
         INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country, website)
-        VALUES (1, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', 1, 'US', 'https://meryrose.com')
+        VALUES (1, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', TRUE, 'US', 'https://meryrose.com')
       `);
     }
 
@@ -20,7 +20,7 @@ module.exports = async function seedDatabase(db) {
       console.log('📝 Creating company 2...');
       await db.run(`
         INSERT INTO companies (id, name, description, email, status, logo, show_testimonials, country, website)
-        VALUES (2, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', 1, 'US', 'https://meryrose.com')
+        VALUES (2, 'Mery Rose', 'Elegant vintage fashion and timeless pieces', 'contact@meryrose.com', 'active', '/images/mery-rose-logo.png', TRUE, 'US', 'https://meryrose.com')
       `);
     }
 

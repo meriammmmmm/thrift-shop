@@ -1,6 +1,7 @@
 // API configuration
-// In production (Railway), use relative URL so server proxy works
-// In development, use localhost
-export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'
-  : 'https://mery-rose-backend.onrender.comapi';
+//
+// The admin panel talks to the same backend as the storefront. Every component
+// reads `process.env.REACT_APP_API_URL` directly (with this host as the
+// fallback); this module is kept as the single place to look up the value.
+export const API_BASE_URL =
+  process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';

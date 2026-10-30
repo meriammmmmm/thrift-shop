@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   user: any;
   onLogout: () => void;
   onToggleSidebar: () => void;
-  onNavigateToProfile: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavigateToProfile }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +26,6 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavi
   }, []);
 
   const handleProfileClick = () => {
-    onNavigateToProfile();
     setDropdownOpen(false);
   };
 
@@ -128,7 +127,8 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavi
                   
                   {/* Menu Items */}
                   <div className="py-2">
-                    <button
+                    <Link
+                      to="/admin/profile"
                       onClick={handleProfileClick}
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
                     >
@@ -139,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onNavi
                         <div className="font-medium">My Profile</div>
                         <div className="text-xs text-gray-500">Manage account settings</div>
                       </div>
-                    </button>
+                    </Link>
                     
                     <button
                       onClick={() => setDropdownOpen(false)}

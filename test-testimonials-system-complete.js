@@ -59,24 +59,34 @@ async function testCompleteTestimonialsSystem() {
       console.log('⚠️  Admin Panel may not be running on', ADMIN_URL);
     }
 
-    // Test 5: Admin API Endpoints (without auth - should show structure)
+    // Test 5: The full list (including reviews waiting for approval) is
+    // admin-only, so an anonymous request has to be turned away.
     console.log('\n5. Testing Admin API Endpoints...');
     const adminTestimonialsResponse = await fetch(`${BACKEND_URL}/api/testimonials?companyId=1`);
     const adminTestimonialsData = await adminTestimonialsResponse.json();
-    console.log('✅ Admin testimonials endpoint accessible');
-    console.log('   Total testimonials in system:', adminTestimonialsData.testimonials?.length || 0);
 
-    // Test 6: Database Integration
+    if (adminTestimonialsResponse.status === 401) {
+      console.log('✅ The review list is protected — an admin token is required');
+    } else {
+      console.log('⚠️  The review list answered without a token:', adminTestimonialsResponse.status);
+    }
+    console.log('   Error returned:', adminTestimonialsData.error || 'none');
+
+    // Test 6: Database Integration (with an admin token)
     console.log('\n6. Testing Database Integration...');
-    const allTestimonialsResponse = await fetch(`${BACKEND_URL}/api/testimonials?companyId=1`);
+    const adminToken = process.env.ADMIN_TOKEN;
+    const allTestimonialsResponse = await fetch(`${BACKEND_URL}/api/testimonials?companyId=1`, {
+      headers: adminToken ? { Authorization: `Bearer ${adminToken}` } : {}
+    });
     const allTestimonialsData = await allTestimonialsResponse.json();
-    
+
     if (allTestimonialsData.testimonials && allTestimonialsData.testimonials.length > 0) {
       console.log('✅ Database integration working');
       console.log('   Sample testimonial:', {
         id: allTestimonialsData.testimonials[0].id,
         title: allTestimonialsData.testimonials[0].title,
-        isActive: allTestimonialsData.testimonials[0].is_active
+        isActive: allTestimonialsData.testimonials[0].is_active,
+        status: allTestimonialsData.testimonials[0].status
       });
     }
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -25,6 +26,10 @@ app.use((req, res, next) => {
 app.use('/api', createProxyMiddleware({
   target: process.env.BACKEND_URL || 'http://localhost:5001',
   changeOrigin: true,
+  pathRewrite: (path, req) => {
+    // The backend URL already contains the full path, just forward /api requests
+    return path;
+  },
   timeout: 60000, // 60 seconds timeout for large image uploads
   proxyTimeout: 60000,
   onError: (err, req, res) => {
@@ -32,18 +37,24 @@ app.use('/api', createProxyMiddleware({
     res.status(500).json({ error: 'Backend connection failed', details: err.message });
   },
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.url} to backend`);
-    // Set content length for large payloads
-    if (req.body && req.method === 'POST') {
-      const bodyData = JSON.stringify(req.body);
-      proxyReq.setHeader('Content-Type', 'application/json');
-      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-    }
+    const targetUrl = `${process.env.BACKEND_URL || 'http://localhost:5001'}${req.url}`;
+    console.log(`Proxying ${req.method} ${req.url} to ${targetUrl}`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Response from backend: ${proxyRes.statusCode} for ${req.url}`);
   }
 }));
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from React build with no cache for JS files
+app.use(express.static(path.join(__dirname, 'dist'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Handle React routing - send all requests to index.html
 app.get('*', (req, res) => {

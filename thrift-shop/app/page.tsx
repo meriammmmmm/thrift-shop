@@ -20,6 +20,7 @@ import MarqueeBand from './components/MarqueeBand';
 import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
+import { toBooleanFlag } from '../lib/flags';
 import { useTheme, useThemeStyles } from '../lib/theme';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
 
@@ -177,7 +178,7 @@ export default function Home() {
             setProducts(cachedProducts);
             if (cachedCompany) {
               setCompany(cachedCompany);
-              setShowTestimonialsSection(cachedCompany.show_testimonials !== 0);
+              setShowTestimonialsSection(toBooleanFlag(cachedCompany.show_testimonials, true));
             }
             if (cachedCurrency) setCompanyCurrency(cachedCurrency);
             // Cache hit → hide splash immediately, page is ready
@@ -199,7 +200,7 @@ export default function Home() {
       let freshCurrency = { currency: 'USD', symbol: '$' };
       if (response.company) {
         setCompany(response.company);
-        setShowTestimonialsSection(response.company.show_testimonials !== 0);
+        setShowTestimonialsSection(toBooleanFlag(response.company.show_testimonials, true));
         if (response.company.country) {
           freshCurrency = currencyConfig[response.company.country] || freshCurrency;
           setCompanyCurrency(freshCurrency);

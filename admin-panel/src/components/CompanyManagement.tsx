@@ -24,7 +24,7 @@ interface Company {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const CompanyManagement: React.FC<CompanyManagementProps> = ({ authToken }) => {
   const [companies, setCompanies] = useState<Company[]>([]);

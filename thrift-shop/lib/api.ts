@@ -184,7 +184,7 @@ class ApiClient {
     payload: {
       model_image: string;
       garment_image: string;
-      garment_type?: 'upper' | 'lower' | 'overall';
+      garment_type?: 'upper' | 'lower' | 'overall' | 'accessory';
       garment_description?: string;
     },
     timeoutMs = 150000,

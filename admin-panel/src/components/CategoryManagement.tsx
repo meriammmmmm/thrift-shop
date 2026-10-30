@@ -24,7 +24,7 @@ interface Product {
   category?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -524,7 +524,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ authToken }) =>
                           className="w-4 h-4 text-[var(--color-primary)] border-gray-300 rounded focus:ring-[var(--color-primary)]"
                         />
                         <div className="ml-3 flex items-center flex-1">
-                          {product.images && product.images.length > 0 && (
+                          {Array.isArray(product.images) && product.images.length > 0 && (
                             <img
                               src={product.images[0]}
                               alt={product.name}

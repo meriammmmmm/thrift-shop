@@ -55,12 +55,18 @@ export function literalChoices(param?: EndpointParameter): string[] {
 /** The word-form used by a Space that does not publish its choices. */
 export function fallbackVocabulary(sample: string): Record<Mask, string> {
   if (sample.includes('body')) {
-    return { upper: 'upper_body', lower: 'lower_body', overall: 'dress' };
+    return {
+      upper: 'upper_body',
+      lower: 'lower_body',
+      overall: 'dress',
+      accessory: 'accessory',
+    };
   }
   return {
     upper: 'upper',
     lower: 'lower',
     overall: sample.includes('dress') ? 'dress' : 'overall',
+    accessory: 'accessory',
   };
 }
 

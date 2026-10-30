@@ -123,7 +123,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const CompanySignup: React.FC<CompanySignupProps> = ({ onSignupSuccess, onBackToLogin }) => {
   const [loading, setLoading] = useState(false);

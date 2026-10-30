@@ -14,7 +14,7 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('✅ Token verified for user:', decoded.userId);
     
-    const user = await db.get('SELECT id, email, name, role, admin_company_id FROM users WHERE id = ?', [decoded.userId]);
+    const user = await db.get('SELECT id, email, name, role, company_id, admin_company_id FROM users WHERE id = ?', [decoded.userId]);
     
     if (!user) {
       console.log('❌ User not found for token:', decoded.userId);
@@ -42,7 +42,31 @@ const requireAdmin = async (req, res, next) => {
   });
 };
 
+/**
+ * Attaches req.user when a valid token is present, but never rejects the
+ * request. Used by routes that are readable publicly and should scope to the
+ * caller's company when they happen to be signed in (e.g. the admin list).
+ */
+const optionalAuth = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await db.get(
+      'SELECT id, email, name, role, company_id, admin_company_id FROM users WHERE id = ?',
+      [decoded.userId]
+    );
+    if (user) req.user = user;
+  } catch (error) {
+    // An invalid token is simply ignored — the route falls back to its own scoping.
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
-  requireAdmin
+  requireAdmin,
+  optionalAuth
 };

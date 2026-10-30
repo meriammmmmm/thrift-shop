@@ -36,6 +36,7 @@ const MASK_LABELS: Record<Mask, string> = {
   upper: 'Top / jacket',
   lower: 'Skirt / trousers',
   overall: 'Dress / one-piece',
+  accessory: 'Accessory',
 };
 
 /** The chips above the product grid. */

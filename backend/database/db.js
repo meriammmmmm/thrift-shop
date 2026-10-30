@@ -269,6 +269,8 @@ class DatabaseWrapper {
       )`,
 
       // Testimonials table for company testimonials/reviews
+      // `status` drives the review workflow a customer submission goes
+      // through: pending -> approved (live on the storefront) or rejected.
       `CREATE TABLE IF NOT EXISTS testimonials (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         company_id INTEGER NOT NULL,
@@ -277,6 +279,10 @@ class DatabaseWrapper {
         description TEXT NOT NULL,
         image TEXT,
         is_active BOOLEAN DEFAULT 1,
+        status TEXT DEFAULT 'approved',
+        source TEXT DEFAULT 'admin',
+        user_id INTEGER,
+        submitter_email TEXT,
         display_order INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -333,6 +339,44 @@ class DatabaseWrapper {
         FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
         UNIQUE(category_id, product_id)
+      )`,
+
+      // Styled looks: a photo of the complete outfit being worn, plus the
+      // individual catalogue pieces that make it up ("Shop the Look")
+      `CREATE TABLE IF NOT EXISTS looks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        occasion TEXT,
+        tagline TEXT,
+        worn_image TEXT,
+        is_active BOOLEAN DEFAULT 1,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies (id)
+      )`,
+
+      // Products belonging to a look, in wear order
+      `CREATE TABLE IF NOT EXISTS look_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        look_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (look_id) REFERENCES looks (id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+        UNIQUE(look_id, product_id)
+      )`,
+
+      // The worn-outfit photo itself, kept out of `looks.worn_image` so the
+      // list endpoints never have to carry megabytes of base64.
+      `CREATE TABLE IF NOT EXISTS look_images (
+        look_id INTEGER PRIMARY KEY,
+        image TEXT NOT NULL,
+        mime TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (look_id) REFERENCES looks (id) ON DELETE CASCADE
       )`
     ];
 
@@ -346,6 +390,48 @@ class DatabaseWrapper {
 
     // Add profile_picture column to existing tables if it doesn't exist
     this.addProfilePictureColumns();
+
+    // Reviews need their approval state on databases created before the
+    // workflow existed.
+    this.addTestimonialColumns();
+  }
+
+  addTestimonialColumns() {
+    // A review submitted from the storefront waits for an admin decision, so
+    // it needs a status, a source and (when the customer was signed in) a link
+    // back to their account. The columns are added without a default so the
+    // backfill below can tell legacy rows apart from new ones.
+    const columns = [
+      { name: 'status', ddl: 'ALTER TABLE testimonials ADD COLUMN status TEXT' },
+      { name: 'source', ddl: 'ALTER TABLE testimonials ADD COLUMN source TEXT' },
+      { name: 'user_id', ddl: 'ALTER TABLE testimonials ADD COLUMN user_id INTEGER' },
+      { name: 'submitter_email', ddl: 'ALTER TABLE testimonials ADD COLUMN submitter_email TEXT' },
+    ];
+
+    for (const column of columns) {
+      try {
+        this.db.exec(column.ddl);
+      } catch (err) {
+        if (!err.message.includes('duplicate column name')) {
+          console.error(`Error adding ${column.name} to testimonials:`, err.message);
+        }
+      }
+    }
+
+    // Legacy rows: anything that was already live is approved, anything that
+    // was not live still needs a decision from the admin.
+    try {
+      this.db.exec(`
+        UPDATE testimonials
+        SET status = CASE WHEN is_active THEN 'approved' ELSE 'pending' END
+        WHERE status IS NULL OR status = ''
+      `);
+      this.db.exec(`
+        UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
+      `);
+    } catch (err) {
+      console.error('Error backfilling testimonial workflow columns:', err.message);
+    }
   }
 
   addProfilePictureColumns() {
@@ -478,11 +564,20 @@ class DatabaseWrapper {
   }
 
   // Helper methods - wrapped in promises for compatibility with existing async/await code
+  /**
+   * SQLite cannot bind JS booleans — they must be integers. Boolean columns
+   * (is_active, show_testimonials, ...) are stored as 0/1, so every query that
+   * takes parameters goes through here.
+   */
+  bindParams(params = []) {
+    return params.map((p) => (typeof p === 'boolean' ? (p ? 1 : 0) : p));
+  }
+
   get(sql, params = []) {
     return Promise.resolve().then(() => {
       if (!this.db) throw new Error('Database not initialized');
       try {
-        return this.db.prepare(sql).get(...params);
+        return this.db.prepare(sql).get(...this.bindParams(params));
       } catch (err) {
         console.error('DB GET Error:', err.message, 'SQL:', sql);
         throw err;
@@ -494,7 +589,7 @@ class DatabaseWrapper {
     return Promise.resolve().then(() => {
       if (!this.db) throw new Error('Database not initialized');
       try {
-        return this.db.prepare(sql).all(...params);
+        return this.db.prepare(sql).all(...this.bindParams(params));
       } catch (err) {
         console.error('DB ALL Error:', err.message, 'SQL:', sql);
         throw err;
@@ -507,7 +602,8 @@ class DatabaseWrapper {
       if (!this.db) throw new Error('Database not initialized');
       try {
         const stmt = this.db.prepare(sql);
-        const result = stmt.run(...params);
+        const bound = this.bindParams(params);
+        const result = stmt.run(...bound);
         return { id: result.lastInsertRowid, changes: result.changes };
       } catch (err) {
         console.error('DB RUN Error:', err.message, 'SQL:', sql);

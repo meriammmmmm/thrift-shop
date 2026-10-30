@@ -1,0 +1,57 @@
+# One command runs your whole shop: database + backend + storefront.
+# Usage (in the thriftShop folder):  docker compose up --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: thrift
+      POSTGRES_PASSWORD: thrift
+      POSTGRES_DB: thriftshop
+    volumes:
+      - thrift_dbdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thrift -d thriftshop"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://thrift:thrift@db:5432/thriftshop
+      JWT_SECRET: local-dev-secret-change-me-0123456789
+      ADMIN_EMAIL: admin@thriftshop.com
+      ADMIN_PASSWORD: admin123
+      GEMINI_MODEL: gemini-2.5-flash
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "5001:5001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./thrift-shop
+      dockerfile: Dockerfile.local
+    restart: unless-stopped
+    environment:
+      # Point the shop at your local backend, and read products FROM the backend
+      NEXT_PUBLIC_API_URL: http://localhost:5001/api
+      NEXT_PUBLIC_PRODUCTS_SOURCE: backend
+      NEXT_PUBLIC_COMPANY_ID: "1"
+      NEXT_PUBLIC_COMPANY_NAME: "Mery Rose"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  thrift_dbdata:

@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+type ReviewStatus = 'pending' | 'approved' | 'rejected';
+type ReviewSource = 'customer' | 'admin';
 
 interface Testimonial {
   id: number;
@@ -7,142 +10,155 @@ interface Testimonial {
   title: string;
   description: string;
   isActive: boolean;
+  status: ReviewStatus;
+  source: ReviewSource;
+  submitterEmail: string | null;
+  createdAt: string | null;
 }
 
 interface TestimonialsManagementProps {
   authToken: string;
 }
 
+type Filter = 'pending' | 'live' | 'hidden' | 'all';
+
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face';
+
+/**
+ * SQLite hands back 0/1, Postgres hands back true/false. Reading both here is
+ * what keeps the approval queue honest — a review that is already live must
+ * never look like it is still waiting.
+ */
+const parseBool = (value: unknown, fallback = false): boolean => {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return fallback;
+};
+
+const transform = (raw: any): Testimonial => {
+  const isActive = parseBool(raw.isActive ?? raw.is_active, false);
+  const status = (raw.status || (isActive ? 'approved' : 'pending')) as ReviewStatus;
+
+  return {
+    id: raw.id,
+    name: raw.name || raw.title,
+    image: raw.image || DEFAULT_AVATAR,
+    title: raw.title,
+    description: raw.description,
+    isActive,
+    status,
+    source: raw.source === 'customer' ? 'customer' : 'admin',
+    submitterEmail: raw.submitter_email || null,
+    createdAt: raw.created_at || null,
+  };
+};
+
+const formatDate = (value: string | null): string => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
 const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authToken }) => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [showTestimonials, setShowTestimonials] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string>('');
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [filter, setFilter] = useState<Filter>('pending');
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
 
-  // Default testimonials
-  const defaultTestimonials: Testimonial[] = [
-    {
-      id: 1,
-      name: 'Recirculate',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face',
-      title: 'Recirculate',
-      description: 'Landfills are out. Keeping clothes in circulation is in. Send us your clothes, we\'ll do the rest.',
-      isActive: true
-    },
-    {
-      id: 2,
-      name: 'Reimagine',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-      title: 'Reimagine',
-      description: 'Find yourself in our closet as we simplify secondhand. Let our features work for you.',
-      isActive: true
-    },
-    {
-      id: 3,
-      name: 'Repeat',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face',
-      title: 'Repeat',
-      description: 'Where your old fave becomes someone\'s new fave and making an impact comes with the territory.',
-      isActive: true
-    }
-  ];
-
   // Load testimonials from API
-  const loadTestimonials = async () => {
-    console.log('📥 Loading testimonials...');
+  const loadTestimonials = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Load testimonials from API
-      const response = await fetch('https://mery-rose-backend.onrender.comapi/testimonials', {
+      setLoadError('');
+
+      const response = await fetch('/api/testimonials', {
         headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
-      
-      console.log('🌐 Load testimonials API response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📥 Raw testimonials data from API:', data.testimonials);
-        
-        // Transform API data to match component interface
-        const transformedTestimonials = (data.testimonials || []).map((t: any) => ({
-          id: t.id,
-          name: t.name || t.title,
-          image: t.image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face',
-          title: t.title,
-          description: t.description,
-          isActive: t.is_active === 1 // Convert database boolean to component boolean
-        }));
-        
-        console.log('🔄 Transformed testimonials for component:', transformedTestimonials);
-        setTestimonials(transformedTestimonials);
-      } else {
-        console.log('⚠️ API failed, using default testimonials');
-        // Fallback to default testimonials if API fails
-        setTestimonials(defaultTestimonials);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Could not load reviews');
       }
-      
+
+      const data = await response.json();
+      setTestimonials((data.testimonials || []).map(transform));
+
       // Load testimonials visibility setting
-      const settingsResponse = await fetch('https://mery-rose-backend.onrender.comapi/companies/me', {
+      const settingsResponse = await fetch('/api/companies/me', {
         headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
-      
+
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json();
-        setShowTestimonials(settingsData.company?.show_testimonials !== 0);
+        setShowTestimonials(parseBool(settingsData.company?.show_testimonials, true));
       }
-      
     } catch (error) {
-      console.error('❌ Failed to load testimonials:', error);
-      // Fallback to default testimonials
-      setTestimonials(defaultTestimonials);
+      // No silent fallback to fake reviews: an approval queue that shows
+      // sample content is worse than an empty queue with an error.
+      setTestimonials([]);
+      setLoadError(
+        error instanceof Error ? error.message : 'Could not load reviews'
+      );
     } finally {
       setLoading(false);
     }
-  };
-
-  // Load testimonials on component mount
-  useEffect(() => {
-    console.log('🎬 TestimonialsManagement component mounted, loading testimonials...');
-    loadTestimonials();
   }, [authToken]);
 
+  useEffect(() => {
+    loadTestimonials();
+  }, [loadTestimonials]);
+
   const handleToggleTestimonials = async () => {
+    const nextValue = !showTestimonials;
     try {
-      const response = await fetch('https://mery-rose-backend.onrender.comapi/testimonials/section/visibility', {
+      const response = await fetch('/api/testimonials/section/visibility', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ showTestimonials: !showTestimonials })
+        body: JSON.stringify({ showTestimonials: nextValue }),
       });
-      
+
       if (response.ok) {
-        setShowTestimonials(!showTestimonials);
-        console.log('Testimonials visibility toggled:', !showTestimonials);
-      } else {
-        console.error('Failed to toggle testimonials visibility');
+        setShowTestimonials(nextValue);
       }
     } catch (error) {
-      console.error('Failed to toggle testimonials:', error);
+      console.error('Failed to toggle testimonials visibility:', error);
     }
   };
 
   const handleAddNew = () => {
     const newTestimonial: Testimonial = {
-      id: Date.now(), // Simple ID generation
+      id: Date.now(),
       name: '',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
+      image: DEFAULT_AVATAR,
       title: '',
       description: '',
-      isActive: true
+      isActive: true,
+      status: 'approved',
+      source: 'admin',
+      submitterEmail: null,
+      createdAt: null,
     };
     setEditingTestimonial(newTestimonial);
     setIsAddingNew(true);
@@ -155,15 +171,20 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     setIsModalOpen(true);
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingTestimonial(null);
+    setIsAddingNew(false);
+  };
+
   const handleSaveTestimonial = async (testimonial: Testimonial) => {
     try {
       if (isAddingNew) {
-        // Add new testimonial
-        const response = await fetch('https://mery-rose-backend.onrender.comapi/testimonials', {
+        const response = await fetch('/api/testimonials', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
             title: testimonial.title,
@@ -171,34 +192,22 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
             description: testimonial.description,
             image: testimonial.image,
             isActive: testimonial.isActive,
-            displayOrder: testimonial.id
-          })
+          }),
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Transform the returned testimonial data
-          const newTestimonial = {
-            id: data.testimonial.id,
-            name: data.testimonial.name || data.testimonial.title,
-            image: data.testimonial.image,
-            title: data.testimonial.title,
-            description: data.testimonial.description,
-            isActive: data.testimonial.is_active === 1
-          };
-          setTestimonials([...testimonials, newTestimonial]);
-          console.log('New testimonial added:', newTestimonial);
-        } else {
+
+        if (!response.ok) {
           console.error('Failed to add testimonial');
           return;
         }
+
+        const data = await response.json();
+        setTestimonials(prev => [transform(data.testimonial), ...prev]);
       } else {
-        // Update existing testimonial
-        const response = await fetch(`https://mery-rose-backend.onrender.comapi/testimonials/${testimonial.id}`, {
+        const response = await fetch(`/api/testimonials/${testimonial.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
             title: testimonial.title,
@@ -206,108 +215,116 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
             description: testimonial.description,
             image: testimonial.image,
             isActive: testimonial.isActive,
-            displayOrder: testimonial.id
-          })
+          }),
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Transform the returned testimonial data
-          const updatedTestimonial = {
-            id: data.testimonial.id,
-            name: data.testimonial.name || data.testimonial.title,
-            image: data.testimonial.image,
-            title: data.testimonial.title,
-            description: data.testimonial.description,
-            isActive: data.testimonial.is_active === 1
-          };
-          
-          const updatedTestimonials = testimonials.map(t => 
-            t.id === testimonial.id ? updatedTestimonial : t
-          );
-          setTestimonials(updatedTestimonials);
-          console.log('Testimonial updated:', updatedTestimonial);
-        } else {
+
+        if (!response.ok) {
           console.error('Failed to update testimonial');
           return;
         }
+
+        const data = await response.json();
+        const updated = transform(data.testimonial);
+        setTestimonials(prev =>
+          prev.map(t => (t.id === updated.id ? updated : t))
+        );
       }
-      
-      setIsModalOpen(false);
-      setEditingTestimonial(null);
-      setIsAddingNew(false);
+
+      closeModal();
     } catch (error) {
       console.error('Failed to save testimonial:', error);
     }
   };
 
   const handleDeleteTestimonial = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this testimonial?')) {
-      try {
-        const response = await fetch(`https://mery-rose-backend.onrender.comapi/testimonials/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
-        
-        if (response.ok) {
-          const updatedTestimonials = testimonials.filter(t => t.id !== id);
-          setTestimonials(updatedTestimonials);
-          console.log('Testimonial deleted:', id);
-        } else {
-          console.error('Failed to delete testimonial');
-        }
-      } catch (error) {
-        console.error('Failed to delete testimonial:', error);
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
+
+    try {
+      const response = await fetch(`/api/testimonials/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        setTestimonials(prev => prev.filter(t => t.id !== id));
       }
+    } catch (error) {
+      console.error('Failed to delete testimonial:', error);
     }
   };
 
-  const handleToggleActive = async (id: number) => {
-    console.log('🔄 Toggle clicked for testimonial ID:', id);
-    console.log('📊 Current testimonials state:', testimonials.map(t => ({ id: t.id, title: t.title, isActive: t.isActive })));
-    
+  /** Run a workflow action (approve / reject / toggle) and sync the row. */
+  const runAction = async (
+    id: number,
+    action: 'approve' | 'reject' | 'toggle'
+  ): Promise<boolean> => {
+    setBusyId(id);
+
     try {
-      const response = await fetch(`https://mery-rose-backend.onrender.comapi/testimonials/${id}/toggle`, {
+      const response = await fetch(`/api/testimonials/${id}/${action}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
-      
-      console.log('🌐 Toggle API response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📥 Toggle API response data:', data);
-        
-        // Transform the returned testimonial data
-        const updatedTestimonial = {
-          id: data.testimonial.id,
-          name: data.testimonial.name || data.testimonial.title,
-          image: data.testimonial.image,
-          title: data.testimonial.title,
-          description: data.testimonial.description,
-          isActive: data.testimonial.is_active === 1 // Convert database boolean
-        };
-        
-        console.log('🔄 Transformed testimonial:', updatedTestimonial);
-        
-        const updatedTestimonials = testimonials.map(t => 
-          t.id === id ? updatedTestimonial : t
-        );
-        
-        console.log('📊 Updated testimonials state:', updatedTestimonials.map(t => ({ id: t.id, title: t.title, isActive: t.isActive })));
-        
-        setTestimonials(updatedTestimonials);
-        console.log('✅ Testimonial toggled successfully:', updatedTestimonial);
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Toggle API failed:', response.status, errorData);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error(`Failed to ${action} testimonial:`, errorData);
+        return false;
       }
+
+      const data = await response.json();
+      const updated = transform(data.testimonial);
+      setTestimonials(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+      return true;
     } catch (error) {
-      console.error('❌ Toggle error:', error);
+      console.error(`Failed to ${action} testimonial:`, error);
+      return false;
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleApprove = (id: number) => runAction(id, 'approve');
+  const handleReject = (id: number) => runAction(id, 'reject');
+  const handleToggleActive = (id: number) => runAction(id, 'toggle');
+
+  const pendingTestimonials = testimonials.filter(t => t.status === 'pending');
+  const pendingCount = pendingTestimonials.length;
+  const liveTestimonials = testimonials.filter(t => t.isActive);
+  const hiddenTestimonials = testimonials.filter(
+    t => !t.isActive && t.status !== 'pending'
+  );
+
+  const visibleTestimonials =
+    filter === 'pending'
+      ? pendingTestimonials
+      : filter === 'live'
+      ? liveTestimonials
+      : filter === 'hidden'
+      ? hiddenTestimonials
+      : testimonials;
+
+  const handleApproveAll = async () => {
+    for (const testimonial of pendingTestimonials) {
+      await handleApprove(testimonial.id);
+    }
+  };
+
+  const handleRejectAll = async () => {
+    if (
+      !window.confirm(
+        `Reject all ${pendingTestimonials.length} waiting reviews? They stay off the storefront.`
+      )
+    ) {
+      return;
+    }
+
+    for (const testimonial of pendingTestimonials) {
+      await handleReject(testimonial.id);
     }
   };
 
@@ -326,19 +343,79 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     );
   }
 
+  const filters: { id: Filter; label: string; count: number }[] = [
+    { id: 'pending', label: 'Waiting for approval', count: pendingTestimonials.length },
+    { id: 'live', label: 'Live on storefront', count: liveTestimonials.length },
+    { id: 'hidden', label: 'Not published', count: hiddenTestimonials.length },
+    { id: 'all', label: 'All', count: testimonials.length },
+  ];
+
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Testimonials Management</h1>
-        <p className="text-gray-600">Manage the "Fashion, meet Forever" section on your homepage</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Reviews</h1>
+        <p className="text-gray-600">
+          Customer reviews submitted from the storefront wait here. Approve one and it
+          goes live on the storefront.
+        </p>
       </div>
+
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700">Could not load reviews: {loadError}</p>
+          <button
+            onClick={loadTestimonials}
+            className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* Customer reviews waiting for approval */}
+      {pendingCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-sm font-bold">
+              {pendingCount}
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">
+                {pendingCount === 1 ? 'Customer review' : 'Customer reviews'} waiting
+                for approval
+              </h3>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Approve a review to publish it on the storefront.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRejectAll}
+              className="px-4 py-2 text-sm font-semibold text-amber-800 rounded-lg border border-amber-300 bg-white hover:bg-amber-100 transition-colors"
+            >
+              Reject all
+            </button>
+            <button
+              onClick={handleApproveAll}
+              className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-amber-600 hover:bg-amber-700 transition-colors shadow-sm"
+            >
+              Approve all
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Toggle Section Visibility */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Section Visibility</h3>
-            <p className="text-gray-600 text-sm">Show or hide the testimonials section on your homepage</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Section Visibility
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Show or hide the reviews section on your homepage
+            </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -352,12 +429,33 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
         </div>
       </div>
 
-      {/* Testimonials List */}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {filters.map(option => (
+          <button
+            key={option.id}
+            onClick={() => setFilter(option.id)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${
+              filter === option.id
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {option.label} ({option.count})
+          </button>
+        ))}
+      </div>
+
+      {/* Reviews List */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Testimonials Content</h3>
-            <p className="text-gray-600 text-sm mt-1">Add, edit, or remove testimonial cards</p>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {filters.find(f => f.id === filter)?.label}
+            </h3>
+            <p className="text-gray-600 text-sm mt-1">
+              Customer submissions and your own testimonial cards
+            </p>
           </div>
           <div className="flex space-x-3">
             <button
@@ -370,92 +468,144 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
           </div>
         </div>
 
-        {testimonials.length === 0 ? (
+        {visibleTestimonials.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-4xl text-gray-300 mb-4">📝</div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">No Testimonials Yet</h4>
-            <p className="text-gray-600 mb-6">Add your first testimonial to get started</p>
-            <div className="flex justify-center">
-              <button
-                onClick={handleAddNew}
-                className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm theme-btn-primary"
-              >
-                Add First Testimonial
-              </button>
-            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              {filter === 'pending'
+                ? 'No reviews waiting'
+                : 'No reviews yet'}
+            </h4>
+            <p className="text-gray-600 mb-6">
+              {filter === 'pending'
+                ? 'Customer reviews sent from your storefront appear here for approval.'
+                : 'Customer reviews sent from your storefront appear here for approval.'}
+            </p>
+            {filter !== 'pending' && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleAddNew}
+                  className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm theme-btn-primary"
+                >
+                  Add First Testimonial
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="p-6">
-                <div className="flex items-start space-x-4">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900">{testimonial.title}</h4>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          testimonial.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {testimonial.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={testimonial.isActive || false}
-                            onChange={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              console.log('🔄 Toggle clicked for testimonial:', testimonial.id, 'current state:', testimonial.isActive);
-                              handleToggleActive(testimonial.id);
-                            }}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
-                        </label>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔄 Button toggle clicked for testimonial:', testimonial.id);
-                            handleToggleActive(testimonial.id);
-                          }}
-                          className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                        >
-                          {testimonial.isActive ? 'ON' : 'OFF'}
-                        </button>
-                        <button
-                          onClick={() => handleEditTestimonial(testimonial)}
-                          className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTestimonial(testimonial.id)}
-                          className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          Delete
-                        </button>
+            {visibleTestimonials.map((testimonial) => {
+              const isBusy = busyId === testimonial.id;
+
+              return (
+                <div key={testimonial.id} className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="min-w-0">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {testimonial.title}
+                          </h4>
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            by {testimonial.name}
+                            {testimonial.createdAt && (
+                              <span className="text-gray-400">
+                                {' '}
+                                · {formatDate(testimonial.createdAt)}
+                              </span>
+                            )}
+                          </p>
+                          {testimonial.source === 'customer' && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              Customer submission
+                              {testimonial.submitterEmail
+                                ? ` · ${testimonial.submitterEmail}`
+                                : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              testimonial.status === 'pending'
+                                ? 'bg-amber-100 text-amber-800'
+                                : testimonial.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {testimonial.status === 'pending'
+                              ? 'Waiting for approval'
+                              : testimonial.isActive
+                              ? 'Live'
+                              : 'Not published'}
+                          </span>
+
+                          {testimonial.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(testimonial.id)}
+                                disabled={isBusy}
+                                className="px-3 py-1 text-xs font-semibold text-white rounded transition-colors bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                              >
+                                {isBusy ? 'Saving…' : 'Approve'}
+                              </button>
+                              <button
+                                onClick={() => handleReject(testimonial.id)}
+                                disabled={isBusy}
+                                className="px-3 py-1 text-xs font-semibold text-gray-700 rounded border border-gray-300 transition-colors hover:bg-gray-100 disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+
+                          {testimonial.status !== 'pending' && (
+                            <button
+                              onClick={() => handleToggleActive(testimonial.id)}
+                              disabled={isBusy}
+                              className={`px-3 py-1 text-xs font-semibold text-white rounded transition-colors disabled:opacity-50 ${
+                                testimonial.isActive
+                                  ? 'bg-gray-500 hover:bg-gray-600'
+                                  : 'bg-amber-600 hover:bg-amber-700'
+                              }`}
+                            >
+                              {isBusy ? 'Saving…' : testimonial.isActive ? 'Unpublish' : 'Publish'}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleEditTestimonial(testimonial)}
+                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTestimonial(testimonial.id)}
+                            className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
+                      <p className="text-gray-600 text-sm">{testimonial.description}</p>
                     </div>
-                    <p className="text-gray-600 text-sm">{testimonial.description}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Add/Edit Modal */}
       {isModalOpen && editingTestimonial && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -466,16 +616,12 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px'
+            padding: '16px',
           }}
         >
           {/* Backdrop */}
-          <div 
-            onClick={() => {
-              setIsModalOpen(false);
-              setEditingTestimonial(null);
-              setIsAddingNew(false);
-            }}
+          <div
+            onClick={closeModal}
             style={{
               position: 'absolute',
               top: 0,
@@ -484,12 +630,12 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
               bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.1)',
               backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)'
+              WebkitBackdropFilter: 'blur(2px)',
             }}
           />
-          
+
           {/* Modal */}
-          <div 
+          <div
             style={{
               position: 'relative',
               backgroundColor: 'white',
@@ -499,16 +645,12 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
               zIndex: 100000,
               maxHeight: '90vh',
-              overflowY: 'auto'
+              overflowY: 'auto',
             }}
           >
             {/* Close button */}
             <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setEditingTestimonial(null);
-                setIsAddingNew(false);
-              }}
+              onClick={closeModal}
               style={{
                 position: 'absolute',
                 top: '16px',
@@ -521,59 +663,75 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                 border: 'none',
                 background: 'none',
                 cursor: 'pointer',
-                color: '#9CA3AF'
+                color: '#9CA3AF',
               }}
             >
               ✕
             </button>
-            
+
             <div style={{ padding: '24px' }}>
               {/* Icon */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '48px',
-                height: '48px',
-                margin: '0 auto 16px',
-                borderRadius: '50%',
-                backgroundColor: '#F0F9FF'
-              }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '48px',
+                  height: '48px',
+                  margin: '0 auto 16px',
+                  borderRadius: '50%',
+                  backgroundColor: '#F0F9FF',
+                }}
+              >
                 <i className="fas fa-quote-left text-blue-500 text-xl"></i>
               </div>
-              
+
               {/* Title */}
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  marginBottom: '8px'
-                }}>{isAddingNew ? 'Add New Testimonial' : 'Edit Testimonial'}</h3>
-                <p style={{
-                  color: '#6B7280',
-                  fontSize: '14px',
-                  lineHeight: '1.5'
-                }}>Fill in the testimonial details below</p>
+                <h3
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    marginBottom: '8px',
+                  }}
+                >
+                  {isAddingNew ? 'Add New Testimonial' : 'Edit Testimonial'}
+                </h3>
+                <p
+                  style={{
+                    color: '#6B7280',
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  Fill in the testimonial details below
+                </p>
               </div>
-              
+
               {/* Form */}
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '4px'
-                  }}>Title</label>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Title
+                  </label>
                   <input
                     type="text"
                     value={editingTestimonial.title}
-                    onChange={(e) => setEditingTestimonial({
-                      ...editingTestimonial,
-                      title: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTestimonial({
+                        ...editingTestimonial,
+                        title: e.target.value,
+                      })
+                    }
                     placeholder="e.g., Recirculate, Customer Review, etc."
                     style={{
                       width: '100%',
@@ -581,52 +739,64 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       border: '1px solid #D1D5DB',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
                     }}
                   />
                 </div>
-                
+
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '4px'
-                  }}>Name (Internal)</label>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Reviewer name
+                  </label>
                   <input
                     type="text"
                     value={editingTestimonial.name}
-                    onChange={(e) => setEditingTestimonial({
-                      ...editingTestimonial,
-                      name: e.target.value
-                    })}
-                    placeholder="Internal reference name"
+                    onChange={(e) =>
+                      setEditingTestimonial({
+                        ...editingTestimonial,
+                        name: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Amira B."
                     style={{
                       width: '100%',
                       padding: '12px',
                       border: '1px solid #D1D5DB',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
                     }}
                   />
                 </div>
-                
+
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '4px'
-                  }}>Description</label>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Description
+                  </label>
                   <textarea
                     value={editingTestimonial.description}
-                    onChange={(e) => setEditingTestimonial({
-                      ...editingTestimonial,
-                      description: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTestimonial({
+                        ...editingTestimonial,
+                        description: e.target.value,
+                      })
+                    }
                     rows={4}
                     placeholder="Write the testimonial content or description..."
                     style={{
@@ -636,26 +806,32 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      resize: 'vertical'
+                      resize: 'vertical',
                     }}
                   />
                 </div>
-                
+
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '4px'
-                  }}>Image URL</label>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Image URL
+                  </label>
                   <input
                     type="url"
                     value={editingTestimonial.image}
-                    onChange={(e) => setEditingTestimonial({
-                      ...editingTestimonial,
-                      image: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTestimonial({
+                        ...editingTestimonial,
+                        image: e.target.value,
+                      })
+                    }
                     placeholder="https://example.com/image.jpg"
                     style={{
                       width: '100%',
@@ -663,22 +839,22 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       border: '1px solid #D1D5DB',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
                     }}
                   />
                   {editingTestimonial.image && (
                     <div style={{ marginTop: '8px', textAlign: 'center' }}>
-                      <img 
-                        src={editingTestimonial.image} 
-                        alt="Preview" 
+                      <img
+                        src={editingTestimonial.image}
+                        alt="Preview"
                         style={{
                           width: '64px',
                           height: '64px',
                           borderRadius: '50%',
-                          objectFit: 'cover'
+                          objectFit: 'cover',
                         }}
                         onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face';
+                          e.currentTarget.src = DEFAULT_AVATAR;
                         }}
                       />
                     </div>
@@ -690,26 +866,28 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                     type="checkbox"
                     id="isActive"
                     checked={editingTestimonial.isActive}
-                    onChange={(e) => setEditingTestimonial({
-                      ...editingTestimonial,
-                      isActive: e.target.checked
-                    })}
+                    onChange={(e) =>
+                      setEditingTestimonial({
+                        ...editingTestimonial,
+                        isActive: e.target.checked,
+                      })
+                    }
                     style={{ marginRight: '8px' }}
                   />
-                  <label htmlFor="isActive" style={{
-                    fontSize: '14px',
-                    color: '#374151'
-                  }}>
+                  <label htmlFor="isActive" style={{ fontSize: '14px', color: '#374151' }}>
                     Active (show on website)
                   </label>
                 </div>
               </div>
-              
+
               {/* Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
                   onClick={() => handleSaveTestimonial(editingTestimonial)}
-                  disabled={!editingTestimonial.title.trim() || !editingTestimonial.description.trim()}
+                  disabled={
+                    !editingTestimonial.title.trim() ||
+                    !editingTestimonial.description.trim()
+                  }
                   className="theme-btn-primary"
                   style={{
                     width: '100%',
@@ -717,18 +895,22 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                     border: 'none',
                     borderRadius: '8px',
                     fontWeight: '500',
-                    cursor: editingTestimonial.title.trim() && editingTestimonial.description.trim() ? 'pointer' : 'not-allowed',
-                    opacity: editingTestimonial.title.trim() && editingTestimonial.description.trim() ? 1 : 0.5
+                    cursor:
+                      editingTestimonial.title.trim() &&
+                      editingTestimonial.description.trim()
+                        ? 'pointer'
+                        : 'not-allowed',
+                    opacity:
+                      editingTestimonial.title.trim() &&
+                      editingTestimonial.description.trim()
+                        ? 1
+                        : 0.5,
                   }}
                 >
                   {isAddingNew ? 'Add Testimonial' : 'Save Changes'}
                 </button>
                 <button
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setEditingTestimonial(null);
-                    setIsAddingNew(false);
-                  }}
+                  onClick={closeModal}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -737,7 +919,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                     border: '1px solid #D1D5DB',
                     borderRadius: '8px',
                     fontWeight: '500',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   Cancel
@@ -747,7 +929,6 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
           </div>
         </div>
       )}
-
     </div>
   );
 };

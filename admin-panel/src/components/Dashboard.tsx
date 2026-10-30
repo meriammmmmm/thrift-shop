@@ -24,7 +24,7 @@ interface Company {
   logo?: string;
 }
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
   const [stats, setStats] = useState<DashboardStats>({

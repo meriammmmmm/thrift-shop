@@ -156,7 +156,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, onBack }) => {
   const [product, setProduct] = useState<ProductDetails | null>(null);
@@ -276,7 +276,12 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
   const loadProductDetails = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      /**
+       * `rawImages=1` asks for the pictures exactly as they are stored.
+       * The panel writes the images it was given straight back on save, so it
+       * has to receive the originals — the storefront gets links instead.
+       */
+      const response = await fetch(`${API_BASE_URL}/products/${productId}?rawImages=1`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -284,6 +289,13 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
 
       if (response.ok) {
         const data = await response.json();
+        // Normalize images field — handle double-serialized JSON string from DB
+        let images = data.images;
+        if (typeof images === 'string') {
+          try { images = JSON.parse(images); } catch { images = []; }
+        }
+        if (!Array.isArray(images)) images = [];
+        data.images = images;
         // Ensure price is a number
         if (data.price !== undefined && data.price !== null) {
           data.price = parseFloat(data.price);
@@ -291,8 +303,10 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
         setProduct(data);
         setEditForm(data);
         // Set existing images as URLs for editing
-        if (data.images && data.images.length > 0) {
+        if (Array.isArray(data.images) && data.images.length > 0) {
           setImageUrls(data.images.join('\n'));
+        } else {
+          setImageUrls('');
         }
       } else {
         showError('Error', 'Failed to load product details');
@@ -492,11 +506,11 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
     e.preventDefault();
     if (draggedExistingImageIndex === null || draggedExistingImageIndex === index) return;
 
-    if (!product || !product.images) return;
+    if (!product || !Array.isArray(product.images)) return;
 
     const newImages = [...product.images];
     const draggedImage = newImages[draggedExistingImageIndex];
-    
+
     newImages.splice(draggedExistingImageIndex, 1);
     newImages.splice(index, 0, draggedImage);
 
@@ -648,7 +662,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
 
       const updatedForm = {
         ...editForm,
-        images: allImages.length > 0 ? allImages : editForm.images
+        images: allImages.length > 0 ? allImages : (Array.isArray(editForm.images) ? editForm.images : [])
       };
 
       const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
@@ -845,7 +859,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                   setIsEditing(false);
                   setSelectedImages([]);
                   setImagePreviews([]);
-                  setImageUrls(product?.images?.join('\n') || '');
+                  setImageUrls(Array.isArray(product?.images) ? product.images.join('\n') : '');
                 }}
                 className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 flex items-center"
               >
@@ -881,7 +895,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
       <div className="modern-card p-6">
         <div className="flex items-center space-x-6">
           <div className="w-24 h-24 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">
-            {product.images && product.images.length > 0 ? (
+            {Array.isArray(product.images) && product.images.length > 0 ? (
               <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -1524,7 +1538,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
       )}
 
       {/* Images */}
-      {product.images && product.images.length > 0 && (
+      {Array.isArray(product.images) && product.images.length > 0 && (
         <div className="modern-card p-6">
           <h4 className="text-xl font-semibold text-gray-900 mb-6">
             <i className="fas fa-images mr-2 text-blue-500"></i>
@@ -1569,9 +1583,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, authToken, o
                         const currentUrls = imageUrls.split('\n').filter(url => url.trim());
                         const updatedUrls = currentUrls.filter((_, i) => i !== index);
                         setImageUrls(updatedUrls.join('\n'));
-                        
+
                         // Update the product state to reflect the change
-                        if (product.images) {
+                        if (Array.isArray(product.images)) {
                           const updatedImages = product.images.filter((_, i) => i !== index);
                           setProduct(prev => prev ? { ...prev, images: updatedImages } : null);
                         }

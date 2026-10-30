@@ -26,6 +26,8 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [mounted, setMounted] = useState(false);
+  /** Set when the visitor is signed in — the review is then linked to their account. */
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -108,6 +110,25 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
     setName('');
     setTitle('');
     setMessage('');
+
+    // A signed-in customer gets their name filled in and their review linked
+    // to their account, so the admin knows exactly who wrote it.
+    const token = localStorage.getItem('auth-token');
+    setAuthToken(token);
+
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed?.name) {
+          setName(parsed.name);
+        } else if (parsed?.email) {
+          setName(String(parsed.email).split('@')[0]);
+        }
+      } catch {
+        // A stale cache entry must never block the form.
+      }
+    }
   }, [open]);
 
   const submit = async (event: React.FormEvent) => {
@@ -130,9 +151,14 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
     setError('');
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(`${API_URL}/testimonials/customer-submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name: trimmedName,
           title: title.trim() || 'Customer Review',
@@ -230,8 +256,8 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
               </span>
               <h4 className="mb-2 text-lg font-semibold text-gray-900">Thank you!</h4>
               <p className="mx-auto mb-7 max-w-sm text-sm text-gray-500">
-                Your review is with our team. We publish the best ones on this page — keep an eye
-                out.
+                Your review is with our team. Once it is approved it appears on this page — keep
+                an eye out.
               </p>
               <button
                 type="button"

@@ -1,8 +1,9 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   activeSection: string;
-  onSectionChange: (section: string) => void;
+  onSectionChange?: (section: string) => void;
   isOpen: boolean;
   onClose: () => void;
   user?: {
@@ -80,6 +81,20 @@ const menuItems = [
     iconColor: 'text-rose-600'
   },
   {
+    id: 'articles',
+    name: 'Articles',
+    icon: 'fas fa-newspaper',
+    bgColor: 'bg-cyan-100',
+    iconColor: 'text-cyan-600'
+  },
+  {
+    id: 'looks',
+    name: 'Shop the Look',
+    icon: 'fas fa-layer-group',
+    bgColor: 'bg-fuchsia-100',
+    iconColor: 'text-fuchsia-600'
+  },
+  {
     id: 'theme',
     name: 'Theme Settings',
     icon: 'fas fa-palette',
@@ -89,10 +104,17 @@ const menuItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, isOpen, onClose, user }) => {
+  const location = useLocation();
+
   const handleItemClick = (sectionId: string) => {
-    onSectionChange(sectionId);
+    if (onSectionChange) {
+      onSectionChange(sectionId);
+    }
     onClose(); // Close sidebar on mobile after selection
   };
+
+  // Get current section from pathname
+  const currentSection = location.pathname.replace('/admin/', '') || 'dashboard';
 
   return (
     <>
@@ -138,30 +160,31 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, isOpe
         <nav className="px-4 py-2 flex-1">
           <div className="space-y-1">
             {menuItems.map((item) => (
-              <button
+              <Link
                 key={item.id}
+                to={`/admin/${item.id}`}
                 onClick={() => handleItemClick(item.id)}
                 className={`
                   nav-link w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200
-                  ${activeSection === item.id
+                  ${currentSection === item.id
                     ? 'active bg-gradient-to-r from-[var(--color-primary-light)] to-[var(--color-primary)] text-white shadow-lg'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-[var(--color-primary)]'
                   }
                 `}
               >
                 <div className={`w-10 h-10 rounded-lg ${
-                  activeSection === item.id 
-                    ? 'bg-white bg-opacity-20' 
+                  currentSection === item.id
+                    ? 'bg-white bg-opacity-20'
                     : item.bgColor
                 } flex items-center justify-center mr-3 transition-all duration-200`}>
                   <i className={`${item.icon} ${
-                    activeSection === item.id 
-                      ? item.iconColor 
+                    currentSection === item.id
+                      ? item.iconColor
                       : item.iconColor
                   }`}></i>
                 </div>
                 <span className="font-medium text-sm">{item.name}</span>
-              </button>
+              </Link>
             ))}
           </div>
         </nav>

@@ -1,13 +1,96 @@
 const express = require('express');
 const db = require('../database/db');
 const { requireAdmin } = require('../middleware/auth');
+const {
+  isDataUri,
+  parseImageList,
+  decodeDataUri,
+  publicBaseUrl,
+  rewriteImageEntry,
+  imageEtag,
+} = require('../services/imageUrl');
 
 const router = express.Router();
+
+/**
+ * Serve one image of a product as an image file.
+ *
+ * A large part of the catalogue still has its photo pasted into the `images`
+ * column as a base64 data URI. Sending those bytes inside the JSON made a
+ * storefront request weigh 17 MB and forced the browser to download every
+ * picture in the catalogue — including the ones far below the fold — before
+ * the page could settle. The bytes stay in the database; they are served from
+ * here instead, so the JSON only carries a link and the browser can fetch,
+ * cache and lazy-load each picture on its own.
+ */
+router.get('/image/:id/:index', async (req, res) => {
+  try {
+    const row = await db.get(
+      'SELECT images FROM products WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (!row) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const entries = parseImageList(row.images);
+    const index = Number(req.params.index);
+    const entry = Number.isInteger(index) ? entries[index] : undefined;
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    // A picture that already lives somewhere else is simply pointed at.
+    if (!isDataUri(entry)) {
+      /**
+       * Guard against a redirect that points back at this very route — that
+       * would loop forever. It only happens if a link to an image was saved
+       * over the stored picture, in which case the bytes are gone.
+       */
+      if (/\/products\/image\/\d+\/\d+/.test(entry)) {
+        console.warn(
+          `⚠️ Product ${req.params.id} image ${req.params.index} points at the image route itself`
+        );
+        return res.status(404).json({ error: 'Image not found' });
+      }
+
+      return res.redirect(302, entry);
+    }
+
+    const decoded = decodeDataUri(entry);
+    if (!decoded) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const { mime, buffer } = decoded;
+    const etag = imageEtag(buffer);
+
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('ETag', etag);
+
+    // A repeat visit costs a 304 instead of the whole picture.
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    return res.end(buffer);
+  } catch (error) {
+    console.error('Product image fetch error:', error);
+    return res.status(500).json({ error: 'Failed to fetch image' });
+  }
+});
 
 // Get all products with filtering
 router.get('/', async (req, res) => {
   try {
     console.log('📥 GET /api/products - Query params:', req.query);
+
+    // Base for the links that replace inline base64 images.
+    const baseUrl = publicBaseUrl(req);
     
     const {
       page = 1,
@@ -106,23 +189,32 @@ router.get('/', async (req, res) => {
     console.log(`✅ Found ${products.length} products, total: ${totalResult.total}`);
 
     // Parse JSON fields and add company info
-    const parsedProducts = products.map(product => ({
-      ...product,
-      price: parseFloat(product.price),
-      original_price: product.original_price ? parseFloat(product.original_price) : null,
-      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
-      images: product.images ? JSON.parse(product.images) : [],
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : [],
-      reservation_status: product.reservation_status || 'available',
-      reserved_by_order_id: product.reserved_by_order_id || null,
-      company: product.company_name ? {
-        id: product.company_id,
-        name: product.company_name,
-        description: product.company_description
-      } : null
-    }));
+    const parsedProducts = products.map(product => {
+      // Images may be a real array, a JSON string, or a JSON string holding a
+      // JSON string. Any inline base64 becomes a link to the image route, so
+      // the response stays small no matter how big the catalogue grows.
+      const images = parseImageList(product.images).map((entry, index) =>
+        rewriteImageEntry(entry, product.id, index, baseUrl)
+      );
+
+      return {
+        ...product,
+        price: parseFloat(product.price),
+        original_price: product.original_price ? parseFloat(product.original_price) : null,
+        seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
+        images,
+        measurements: product.measurements ? JSON.parse(product.measurements) : null,
+        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+        tags: product.tags ? JSON.parse(product.tags) : [],
+        reservation_status: product.reservation_status || 'available',
+        reserved_by_order_id: product.reserved_by_order_id || null,
+        company: product.company_name ? {
+          id: product.company_id,
+          name: product.company_name,
+          description: product.company_description
+        } : null
+      };
+    });
 
     res.json({
       products: parsedProducts,
@@ -144,6 +236,9 @@ router.get('/', async (req, res) => {
 router.get('/company/:companyId', async (req, res) => {
   try {
     console.log('📥 Company products request:', req.params.companyId);
+
+    // Base for the links that replace inline base64 images.
+    const baseUrl = publicBaseUrl(req);
     console.log('📥 Query params:', req.query);
     console.log('📥 Origin:', req.headers.origin);
     
@@ -313,24 +408,35 @@ router.get('/company/:companyId', async (req, res) => {
     }
 
     // Parse JSON fields and add company info
-    const parsedProducts = products.map(product => ({
-      ...product,
-      price: parseFloat(product.price),
-      original_price: product.original_price ? parseFloat(product.original_price) : null,
-      seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
-      images: product.images ? JSON.parse(product.images) : [],
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : [],
-      reservation_status: product.reservation_status || 'available',
-      reserved_by_order_id: product.reserved_by_order_id || null,
-      company: {
-        id: product.company_id,
-        name: product.company_name,
-        description: product.company_description
-      }
-    }));
+    const parsedProducts = products.map(product => {
+      // Images may be a real array, a JSON string, or a JSON string holding a
+      // JSON string. Any inline base64 becomes a link to the image route, so
+      // the response stays small no matter how big the catalogue grows.
+      const images = parseImageList(product.images).map((entry, index) =>
+        rewriteImageEntry(entry, product.id, index, baseUrl)
+      );
 
+      return {
+        ...product,
+        price: parseFloat(product.price),
+        original_price: product.original_price ? parseFloat(product.original_price) : null,
+        seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
+        images,
+        measurements: product.measurements ? JSON.parse(product.measurements) : null,
+        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+        tags: product.tags ? JSON.parse(product.tags) : [],
+        reservation_status: product.reservation_status || 'available',
+        reserved_by_order_id: product.reserved_by_order_id || null,
+        company: {
+          id: product.company_id,
+          name: product.company_name,
+          description: product.company_description
+        }
+      };
+    });
+
+    // Cache public product listings for 60 seconds (CDN + browser)
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
     res.json({
       company: {
         id: company.id,
@@ -350,6 +456,7 @@ router.get('/company/:companyId', async (req, res) => {
         pages: Math.ceil(totalResult.total / parsedLimit)
       }
     });
+
   } catch (error) {
     console.error('❌ Company products fetch error:', error);
     console.error('Error stack:', error.stack);
@@ -381,9 +488,26 @@ router.get('/:id', async (req, res) => {
     await db.run('UPDATE products SET views = views + 1 WHERE id = ?', [req.params.id]);
 
     // Parse JSON fields and add company info
+    // Images may be a real array, a JSON string, or a JSON string holding a
+    // JSON string. Any inline base64 becomes a link to the image route.
+    const baseUrl = publicBaseUrl(req);
+    const entries = parseImageList(product.images);
+
+    /**
+     * The admin panel edits a product with the images it was handed and
+     * writes them straight back, so it needs the originals. A storefront
+     * visitor only ever gets links.
+     */
+    const images =
+      req.query.rawImages === '1'
+        ? entries
+        : entries.map((entry, index) =>
+            rewriteImageEntry(entry, product.id, index, baseUrl)
+          );
+
     const parsedProduct = {
       ...product,
-      images: product.images ? JSON.parse(product.images) : [],
+      images,
       measurements: product.measurements ? JSON.parse(product.measurements) : null,
       care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
       tags: product.tags ? JSON.parse(product.tags) : [],
@@ -641,6 +765,9 @@ router.get('/meta/brands', async (req, res) => {
 router.get('/admin/products', requireAdmin, async (req, res) => {
   try {
     console.log('📦 Admin products request received:', req.query);
+
+    // Base for the links that replace inline base64 images.
+    const baseUrl = publicBaseUrl(req);
     const adminUser = req.user;
     const companyId = adminUser.admin_company_id;
 
@@ -719,14 +846,13 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
 
     // Parse JSON fields
     const parsedProducts = products.map(product => {
-      let images = [];
-      try {
-        images = product.images ? JSON.parse(product.images) : [];
-        // Keep full images for admin panel
-      } catch (e) {
-        console.error('Error parsing images for product', product.id, e);
-      }
-      
+      // Images may be a real array, a JSON string, or a JSON string holding a
+      // JSON string. Any inline base64 becomes a link to the image route, so
+      // the response stays small no matter how big the catalogue grows.
+      const images = parseImageList(product.images).map((entry, index) =>
+        rewriteImageEntry(entry, product.id, index, baseUrl)
+      );
+
       return {
         ...product,
         images,

@@ -36,6 +36,12 @@ const db = require('./database/db');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Behind Fly.io (and every other proxy) the request arrives over plain HTTP
+// even though the visitor used HTTPS. Trusting the proxy makes `req.protocol`
+// and `req.hostname` report the real public address, which is what the image
+// links are built from.
+app.set('trust proxy', true);
+
 // CORS configuration - MUST come first, before any other middleware
 app.options('*', cors()); // Enable pre-flight for all routes
 
@@ -390,6 +396,17 @@ if (process.env.VERCEL) {
     
     // Run async initialization tasks without blocking server startup
     setImmediate(async () => {
+      /**
+       * Move any worn-outfit photo that is still sitting in `looks.worn_image`
+       * as base64 into `look_images`, so the storefront never has to download
+       * megabytes of base64 just to show the looks.
+       */
+      try {
+        await looksRoutes.backfillWornImages();
+      } catch (error) {
+        console.warn('⚠️ look image repair at startup failed:', error.message);
+      }
+
       // Create category_products table if it doesn't exist
       try {
         // Use SERIAL for PostgreSQL, AUTOINCREMENT for SQLite

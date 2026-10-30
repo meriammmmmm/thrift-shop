@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -8,6 +9,8 @@ import CategoryManagement from './components/CategoryManagement';
 import OrderManagement from './components/OrderManagement';
 import TransactionManagement from './components/TransactionManagement';
 import TestimonialsManagement from './components/TestimonialsManagement';
+import ArticlesManagement from './components/ArticlesManagement';
+import LooksManagement from './components/LooksManagement';
 import ThemeSettings from './components/ThemeSettings';
 import AdminProfile from './components/AdminProfile';
 import LoginForm from './components/LoginForm';
@@ -15,7 +18,7 @@ import CompanySignup from './components/CompanySignup';
 import NotificationSystem from './components/NotificationSystem';
 import { useNotifications } from './hooks/useNotifications';
 
-const API_BASE_URL = 'https://thrift-shop-backend-production-dbea.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 interface User {
   id: number;
@@ -35,10 +38,66 @@ interface User {
   };
 }
 
+// Component for the main layout with Header and Sidebar
+const MainLayout: React.FC<{
+  currentUser: User;
+  authToken: string;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  logout: () => void;
+  notifications: any[];
+  removeNotification: (id: string) => void;
+}> = ({ currentUser, authToken, sidebarOpen, setSidebarOpen, logout, notifications, removeNotification }) => {
+  const location = useLocation();
+
+  return (
+    <div className="min-h-screen" style={{ background: '#FFF5F7' }}>
+      <Header
+        user={currentUser}
+        onLogout={logout}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+      />
+
+      <div className="flex">
+        <Sidebar
+          activeSection={location.pathname.replace('/admin/', '') || 'dashboard'}
+          onSectionChange={() => {}}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          user={currentUser}
+        />
+
+        <main className="main-content flex-1" style={{ background: '#FFF5F7' }}>
+          <Routes>
+            <Route path="/" element={<Dashboard authToken={authToken} />} />
+            <Route path="/dashboard" element={<Dashboard authToken={authToken} />} />
+            <Route path="/profile" element={currentUser ? <AdminProfile authToken={authToken} user={currentUser} /> : <Navigate to="/admin/dashboard" />} />
+            <Route path="/users" element={<UserManagement authToken={authToken} />} />
+            <Route path="/products" element={<ProductManagement authToken={authToken} />} />
+            <Route path="/categories" element={<CategoryManagement authToken={authToken} />} />
+            <Route path="/orders" element={<OrderManagement authToken={authToken} />} />
+            <Route path="/transactions" element={<TransactionManagement authToken={authToken} />} />
+            <Route path="/testimonials" element={<TestimonialsManagement authToken={authToken} />} />
+            <Route path="/articles" element={<ArticlesManagement authToken={authToken} />} />
+            <Route path="/looks" element={<LooksManagement authToken={authToken} />} />
+            <Route path="/theme" element={<ThemeSettings authToken={authToken} />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+          </Routes>
+        </main>
+      </div>
+
+      {/* Notification System */}
+      <NotificationSystem
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authToken, setAuthToken] = useState<string>('');
-  const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showSignup, setShowSignup] = useState<boolean>(false);
@@ -78,18 +137,18 @@ const App: React.FC = () => {
       console.error('Failed to load theme for admin panel:', error);
       // Apply default theme if loading fails
       applyThemeToAdminPanel({
-        primary: '#0d9488',
-        primaryHover: '#0f766e',
-        primaryLight: '#5eead4',
-        secondary: '#64748b',
-        accent: '#f59e0b',
-        background: '#ffffff',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
+        primary: '#731528',        // Mery Rose burgundy (main brand color)
+        primaryHover: '#9B3550',   // Lighter burgundy on hover
+        primaryLight: '#FFC0CB',   // Light pink accent
+        secondary: '#8B2E3C',      // Darker burgundy for secondary elements
+        accent: '#FF69B4',         // Hot pink accent
+        background: '#ffffff',     // Clean white background
+        text: '#1f2937',          // Dark gray text
+        textLight: '#6b7280',     // Light gray text
+        success: '#10b981',       // Keep success green
+        error: '#ef4444',         // Keep error red
+        warning: '#f59e0b',       // Keep warning amber
+        info: '#731528'           // Use burgundy for info
       });
     }
   };
@@ -188,31 +247,6 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'dashboard':
-        return <Dashboard authToken={authToken} />;
-      case 'profile':
-        return currentUser ? <AdminProfile authToken={authToken} user={currentUser} /> : <Dashboard authToken={authToken} />;
-      case 'users':
-        return <UserManagement authToken={authToken} />;
-      case 'products':
-        return <ProductManagement authToken={authToken} />;
-      case 'categories':
-        return <CategoryManagement authToken={authToken} />;
-      case 'orders':
-        return <OrderManagement authToken={authToken} />;
-      case 'transactions':
-        return <TransactionManagement authToken={authToken} />;
-      case 'testimonials':
-        return <TestimonialsManagement authToken={authToken} />;
-      case 'theme':
-        return <ThemeSettings authToken={authToken} />;
-      default:
-        return <Dashboard authToken={authToken} />;
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#FFF5F7' }}>
@@ -227,49 +261,40 @@ const App: React.FC = () => {
   if (!currentUser) {
     if (showSignup) {
       return (
-        <CompanySignup 
+        <CompanySignup
           onSignupSuccess={() => setShowSignup(false)}
           onBackToLogin={() => setShowSignup(false)}
         />
       );
     }
     return (
-      <LoginForm 
-        onLogin={login} 
-        onShowSignup={() => setShowSignup(true)}
-      />
+      <Routes>
+        <Route path="/signup" element={<CompanySignup onSignupSuccess={() => setShowSignup(false)} onBackToLogin={() => setShowSignup(false)} />} />
+        <Route path="*" element={<LoginForm onLogin={login} onShowSignup={() => setShowSignup(true)} />} />
+      </Routes>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FFF5F7' }}>
-      <Header 
-        user={currentUser} 
-        onLogout={logout}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onNavigateToProfile={() => setActiveSection('profile')}
+    <Routes>
+      <Route path="/login" element={<Navigate to="/admin/dashboard" />} />
+      <Route path="/signup" element={<Navigate to="/admin/dashboard" />} />
+      <Route
+        path="/admin/*"
+        element={
+          <MainLayout
+            currentUser={currentUser}
+            authToken={authToken}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            logout={logout}
+            notifications={notifications}
+            removeNotification={removeNotification}
+          />
+        }
       />
-      
-      <div className="flex">
-        <Sidebar 
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          user={currentUser}
-        />
-        
-        <main className="main-content flex-1" style={{ background: '#FFF5F7' }}>
-          {renderContent()}
-        </main>
-      </div>
-
-      {/* Notification System */}
-      <NotificationSystem 
-        notifications={notifications}
-        onRemove={removeNotification}
-      />
-    </div>
+      <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+    </Routes>
   );
 };
 

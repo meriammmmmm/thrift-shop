@@ -247,6 +247,10 @@ class PostgresDatabase {
           description TEXT NOT NULL,
           image TEXT,
           is_active BOOLEAN DEFAULT true,
+          status TEXT DEFAULT 'approved',
+          source TEXT DEFAULT 'admin',
+          user_id INTEGER,
+          submitter_email TEXT,
           display_order INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -310,6 +314,47 @@ class PostgresDatabase {
         )
       `);
 
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS looks (
+          id SERIAL PRIMARY KEY,
+          company_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          occasion TEXT,
+          tagline TEXT,
+          worn_image TEXT,
+          is_active BOOLEAN DEFAULT true,
+          display_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (company_id) REFERENCES companies (id)
+        )
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS look_items (
+          id SERIAL PRIMARY KEY,
+          look_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          sort_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (look_id) REFERENCES looks (id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+          UNIQUE(look_id, product_id)
+        )
+      `);
+
+      // The worn-outfit photo itself, kept out of `looks.worn_image` so the
+      // list endpoints never have to carry megabytes of base64.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS look_images (
+          look_id INTEGER PRIMARY KEY,
+          image TEXT NOT NULL,
+          mime TEXT,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (look_id) REFERENCES looks (id) ON DELETE CASCADE
+        )
+      `);
+
       console.log('✅ PostgreSQL tables initialized');
 
       // Run migrations to add missing columns
@@ -331,6 +376,30 @@ class PostgresDatabase {
         console.log(`✅ Updated ${updateResult.rowCount} companies with default currency`);
       } catch (err) {
         console.log('⚠️ currency column migration:', err.message);
+      }
+
+      // Reviews submitted from the storefront wait for an admin decision.
+      // The columns are added without a default so the backfill below can tell
+      // legacy rows apart from reviews that went through the new workflow.
+      try {
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS status TEXT`);
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS source TEXT`);
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS submitter_email TEXT`);
+        console.log('✅ Added review workflow columns to testimonials table');
+
+        // Legacy rows: live reviews are approved, the rest still need a
+        // decision from the admin.
+        await client.query(`
+          UPDATE testimonials
+          SET status = CASE WHEN is_active THEN 'approved' ELSE 'pending' END
+          WHERE status IS NULL OR status = ''
+        `);
+        await client.query(`
+          UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
+        `);
+      } catch (err) {
+        console.log('⚠️ testimonial workflow migration:', err.message);
       }
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');

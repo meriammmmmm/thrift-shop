@@ -133,7 +133,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   );
 };
 
-const API_BASE_URL = 'https://mery-rose-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const AddProduct: React.FC<AddProductProps> = ({ authToken }) => {
   const [formData, setFormData] = useState({
