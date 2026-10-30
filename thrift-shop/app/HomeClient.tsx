@@ -17,7 +17,7 @@ import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
 import { buildBrandIndex } from '../lib/brands';
-import ReviewCard from './components/ReviewCard';
+import ReviewCarousel from './components/ReviewCarousel';
 import StarRating from './components/StarRating';
 import { getVisitorKey } from '../lib/visitor';
 import { toBooleanFlag } from '../lib/flags';
@@ -1419,36 +1419,13 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
               )}
             </div>
 
-            {/* Testimonials Grid */}
-            {testimonials.length <= 3 ? (
-              <div className={`grid items-stretch gap-6 sm:gap-8 ${testimonials.length === 1 ? 'max-w-xl mx-auto grid-cols-1' : testimonials.length === 2 ? 'max-w-3xl mx-auto grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
-                {testimonials.map((testimonial, index) => (
-                  <div
-                    key={testimonial.id}
-                    className={`scroll-animate scroll-zoomIn stagger-${index + 1}`}
-                  >
-                    <ReviewCard
-                      testimonial={testimonial}
-                      featured={testimonials.length === 3 && index === 1}
-                      onToggleLike={handleToggleLike}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="relative">
-                <div 
-                  className="flex gap-6 sm:gap-8 overflow-x-auto px-4 pb-8 snap-x snap-mandatory scrollbar-hide"
-                >
-                  {testimonials.map((testimonial, index) => (
-                    <div
-                      key={testimonial.id}
-                      className={`flex-shrink-0 w-[85vw] sm:w-[380px] snap-center scroll-animate scroll-zoomIn stagger-${Math.min(index + 1, 6)}`}
-                    >
-                      <ReviewCard testimonial={testimonial} onToggleLike={handleToggleLike} />
-                    </div>
-                  ))}
-                </div>
+            {/* Testimonials carousel — a swipeable track on every screen size */}
+            {testimonials.length > 0 && (
+              <div className="pb-10 sm:pb-14">
+                <ReviewCarousel
+                  reviews={testimonials}
+                  onToggleLike={handleToggleLike}
+                />
               </div>
             )}
           </div>
