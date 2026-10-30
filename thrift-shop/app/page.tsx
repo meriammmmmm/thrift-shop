@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import ProductCard from './components/ProductCard';
 import BrandCarousel from './components/BrandCarousel';
+import ReviewDialog from './components/ReviewDialog';
+import ReviewTrigger from './components/ReviewTrigger';
 import SafeImage, { normalizeImageList } from './components/SafeImage';
 import { buildBrandIndex } from '../lib/brands';
 import StyleBoard from './components/StyleBoard';
@@ -21,6 +23,16 @@ import { api } from '../lib/api';
 import { useTheme, useThemeStyles } from '../lib/theme';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
 
+interface Testimonial {
+  id: number;
+  /** Who wrote it — customers fill this in, admin-created cards fall back to the title. */
+  name: string;
+  title: string;
+  description: string;
+  image?: string;
+  is_active?: number;
+}
+
 export default function Home() {
   // Theme hooks
   const { theme, isLoading: themeLoading } = useTheme();
@@ -32,6 +44,7 @@ export default function Home() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +73,7 @@ export default function Home() {
   const [company, setCompany] = useState<{id: number, name: string, description: string, showTestimonials?: boolean} | null>(null);
   
   // Testimonials
-  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [showTestimonialsSection, setShowTestimonialsSection] = useState<boolean>(true);
 
   // Currency configuration
@@ -621,6 +634,29 @@ export default function Home() {
                   className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
                 >
                   SHOP
+                </button>
+
+                {/* Leave a review — opens the same dialog as the CTA in the reviews section */}
+                <button
+                  onClick={() => setIsReviewOpen(true)}
+                  aria-label="Leave a review"
+                  title="Leave a review"
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-1.5 text-[9px] font-semibold whitespace-nowrap transition-all duration-300 hover:scale-[1.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-xs md:text-sm"
+                  style={{ backgroundColor: `${theme.primary}14`, color: theme.primary }}
+                >
+                  <svg
+                    className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 5.11 5.52.44c.5.04.71.68.32 1.03l-4.2 3.6 1.28 5.39c.12.5-.42.88-.87.62L12 16.9l-4.69 2.79c-.45.26-.99-.12-.87-.62l1.28-5.39-4.2-3.6c-.39-.35-.18-.99.32-1.03l5.52-.44 2.12-5.11Z" />
+                  </svg>
+                  <span className="hidden sm:inline">Leave a review</span>
                 </button>
               </div>
 
@@ -1349,28 +1385,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials Section - Fashion, meet Forever */}
-      {showTestimonialsSection && testimonials.length > 0 && (
-        <section className="py-12 sm:py-24 relative overflow-hidden scroll-animate scroll-fadeInUp" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
-          {/* Decorative Background Elements */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-72 h-72 rounded-full animate-float animate-blob" style={{ background: `radial-gradient(circle, ${theme.primary}40 0%, transparent 70%)` }}></div>
-            <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full animate-float animate-blob" style={{ background: `radial-gradient(circle, ${theme.primary}30 0%, transparent 70%)`, animationDelay: '1s' }}></div>
-          </div>
-
+      {/* Testimonials Section */}
+      {showTestimonialsSection && (
+        <section
+          className="relative overflow-hidden scroll-animate scroll-fadeInUp"
+          style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${theme.primary}0f 0%, transparent 70%)` }}
+        >
           <div className="max-w-7xl mx-auto px-4 relative z-10">
-            {/* Header */}
-            <div className="text-center mb-10 sm:mb-16 reveal-on-scroll">
-              <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-3 tracking-tight">
-                Fashion, meet Forever
-              </h2>
-              <p className="text-gray-500 text-sm tracking-wide">
-                Real stories from our community
-              </p>
-            </div>
-
             {/* Testimonials Grid */}
-            {testimonials.length <= 3 ? (
+            {testimonials.length > 0 && (testimonials.length <= 3 ? (
               <div className={`flex items-stretch justify-center gap-8 max-w-7xl mx-auto ${testimonials.length === 1 ? 'flex-col' : testimonials.length === 2 ? 'flex-row' : 'flex-row'}`}>
                 {testimonials.map((testimonial, index) => (
                   <div 
@@ -1406,9 +1429,16 @@ export default function Home() {
                         </div>
 
                         {/* Title */}
-                        <h3 className="text-sm font-medium text-gray-900 text-center mb-4 uppercase tracking-wide">
+                        <h3 className="text-sm font-medium text-gray-900 text-center mb-1 uppercase tracking-wide">
                           {testimonial.title}
                         </h3>
+
+                        {/* Who wrote it */}
+                        {testimonial.name && testimonial.name !== testimonial.title && (
+                          <p className="text-center text-xs text-gray-400 mb-3">
+                            {testimonial.name}
+                          </p>
+                        )}
 
                         {/* Description */}
                         <p className="text-gray-500 text-xs text-center leading-relaxed">
@@ -1463,9 +1493,16 @@ export default function Home() {
                           </div>
 
                           {/* Title */}
-                          <h3 className="text-sm font-medium text-gray-900 text-center mb-4 uppercase tracking-wide">
+                          <h3 className="text-sm font-medium text-gray-900 text-center mb-1 uppercase tracking-wide">
                             {testimonial.title}
                           </h3>
+
+                          {/* Who wrote it */}
+                          {testimonial.name && testimonial.name !== testimonial.title && (
+                            <p className="text-center text-xs text-gray-400 mb-3">
+                              {testimonial.name}
+                            </p>
+                          )}
 
                           {/* Description */}
                           <p className="text-gray-500 text-xs text-center leading-relaxed">
@@ -1482,7 +1519,16 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-            )}
+            ))}
+          </div>
+
+          {/* Let people add their own review — a full-width band, edge to edge */}
+          <div
+            className={`relative z-10 border-t border-gray-200/80 ${testimonials.length > 0 ? 'mt-12 sm:mt-16' : ''}`}
+          >
+            <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+              <ReviewTrigger onOpen={() => setIsReviewOpen(true)} />
+            </div>
           </div>
         </section>
       )}
@@ -1621,6 +1667,13 @@ export default function Home() {
           user={user}
         />
       )}
+
+      {/* Customer review form — opened from the header or the reviews CTA */}
+      <ReviewDialog
+        open={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        companyId={company?.id}
+      />
     </div>
   );
 }
