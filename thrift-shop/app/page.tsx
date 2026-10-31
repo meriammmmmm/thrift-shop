@@ -10,6 +10,7 @@ import LoveButton from './components/LoveButton';
 import StarRating from './components/StarRating';
 import SafeImage, { normalizeImageList } from './components/SafeImage';
 import { buildBrandIndex } from '../lib/brands';
+import { compareByShopOrder } from '../lib/productOrder';
 import StyleBoard from './components/StyleBoard';
 import LookGallery from './components/LookGallery';
 import { LookDefinition, LookState, fetchLooks } from '../lib/looks';
@@ -63,7 +64,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('custom');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
@@ -172,6 +173,7 @@ export default function Home() {
       description: product.company.description
     } : null,
     dateAdded: product.created_at,
+    displayOrder: product.display_order ?? null,
     views: product.views || 0,
     likes: product.likes || 0,
     liked_by_me: product.liked_by_me ?? false
@@ -208,7 +210,7 @@ export default function Home() {
       // The Mix & Match board and the curated looks both need the whole
       // catalogue, not the first page of it — a look can reference an
       // older piece that a short list would leave out.
-      const response = await api.getCompanyProducts(companyId, { limit: 100 });
+      const response = await api.getCompanyProducts(companyId, { limit: 500 });
 
       let freshCurrency = { currency: 'USD', symbol: '$' };
       if (response.company) {
@@ -357,6 +359,9 @@ export default function Home() {
         return a.brand.localeCompare(b.brand);
       case 'popular':
         return b.likes - a.likes;
+      case 'custom':
+        // The order the admin panel dragged the pieces into.
+        return compareByShopOrder(a, b);
       default:
         return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
     }

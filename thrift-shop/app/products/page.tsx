@@ -12,6 +12,7 @@ import { Product, User } from '../types';
 import { api } from '../../lib/api';
 import { useTheme } from '../../lib/theme';
 import { useCinematicScroll } from '../../lib/motion/useCinematicMotion';
+import { compareByShopOrder } from '../../lib/productOrder';
 import ScrollProgress from '../components/ScrollProgress';
 
 // --- Session-level product cache for the /products page ---
@@ -64,7 +65,7 @@ export default function ProductsPage() {
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
   const [customPriceMin, setCustomPriceMin] = useState('');
   const [customPriceMax, setCustomPriceMax] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('custom');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -139,7 +140,7 @@ export default function ProductsPage() {
       setError(null);
 
       const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
-      const response = await api.getCompanyProducts(parseInt(companyId), { limit: 100 });
+      const response = await api.getCompanyProducts(parseInt(companyId), { limit: 500 });
 
       let currency = { currency: 'USD', symbol: '$' };
       if (response.company) {
@@ -189,6 +190,7 @@ export default function ProductsPage() {
               location: product.seller_location || 'Unknown'
             },
             dateAdded: product.created_at,
+            displayOrder: product.display_order ?? null,
             views: product.views || 0,
             likes: product.likes || 0,
             liked_by_me: product.liked_by_me ?? false
@@ -351,6 +353,9 @@ export default function ProductsPage() {
           return a.brand.localeCompare(b.brand);
         case 'popular':
           return b.likes - a.likes;
+        case 'custom':
+          // The order the admin panel dragged the pieces into.
+          return compareByShopOrder(a, b);
         default:
           return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
       }
@@ -1018,7 +1023,8 @@ export default function ProductsPage() {
                    sortBy === 'price-low' ? 'Price: Low to High' :
                    sortBy === 'price-high' ? 'Price: High to Low' :
                    sortBy === 'brand' ? 'Brand A-Z' :
-                   sortBy === 'popular' ? 'Most Popular' : 'Newest First'}
+                   sortBy === 'popular' ? 'Most Popular' :
+                   sortBy === 'custom' ? 'Featured' : 'Featured'}
                 </span>
                 <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1027,6 +1033,7 @@ export default function ProductsPage() {
               {isSortDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">
                   {[
+                    { value: 'custom', label: 'Featured' },
                     { value: 'newest', label: 'Newest First' },
                     { value: 'price-low', label: 'Price: Low to High' },
                     { value: 'price-high', label: 'Price: High to Low' },

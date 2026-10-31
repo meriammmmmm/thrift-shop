@@ -35,6 +35,8 @@ export interface Product {
   dateAdded: string;
   views: number;
   likes: number;
+  /** The place this piece has in the order the admin panel dragged it into. */
+  displayOrder?: number | null;
   /** Whether this browser already loved the piece. */
   liked_by_me?: boolean;
   most_lovable?: boolean;

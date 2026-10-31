@@ -250,7 +250,7 @@ class ApiClient {
     }
 
     const queryString = new URLSearchParams(
-      Object.entries(params).reduce((acc, [key, value]) => {
+      Object.entries({ sortBy: 'custom', ...params }).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && (typeof value === 'number' || value !== '')) {
           acc[key] = value.toString();
         }

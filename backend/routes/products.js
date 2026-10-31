@@ -256,6 +256,15 @@ router.get('/', async (req, res) => {
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
         break;
+      case 'newest':
+        orderClause = 'ORDER BY p.created_at DESC';
+        break;
+      case 'custom':
+      default:
+        // The order the panel dragged the pieces into. A piece nobody has
+        // placed yet goes last, and the date breaks a tie.
+        orderClause = 'ORDER BY p.display_order IS NULL ASC, p.display_order ASC, p.created_at DESC';
+        break;
     }
 
     // Get products with company information
@@ -376,7 +385,9 @@ router.get('/company/:companyId', async (req, res) => {
 
     // Parse and validate pagination parameters
     const parsedPage = Math.max(1, parseInt(page) || 1);
-    const parsedLimit = Math.min(Math.max(1, parseInt(limit) || 12), 100); // Max 100 items per page
+    // The shop needs the whole catalogue in one go: the order the admin
+    // dragged the pieces into only makes sense when every piece is there.
+    const parsedLimit = Math.min(Math.max(1, parseInt(limit) || 12), 500); // Max 500 items per page
     const offset = (parsedPage - 1) * parsedLimit;
     
     console.log('📄 Pagination:', { page: parsedPage, limit: parsedLimit, offset });
@@ -469,6 +480,15 @@ router.get('/company/:companyId', async (req, res) => {
         break;
       case 'popular':
         orderClause = 'ORDER BY p.likes DESC';
+        break;
+      case 'newest':
+        orderClause = 'ORDER BY p.created_at DESC';
+        break;
+      case 'custom':
+      default:
+        // The order the panel dragged the pieces into. A piece nobody has
+        // placed yet goes last, and the date breaks a tie.
+        orderClause = 'ORDER BY p.display_order IS NULL ASC, p.display_order ASC, p.created_at DESC';
         break;
     }
 
@@ -1002,8 +1022,9 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     console.log('🔍 Query params:', { page, limit, category, brand, search, sortBy, companyId });
 
     const offset = (page - 1) * limit;
-    // Enforce maximum limit to prevent huge responses
-    const maxLimit = Math.min(parseInt(limit), 100);
+    // Enforce maximum limit to prevent huge responses. The panel needs the
+    // whole catalogue in one go so a drag can order every piece.
+    const maxLimit = Math.min(parseInt(limit), 500);
     
     let whereClause = 'WHERE company_id = ?';
     let params = [companyId];
@@ -1041,6 +1062,10 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         orderClause = 'ORDER BY likes DESC, created_at DESC';
         break;
       case 'custom':
+        // The order the panel dragged the pieces into. A piece that has no
+        // place yet goes last, and the date breaks a tie.
+        orderClause = 'ORDER BY (display_order IS NULL) ASC, display_order ASC, created_at DESC';
+        break;
       case 'customRequest':
       case 'newest':
       default:
@@ -1194,29 +1219,48 @@ router.put('/admin/reorder', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'productOrders must be an array' });
     }
 
-    // Update each product's display order
+    // The order the panel sent, without duplicates.
+    const sent = [];
+    const seen = new Set();
     for (const item of productOrders) {
-      const { id, display_order } = item;
-      
-      // Verify product belongs to admin's company
-      const product = await db.get('SELECT company_id FROM products WHERE id = ?', [id]);
-      if (!product || product.company_id !== companyId) {
-        continue; // Skip products that don't belong to this company
-      }
-
-      // Try to update display_order, ignore if column doesn't exist yet
-      try {
-        await db.run(
-          'UPDATE products SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [display_order, id]
-        );
-      } catch (err) {
-        // Column doesn't exist yet, skip
-        console.log('display_order column not yet available');
-      }
+      const id = Number(item?.id);
+      if (!Number.isInteger(id) || seen.has(id)) continue;
+      seen.add(id);
+      sent.push(id);
     }
 
-    res.json({ message: 'Product order updated successfully' });
+    // The pieces the panel did not send keep their place after those, so every
+    // piece ends up with a number of its own and no two pieces share one.
+    const catalogue = await db.all(
+      `SELECT id FROM products
+       WHERE company_id = ?
+       ORDER BY (display_order IS NULL) ASC, display_order ASC, created_at DESC`,
+      [companyId]
+    );
+
+    const tail = catalogue
+      .map((row) => Number(row.id))
+      .filter((id) => !seen.has(id));
+
+    const finalOrder = [...sent, ...tail];
+
+    // Every piece of the catalogue gets a number of its own, so the order the
+    // panel shows is the order the shop shows. A failure here is a real
+    // failure — it must not be reported as a success.
+    let updated = 0;
+    for (let index = 0; index < finalOrder.length; index += 1) {
+      await db.run(
+        'UPDATE products SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?',
+        [index, finalOrder[index], companyId]
+      );
+      updated += 1;
+    }
+
+    res.json({
+      message: 'Product order updated successfully',
+      reordered: finalOrder.length,
+      updated,
+    });
   } catch (error) {
     console.error('Product reorder error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -86,9 +86,10 @@ export async function getCompanyProductsFromSupabase(
   const page = params.page ?? 1;
 
   try {
-    // Fetch products for this company
+    // Fetch products for this company.
+    // `sortBy=custom` is the order the admin panel dragged the pieces into.
     const response = await backendGet(
-      `products?companyId=${companyId}&page=${page}&limit=${limit}`
+      `products?companyId=${companyId}&page=${page}&limit=${limit}&sortBy=custom`
     );
 
     // Fetch company info in parallel

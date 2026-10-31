@@ -111,7 +111,9 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=100&sortBy=${sortBy}`, {
+      // The whole catalogue, not the first page of it: a drag can only
+      // order the pieces the panel has, so every piece has to be here.
+      const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=500&sortBy=${sortBy}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }

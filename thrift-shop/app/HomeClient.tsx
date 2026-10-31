@@ -17,6 +17,7 @@ import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
 import { buildBrandIndex } from '../lib/brands';
+import { compareByShopOrder } from '../lib/productOrder';
 import ReviewCarousel from './components/ReviewCarousel';
 import LoveButton from './components/LoveButton';
 import StarRating from './components/StarRating';
@@ -47,7 +48,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('custom');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
@@ -119,6 +120,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
       description: product.company.description,
     } : undefined,
     dateAdded: product.created_at,
+    displayOrder: product.display_order ?? null,
     views: product.views || 0,
     likes: product.likes || 0,
     liked_by_me: product.liked_by_me ?? false,
@@ -181,7 +183,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
       let companyId = parseInt(companyIdStr);
       if (isNaN(companyId) || companyId <= 0) companyId = 1;
 
-      const response = await api.getCompanyProducts(companyId, { limit: 100 });
+      const response = await api.getCompanyProducts(companyId, { limit: 500 });
 
       let freshCurrency = { currency: 'USD', symbol: '$' };
       if (response.company) {
@@ -321,6 +323,9 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
         return a.brand.localeCompare(b.brand);
       case 'popular':
         return b.likes - a.likes;
+      case 'custom':
+        // The order the admin panel dragged the pieces into.
+        return compareByShopOrder(a, b);
       default:
         return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
     }
