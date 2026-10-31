@@ -24,6 +24,16 @@ interface Company {
   logo?: string;
 }
 
+/** A piece of clothing, with the number of loves it has collected. */
+interface LovedProduct {
+  id: number;
+  name: string;
+  brand: string;
+  images: string[];
+  likes: number;
+  rank: number;
+}
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
 const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
@@ -36,6 +46,9 @@ const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [companyCurrency, setCompanyCurrency] = useState({ currency: 'USD', symbol: '$' });
+  /** The pieces the customers love the most, for the dashboard card. */
+  const [mostLoved, setMostLoved] = useState<LovedProduct[]>([]);
+  const [mostLovedLoaded, setMostLovedLoaded] = useState(false);
 
   // Country to currency mapping
   const countryToCurrency: Record<string, { currency: string; symbol: string }> = {
@@ -111,6 +124,7 @@ const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
 
   useEffect(() => {
     loadDashboardData();
+    loadMostLoved();
     // Initialize charts after component mounts and Chart.js is loaded
     const initCharts = () => {
       if ((window as any).Chart) {
@@ -122,6 +136,35 @@ const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
     };
     setTimeout(initCharts, 500);
   }, [authToken]);
+
+  /**
+   * The most loved pieces, for the card on the dashboard.
+   *
+   * The page itself lives in its own component; this only needs the first few
+   * so the dashboard can show the ranking without another round trip.
+   */
+  const loadMostLoved = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/products/admin/most-loved?limit=5`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const loved = (data.products || [])
+        .filter((product: LovedProduct) => product.likes > 0)
+        .slice(0, 5);
+
+      setMostLoved(loved);
+    } catch {
+      // The dashboard still works without the card — it just stays empty.
+    } finally {
+      setMostLovedLoaded(true);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -307,6 +350,76 @@ const Dashboard: React.FC<DashboardProps> = ({ authToken }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Most Loved Pieces */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <i className="fas fa-heart text-rose-500 mr-2"></i>
+            Most Loved Pieces
+          </h3>
+          <a
+            href="/admin/most-loved"
+            className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium"
+          >
+            View All
+          </a>
+        </div>
+
+        {mostLoved.length === 0 ? (
+          <p className="text-sm text-gray-500 py-6 text-center">
+            {mostLovedLoaded
+              ? 'No loves yet — the pieces your customers love will show up here.'
+              : 'Loading the most loved pieces…'}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {mostLoved.map((product) => (
+              <div
+                key={product.id}
+                className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <span className="flex-shrink-0 w-6 text-center text-sm font-bold text-gray-400">
+                  {product.rank}
+                </span>
+
+                <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                  {product.images && product.images.length > 0 ? (
+                    <img
+                      src={product.images[0]}
+                      alt={product.name || 'Product'}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <i className="fas fa-image text-gray-400"></i>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {product.name || 'Unnamed Product'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {product.brand || 'No Brand'}
+                  </p>
+                </div>
+
+                <span className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-rose-100 text-rose-700 px-2.5 py-1 text-xs font-bold">
+                  <i className="fas fa-heart" aria-hidden="true"></i>
+                  {product.likes}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Charts Section */}

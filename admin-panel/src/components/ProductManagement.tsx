@@ -17,6 +17,8 @@ interface Product {
   category: string;
   in_stock: boolean;
   images?: string[];
+  /** How many visitors loved this piece. */
+  likes?: number;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
@@ -357,6 +359,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Original Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Loves</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
             </tr>
@@ -364,7 +367,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
           <tbody className="divide-y divide-gray-200">
             {products.length === 0 ? (
               <tr>
-                <td colSpan={sortBy === 'custom' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={sortBy === 'custom' ? 8 : 7} className="px-6 py-8 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <i className="fas fa-box-open text-4xl mb-4 text-gray-300"></i>
                     <p className="text-lg font-medium">No products found</p>
@@ -430,6 +433,19 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ authToken }) => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category || 'Uncategorized'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        (product.likes || 0) > 0
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
+                      title={`${product.likes || 0} visitors loved this piece`}
+                    >
+                      <i className="fas fa-heart" aria-hidden="true"></i>
+                      {product.likes || 0}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       product.in_stock !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'

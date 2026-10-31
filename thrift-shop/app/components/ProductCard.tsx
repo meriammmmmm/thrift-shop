@@ -1,6 +1,7 @@
 import { Product } from '../types';
 import Image from 'next/image';
 import { useTheme } from '../../lib/theme';
+import LoveButton from './LoveButton';
 
 interface ProductCardProps {
   product: Product;
@@ -118,16 +119,24 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
           {product.description || `${product.condition} condition. ${product.material || 'Quality materials'}.`}
         </p>
 
-        {/* Price */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-lg font-bold text-gray-900">
-            {currencySymbol}{product.price.toFixed(2)}
-          </span>
-          {product.originalPrice && (
-            <span className="text-sm text-gray-400 line-through">
-              {currencySymbol}{product.originalPrice.toFixed(2)}
+        {/* Price + how many people loved the piece */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="text-lg font-bold text-gray-900">
+              {currencySymbol}{product.price.toFixed(2)}
             </span>
-          )}
+            {product.originalPrice && (
+              <span className="text-sm text-gray-400 line-through">
+                {currencySymbol}{product.originalPrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          <LoveButton
+            productId={product.id}
+            likes={product.likes ?? 0}
+            liked={product.liked_by_me ?? false}
+          />
         </div>
 
         {/* Buttons */}

@@ -120,6 +120,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
     dateAdded: product.created_at,
     views: product.views || 0,
     likes: product.likes || 0,
+    liked_by_me: product.liked_by_me ?? false,
   });
 
   // Pre-transform the server-fetched products so they're typed correctly

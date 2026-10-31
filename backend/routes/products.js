@@ -13,6 +13,65 @@ const {
 const router = express.Router();
 
 /**
+ * The visitor key that identifies a browser.
+ *
+ * Loves are counted per visitor so the same person cannot inflate a counter.
+ * The key comes from a header the storefront generates once per browser and
+ * keeps in localStorage.
+ */
+function visitorKey(req) {
+  const raw = req.get('x-visitor-key');
+  if (!raw) return null;
+  const key = String(raw).trim().slice(0, 64);
+  return key.length >= 8 ? key : null;
+}
+
+/**
+ * Attach the love count (and whether this visitor already loved the piece) to
+ * a list of product rows.
+ *
+ * The counts come from `product_likes` rather than the `products.likes`
+ * column, because the column is only a mirror of the table. The counts are
+ * fetched separately instead of being joined into the main query so the same
+ * code works on SQLite and Postgres without the two dialects disagreeing
+ * about `?` placeholder ordering.
+ */
+async function attachLoves(rows, visitor) {
+  if (!rows || rows.length === 0) return [];
+
+  const ids = rows.map((row) => row.id);
+  const placeholders = ids.map(() => '?').join(', ');
+
+  const counts = await db.all(
+    `SELECT product_id, COUNT(*) AS total
+     FROM product_likes
+     WHERE product_id IN (${placeholders})
+     GROUP BY product_id`,
+    ids
+  );
+
+  const mine = visitor
+    ? await db.all(
+        `SELECT product_id
+         FROM product_likes
+         WHERE visitor_key = ? AND product_id IN (${placeholders})`,
+        [visitor, ...ids]
+      )
+    : [];
+
+  const countMap = new Map(
+    counts.map((row) => [Number(row.product_id), Number(row.total)])
+  );
+  const mineSet = new Set(mine.map((row) => Number(row.product_id)));
+
+  return rows.map((row) => ({
+    ...row,
+    likes: countMap.get(Number(row.id)) ?? 0,
+    liked_by_me: mineSet.has(Number(row.id)),
+  }));
+}
+
+/**
  * Serve one image of a product as an image file.
  *
  * A large part of the catalogue still has its photo pasted into the `images`
@@ -189,32 +248,35 @@ router.get('/', async (req, res) => {
     console.log(`✅ Found ${products.length} products, total: ${totalResult.total}`);
 
     // Parse JSON fields and add company info
-    const parsedProducts = products.map(product => {
-      // Images may be a real array, a JSON string, or a JSON string holding a
-      // JSON string. Any inline base64 becomes a link to the image route, so
-      // the response stays small no matter how big the catalogue grows.
-      const images = parseImageList(product.images).map((entry, index) =>
-        rewriteImageEntry(entry, product.id, index, baseUrl)
-      );
+    const parsedProducts = await attachLoves(
+      products.map(product => {
+        // Images may be a real array, a JSON string, or a JSON string holding a
+        // JSON string. Any inline base64 becomes a link to the image route, so
+        // the response stays small no matter how big the catalogue grows.
+        const images = parseImageList(product.images).map((entry, index) =>
+          rewriteImageEntry(entry, product.id, index, baseUrl)
+        );
 
-      return {
-        ...product,
-        price: parseFloat(product.price),
-        original_price: product.original_price ? parseFloat(product.original_price) : null,
-        seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
-        images,
-        measurements: product.measurements ? JSON.parse(product.measurements) : null,
-        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-        tags: product.tags ? JSON.parse(product.tags) : [],
-        reservation_status: product.reservation_status || 'available',
-        reserved_by_order_id: product.reserved_by_order_id || null,
-        company: product.company_name ? {
-          id: product.company_id,
-          name: product.company_name,
-          description: product.company_description
-        } : null
-      };
-    });
+        return {
+          ...product,
+          price: parseFloat(product.price),
+          original_price: product.original_price ? parseFloat(product.original_price) : null,
+          seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
+          images,
+          measurements: product.measurements ? JSON.parse(product.measurements) : null,
+          care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+          tags: product.tags ? JSON.parse(product.tags) : [],
+          reservation_status: product.reservation_status || 'available',
+          reserved_by_order_id: product.reserved_by_order_id || null,
+          company: product.company_name ? {
+            id: product.company_id,
+            name: product.company_name,
+            description: product.company_description
+          } : null
+        };
+      }),
+      visitorKey(req)
+    );
 
     res.json({
       products: parsedProducts,
@@ -408,35 +470,46 @@ router.get('/company/:companyId', async (req, res) => {
     }
 
     // Parse JSON fields and add company info
-    const parsedProducts = products.map(product => {
-      // Images may be a real array, a JSON string, or a JSON string holding a
-      // JSON string. Any inline base64 becomes a link to the image route, so
-      // the response stays small no matter how big the catalogue grows.
-      const images = parseImageList(product.images).map((entry, index) =>
-        rewriteImageEntry(entry, product.id, index, baseUrl)
-      );
+    const parsedProducts = await attachLoves(
+      products.map(product => {
+        // Images may be a real array, a JSON string, or a JSON string holding a
+        // JSON string. Any inline base64 becomes a link to the image route, so
+        // the response stays small no matter how big the catalogue grows.
+        const images = parseImageList(product.images).map((entry, index) =>
+          rewriteImageEntry(entry, product.id, index, baseUrl)
+        );
 
-      return {
-        ...product,
-        price: parseFloat(product.price),
-        original_price: product.original_price ? parseFloat(product.original_price) : null,
-        seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
-        images,
-        measurements: product.measurements ? JSON.parse(product.measurements) : null,
-        care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-        tags: product.tags ? JSON.parse(product.tags) : [],
-        reservation_status: product.reservation_status || 'available',
-        reserved_by_order_id: product.reserved_by_order_id || null,
-        company: {
-          id: product.company_id,
-          name: product.company_name,
-          description: product.company_description
-        }
-      };
-    });
+        return {
+          ...product,
+          price: parseFloat(product.price),
+          original_price: product.original_price ? parseFloat(product.original_price) : null,
+          seller_rating: product.seller_rating ? parseFloat(product.seller_rating) : null,
+          images,
+          measurements: product.measurements ? JSON.parse(product.measurements) : null,
+          care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+          tags: product.tags ? JSON.parse(product.tags) : [],
+          reservation_status: product.reservation_status || 'available',
+          reserved_by_order_id: product.reserved_by_order_id || null,
+          company: {
+            id: product.company_id,
+            name: product.company_name,
+            description: product.company_description
+          }
+        };
+      }),
+      visitorKey(req)
+    );
 
-    // Cache public product listings for 60 seconds (CDN + browser)
-    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
+    // Cache public product listings for 60 seconds (CDN + browser). A response
+    // that carries "did this visitor already love the piece" belongs to one
+    // browser only, so it must never be shared.
+    const visitor = visitorKey(req);
+    res.set(
+      'Cache-Control',
+      visitor
+        ? 'private, max-age=60'
+        : 'public, max-age=60, stale-while-revalidate=30'
+    );
     res.json({
       company: {
         id: company.id,
@@ -505,25 +578,104 @@ router.get('/:id', async (req, res) => {
             rewriteImageEntry(entry, product.id, index, baseUrl)
           );
 
-    const parsedProduct = {
-      ...product,
-      images,
-      measurements: product.measurements ? JSON.parse(product.measurements) : null,
-      care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
-      tags: product.tags ? JSON.parse(product.tags) : [],
-      reservation_status: product.reservation_status || 'available',
-      reserved_by_order_id: product.reserved_by_order_id || null,
-      company: product.company_name ? {
-        id: product.company_id,
-        name: product.company_name,
-        description: product.company_description
-      } : null
-    };
+    const [parsedProduct] = await attachLoves(
+      [
+        {
+          ...product,
+          images,
+          measurements: product.measurements ? JSON.parse(product.measurements) : null,
+          care_instructions: product.care_instructions ? JSON.parse(product.care_instructions) : [],
+          tags: product.tags ? JSON.parse(product.tags) : [],
+          reservation_status: product.reservation_status || 'available',
+          reserved_by_order_id: product.reserved_by_order_id || null,
+          company: product.company_name ? {
+            id: product.company_id,
+            name: product.company_name,
+            description: product.company_description
+          } : null
+        },
+      ],
+      visitorKey(req)
+    );
 
     res.json(parsedProduct);
   } catch (error) {
     console.error('Product fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Toggle the "love" on a piece of clothing.
+ *
+ * The vote is per visitor (the `x-visitor-key` header), so pressing the heart
+ * again takes the love back and a reload cannot inflate the counter. A piece
+ * that is hidden from the shop does not accept loves — it is not on the
+ * storefront for anyone to love.
+ */
+router.post('/:id/like', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const visitor = visitorKey(req);
+
+    if (!visitor) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing visitor key'
+      });
+    }
+
+    const product = await db.get(
+      'SELECT id FROM products WHERE id = ? AND visible = ?',
+      [id, true]
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    const liked = await db.get(
+      'SELECT id FROM product_likes WHERE product_id = ? AND visitor_key = ?',
+      [id, visitor]
+    );
+
+    let nowLiked;
+    if (liked) {
+      await db.run('DELETE FROM product_likes WHERE id = ?', [liked.id]);
+      nowLiked = false;
+    } else {
+      await db.run(
+        'INSERT INTO product_likes (product_id, visitor_key) VALUES (?, ?)',
+        [id, visitor]
+      );
+      nowLiked = true;
+    }
+
+    const counts = await db.get(
+      'SELECT COUNT(*) AS total FROM product_likes WHERE product_id = ?',
+      [id]
+    );
+
+    const total = counts ? Number(counts.total) : 0;
+
+    // The `products.likes` column is a mirror of the table so the catalogue can
+    // still be sorted by "most loved" with a plain ORDER BY.
+    await db.run('UPDATE products SET likes = ? WHERE id = ?', [total, id]);
+
+    res.json({
+      success: true,
+      liked: nowLiked,
+      likes: total,
+    });
+  } catch (error) {
+    console.error('Toggle product like error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to register the love'
+    });
   }
 });
 
@@ -727,6 +879,10 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     }
 
     const result = await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
+
+    // SQLite does not enforce the foreign key, so the loves on a piece that no
+    // longer exists are cleaned up by hand.
+    await db.run('DELETE FROM product_likes WHERE product_id = ?', [req.params.id]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Product not found' });
@@ -824,6 +980,8 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
         orderClause = 'ORDER BY brand ASC';
         break;
       case 'popular':
+        orderClause = 'ORDER BY likes DESC, created_at DESC';
+        break;
       case 'custom':
       case 'customRequest':
       case 'newest':
@@ -882,6 +1040,83 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Get the most loved pieces of this company (Admin only)
+//
+// The admin panel shows this as its "Most Loved Pieces" page: the pieces the
+// customers pressed the heart on the most, with the count on each one.
+router.get('/admin/most-loved', requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.user.admin_company_id;
+
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const { limit = 50 } = req.query;
+    const maxLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+
+    // Base for the links that replace inline base64 images.
+    const baseUrl = publicBaseUrl(req);
+
+    // The love count is counted from `product_likes` so the page and the
+    // storefront always agree, even if the mirror column drifts.
+    const rows = await db.all(
+      `SELECT p.*, (
+         SELECT COUNT(*) FROM product_likes pl WHERE pl.product_id = p.id
+       ) AS love_count
+       FROM products p
+       WHERE p.company_id = ?
+       ORDER BY love_count DESC, p.created_at DESC
+       LIMIT ?`,
+      [companyId, maxLimit]
+    );
+
+    const products = rows.map((product, index) => {
+      const images = parseImageList(product.images).map((entry, imageIndex) =>
+        rewriteImageEntry(entry, product.id, imageIndex, baseUrl)
+      );
+
+      return {
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        size: product.size,
+        price: parseFloat(product.price),
+        original_price: product.original_price ? parseFloat(product.original_price) : null,
+        images,
+        views: product.views || 0,
+        likes: Number(product.love_count) || 0,
+        visible: product.visible,
+        in_stock: product.in_stock,
+        reservation_status: product.reservation_status || 'available',
+        created_at: product.created_at,
+        rank: index + 1,
+      };
+    });
+
+    const totalLoves = products.reduce((sum, product) => sum + product.likes, 0);
+    const lovedPieces = products.filter((product) => product.likes > 0).length;
+    const topProduct = products.find((product) => product.likes > 0) || null;
+
+    res.json({
+      success: true,
+      products,
+      summary: {
+        total_loves: totalLoves,
+        loved_pieces: lovedPieces,
+        catalogue_size: products.length,
+        top_product: topProduct
+          ? { id: topProduct.id, name: topProduct.name, likes: topProduct.likes }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error('Most loved products fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

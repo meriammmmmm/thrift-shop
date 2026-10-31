@@ -190,7 +190,8 @@ export default function ProductsPage() {
             },
             dateAdded: product.created_at,
             views: product.views || 0,
-            likes: product.likes || 0
+            likes: product.likes || 0,
+            liked_by_me: product.liked_by_me ?? false
           };
         });
         

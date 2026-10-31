@@ -172,7 +172,8 @@ export default function Home() {
     } : null,
     dateAdded: product.created_at,
     views: product.views || 0,
-    likes: product.likes || 0
+    likes: product.likes || 0,
+    liked_by_me: product.liked_by_me ?? false
   });
 
   // Load products from API

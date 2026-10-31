@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Product } from '../types';
 import Image from 'next/image';
 import SizeGuide from './SizeGuide';
+import LoveButton from './LoveButton';
 import { useTheme } from '../../lib/theme';
 
 interface ProductDetailsProps {
@@ -315,6 +316,16 @@ export default function ProductDetails({
                   Save {currencySymbol}{(product.originalPrice! - product.price).toFixed(2)} ({discountPercentage}% off)
                 </p>
               )}
+
+              {/* How many people loved this piece */}
+              <div className="mt-3">
+                <LoveButton
+                  productId={product.id}
+                  likes={product.likes ?? 0}
+                  liked={product.liked_by_me ?? false}
+                  className="px-3 py-1.5 text-sm"
+                />
+              </div>
             </div>
 
             {/* Key Details */}

@@ -174,6 +174,18 @@ class DatabaseWrapper {
         UNIQUE(user_id, product_id)
       )`,
 
+      // A "love" on a piece of clothing. The visitor key identifies the browser
+      // that pressed the heart, so the same person cannot inflate the counter
+      // by reloading the page.
+      `CREATE TABLE IF NOT EXISTS product_likes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        visitor_key TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(product_id, visitor_key),
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+      )`,
+
       // Reviews table
       `CREATE TABLE IF NOT EXISTS reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -579,6 +591,21 @@ class DatabaseWrapper {
       if (!err.message.includes('duplicate column name')) {
         console.error('Error adding visible to products:', err.message);
       }
+    }
+
+    // The `products.likes` column is a mirror of `product_likes`. Any number
+    // that was never backed by a real visit is cleared, so the catalogue sorts
+    // by the same count the storefront shows.
+    try {
+      this.db.exec(`
+        UPDATE products
+        SET likes = (
+          SELECT COUNT(*) FROM product_likes pl WHERE pl.product_id = products.id
+        )
+      `);
+      console.log('✅ Synced products.likes with the real love counts');
+    } catch (err) {
+      console.error('Error syncing products.likes:', err.message);
     }
   }
 

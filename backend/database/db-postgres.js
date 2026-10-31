@@ -136,6 +136,20 @@ class PostgresDatabase {
         )
       `);
 
+      // A "love" on a piece of clothing. The visitor key identifies the browser
+      // that pressed the heart, so the same person cannot inflate the counter
+      // by reloading the page.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS product_likes (
+          id SERIAL PRIMARY KEY,
+          product_id INTEGER NOT NULL,
+          visitor_key TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(product_id, visitor_key),
+          FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+        )
+      `);
+
       await client.query(`
         CREATE TABLE IF NOT EXISTS reviews (
           id SERIAL PRIMARY KEY,
@@ -438,6 +452,39 @@ class PostgresDatabase {
         console.log('✅ Ensured testimonial_likes table exists');
       } catch (err) {
         console.log('⚠️ testimonial_likes migration:', err.message);
+      }
+
+      // Loves on a product. The table is created here as well so a database
+      // that was created before the feature still gets it on the next boot.
+      try {
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS product_likes (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL,
+            visitor_key TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id, visitor_key),
+            FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+          )
+        `);
+        console.log('✅ Ensured product_likes table exists');
+      } catch (err) {
+        console.log('⚠️ product_likes migration:', err.message);
+      }
+
+      // The `products.likes` column is a mirror of `product_likes`. Any number
+      // that was never backed by a real visit is cleared, so the catalogue
+      // sorts by the same count the storefront shows.
+      try {
+        await client.query(`
+          UPDATE products p
+          SET likes = (
+            SELECT COUNT(*) FROM product_likes pl WHERE pl.product_id = p.id
+          )
+        `);
+        console.log('✅ Synced products.likes with the real love counts');
+      } catch (err) {
+        console.log('⚠️ products.likes sync:', err.message);
       }
 
       const result = await client.query('SELECT id FROM companies LIMIT 1');

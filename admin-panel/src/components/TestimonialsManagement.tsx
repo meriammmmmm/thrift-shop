@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../config';
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected';
 type ReviewSource = 'customer' | 'admin';
@@ -43,17 +44,97 @@ const isPlaceholderImage = (image: string | null | undefined): boolean => {
   return LEGACY_PLACEHOLDER_AVATARS.some((id) => image.includes(id));
 };
 
-/** Curated pairs that sit well with the brand palette. */
-const AVATAR_PALETTE = [
-  { from: '#8C1F3D', to: '#C4657E' },
-  { from: '#5B2333', to: '#A34D64' },
-  { from: '#7A3B52', to: '#C98C9C' },
-  { from: '#2F4858', to: '#5C7C8A' },
-  { from: '#4A3B6B', to: '#8B7BA8' },
-  { from: '#3E5C45', to: '#7FA88C' },
-  { from: '#6B4E3D', to: '#B08D6B' },
-  { from: '#5A2E4A', to: '#A66E93' },
-];
+/**
+ * The brand colours the avatar gradients are built from.
+ *
+ * They mirror the storefront theme, so an avatar looks the same in the admin
+ * panel as it does on the shop. The live theme is fetched on mount and
+ * replaces these when it arrives.
+ */
+const BRAND_PRIMARY = '#8B1538';
+const BRAND_PRIMARY_LIGHT = '#b33d60';
+
+/** How far each avatar is rotated away from the brand colour. */
+const HUE_OFFSETS = [-16, -10, -4, 0, 5, 11, 16, -22];
+
+type Rgb = { r: number; g: number; b: number };
+
+function hexToRgb(hex: string): Rgb {
+  const clean = hex.replace('#', '').trim();
+  const value = parseInt(clean.slice(0, 6), 16);
+  if (Number.isNaN(value)) return { r: 115, g: 21, b: 40 };
+
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255,
+  };
+}
+
+function rgbToHex({ r, g, b }: Rgb): string {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return `#${[r, g, b]
+    .map((n) => clamp(n).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+/** Mix towards white (positive) or black (negative). */
+function shade(color: Rgb, amount: number): Rgb {
+  const target = amount >= 0 ? 255 : 0;
+  const ratio = Math.abs(amount);
+
+  return {
+    r: color.r + (target - color.r) * ratio,
+    g: color.g + (target - color.g) * ratio,
+    b: color.b + (target - color.b) * ratio,
+  };
+}
+
+/** Rotate the colour around the colour wheel. */
+function shiftHue(color: Rgb, degrees: number): Rgb {
+  const r = color.r / 255;
+  const g = color.g / 255;
+  const b = color.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+
+  if (max === min) return color;
+
+  const delta = max - min;
+  const saturation =
+    lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+
+  let hue: number;
+  if (max === r) hue = ((g - b) / delta + (g < b ? 6 : 0)) / 6;
+  else if (max === g) hue = ((b - r) / delta + 2) / 6;
+  else hue = ((r - g) / delta + 4) / 6;
+
+  hue = (hue + degrees / 360 + 1) % 1;
+
+  const q =
+    lightness < 0.5
+      ? lightness * (1 + saturation)
+      : lightness + saturation - lightness * saturation;
+  const p = 2 * lightness - q;
+
+  const hueToChannel = (t: number) => {
+    let value = t;
+    if (value < 0) value += 1;
+    if (value > 1) value -= 1;
+    if (value < 1 / 6) return p + (q - p) * 6 * value;
+    if (value < 1 / 2) return q;
+    if (value < 2 / 3) return p + (q - p) * (2 / 3 - value) * 6;
+    return p;
+  };
+
+  return {
+    r: hueToChannel(hue + 1 / 3) * 255,
+    g: hueToChannel(hue) * 255,
+    b: hueToChannel(hue - 1 / 3) * 255,
+  };
+}
 
 /** A stable hash so the same name always maps to the same colour. */
 const hashName = (name: string): number => {
@@ -84,10 +165,14 @@ const Avatar = ({
   name,
   image,
   size = 64,
+  primary = BRAND_PRIMARY,
+  primaryLight = BRAND_PRIMARY_LIGHT,
 }: {
   name: string;
   image: string | null;
   size?: number;
+  primary?: string;
+  primaryLight?: string;
 }) => {
   if (!isPlaceholderImage(image)) {
     return (
@@ -103,7 +188,9 @@ const Avatar = ({
     );
   }
 
-  const palette = AVATAR_PALETTE[hashName(name || '?') % AVATAR_PALETTE.length];
+  const offset = HUE_OFFSETS[hashName(name || '?') % HUE_OFFSETS.length];
+  const from = shiftHue(shade(hexToRgb(primary), -0.2), offset);
+  const to = shiftHue(shade(hexToRgb(primaryLight), 0.1), offset);
 
   return (
     <div
@@ -119,7 +206,7 @@ const Avatar = ({
         color: '#FFFFFF',
         fontWeight: 600,
         fontSize: Math.round(size * 0.36),
-        backgroundImage: `linear-gradient(135deg, ${palette.from} 0%, ${palette.to} 100%)`,
+        backgroundImage: `linear-gradient(135deg, ${rgbToHex(from)} 0%, ${rgbToHex(to)} 100%)`,
       }}
     >
       {getInitials(name)}
@@ -208,6 +295,46 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
+
+  /**
+   * The brand colours the avatar gradients are built from.
+   *
+   * The storefront reads them from the live theme, so the panel reads them
+   * from the same place — otherwise a review would look one colour in the
+   * admin list and another colour on the shop.
+   */
+  const [brand, setBrand] = useState<{ primary: string; primaryLight: string }>({
+    primary: BRAND_PRIMARY,
+    primaryLight: BRAND_PRIMARY_LIGHT,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTheme = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings/theme`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const theme = data?.theme;
+        if (cancelled || !theme?.primary) return;
+
+        setBrand({
+          primary: theme.primary,
+          primaryLight: theme.primaryLight || theme.primary,
+        });
+      } catch {
+        // The fallback colours stay in place — the avatars still look right.
+      }
+    };
+
+    loadTheme();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load testimonials from API
   const loadTestimonials = useCallback(async () => {
@@ -637,6 +764,8 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       name={testimonial.name}
                       image={testimonial.image}
                       size={64}
+                      primary={brand.primary}
+                      primaryLight={brand.primaryLight}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
@@ -999,6 +1128,8 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                       name={editingTestimonial.name || editingTestimonial.title}
                       image={editingTestimonial.image}
                       size={64}
+                      primary={brand.primary}
+                      primaryLight={brand.primaryLight}
                     />
                   </div>
                 </div>

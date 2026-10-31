@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import UserManagement from './components/UserManagement';
 import ProductManagement from './components/ProductManagement';
+import MostLovedPieces from './components/MostLovedPieces';
 import CategoryManagement from './components/CategoryManagement';
 import OrderManagement from './components/OrderManagement';
 import TransactionManagement from './components/TransactionManagement';
@@ -74,6 +75,7 @@ const MainLayout: React.FC<{
             <Route path="/profile" element={currentUser ? <AdminProfile authToken={authToken} user={currentUser} /> : <Navigate to="/admin/dashboard" />} />
             <Route path="/users" element={<UserManagement authToken={authToken} />} />
             <Route path="/products" element={<ProductManagement authToken={authToken} />} />
+            <Route path="/most-loved" element={<MostLovedPieces authToken={authToken} />} />
             <Route path="/categories" element={<CategoryManagement authToken={authToken} />} />
             <Route path="/orders" element={<OrderManagement authToken={authToken} />} />
             <Route path="/transactions" element={<TransactionManagement authToken={authToken} />} />

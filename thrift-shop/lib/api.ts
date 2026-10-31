@@ -4,6 +4,7 @@ import {
   getCompanyProductsFromSupabase,
   getProductFromSupabase,
 } from './supabaseProducts';
+import { getVisitorKey } from './visitor';
 
 // The Railway app this used to point at has been deleted (every route now
 // answers "Application not found"), so the live backend is the fly.dev host.
@@ -45,6 +46,10 @@ class ApiClient {
     
     // Get token from localStorage
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+
+    // The visitor key tells the API which votes are this browser's, so a piece
+    // the visitor already loved comes back with its heart already pressed.
+    const visitorKey = typeof window !== 'undefined' ? getVisitorKey() : '';
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
@@ -54,6 +59,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
+        ...(visitorKey && { 'x-visitor-key': visitorKey }),
         ...options.headers,
       },
       signal: controller.signal,

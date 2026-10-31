@@ -53,6 +53,13 @@ const menuItems = [
     iconColor: 'text-orange-600'
   },
   {
+    id: 'most-loved',
+    name: 'Most Loved Pieces',
+    icon: 'fas fa-heart',
+    bgColor: 'bg-rose-100',
+    iconColor: 'text-rose-600'
+  },
+  {
     id: 'categories',
     name: 'Category Management',
     icon: 'fas fa-tags',
