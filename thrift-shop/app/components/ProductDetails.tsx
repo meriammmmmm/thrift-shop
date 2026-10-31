@@ -4,7 +4,6 @@ import Image from 'next/image';
 import SizeGuide from './SizeGuide';
 import LoveButton from './LoveButton';
 import { useTheme } from '../../lib/theme';
-import { fetchVideos, ShopVideo, videoForProduct } from '../../lib/videos';
 
 interface ProductDetailsProps {
   product: Product | null;
@@ -34,32 +33,6 @@ export default function ProductDetails({
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  /** The clip of this piece, when it has one. */
-  const [videos, setVideos] = useState<ShopVideo[]>([]);
-  const [showVideo, setShowVideo] = useState(false);
-
-  const productVideo = product ? videoForProduct(videos, product.id) : undefined;
-
-  // The clips are fetched when a piece is opened, not with the whole page.
-  useEffect(() => {
-    if (!isOpen || !product) {
-      setShowVideo(false);
-      return;
-    }
-
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '2';
-    if (!apiUrl) return;
-
-    let cancelled = false;
-    fetchVideos(apiUrl, companyId).then((loaded) => {
-      if (!cancelled) setVideos(loaded);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, product]);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -354,46 +327,6 @@ export default function ProductDetails({
                 />
               </div>
             </div>
-
-            {/* The clip of this piece, when it has one */}
-            {productVideo && (
-              <div className="mb-6">
-                {showVideo ? (
-                  <div>
-                    <video
-                      src={productVideo.video_url}
-                      poster={productVideo.poster_url || undefined}
-                      controls
-                      autoPlay
-                      playsInline
-                      className="w-full rounded-xl bg-black max-h-[420px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowVideo(false)}
-                      className="mt-2 text-xs underline underline-offset-2 hover:opacity-70"
-                      style={{ color: theme.primary }}
-                    >
-                      Hide the video
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowVideo(true)}
-                    className="inline-flex items-center px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors"
-                    style={{
-                      color: theme.primary,
-                      borderColor: `${theme.primary}40`,
-                      backgroundColor: `${theme.primary}08`,
-                    }}
-                  >
-                    <i className="fas fa-play-circle mr-2"></i>
-                    Watch the video
-                  </button>
-                )}
-              </div>
-            )}
 
             {/* Key Details */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">

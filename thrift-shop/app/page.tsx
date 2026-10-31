@@ -659,12 +659,6 @@ export default function Home() {
     setIsProductDetailsOpen(true);
   };
 
-  /** The video section knows a piece by its id — the page knows the piece. */
-  const handleViewProductById = (productId: number) => {
-    const product = products.find((item) => item.id === productId);
-    if (product) handleViewDetails(product);
-  };
-
   const cartCount = cart.length;
 
   const heroSlides = [
@@ -1192,13 +1186,8 @@ export default function Home() {
       {/* Brand band — the ticker leans into the scroll speed */}
       <MarqueeBand />
 
-      {/* The clips of the shop — every piece that has a video of its own */}
-      <VideoSection
-        videos={videos}
-        primary={theme.primary}
-        currencySymbol={companyCurrency.symbol}
-        onViewProduct={handleViewProductById}
-      />
+      {/* The clips of the shop — they have a section of their own */}
+      <VideoSection videos={videos} primary={theme.primary} />
 
       {/* Clean Out Service Section */}
      

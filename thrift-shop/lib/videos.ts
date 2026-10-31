@@ -49,8 +49,8 @@ export async function fetchVideos(
     const data = await response.json();
     const videos: ShopVideo[] = data.videos || [];
 
-    // A piece that is hidden in the shop is not shown with its video either.
-    return videos.filter((video) => video.is_active && video.product);
+    // A clip that is hidden in the panel does not show in the shop either.
+    return videos.filter((video) => video.is_active);
   } catch {
     return [];
   }

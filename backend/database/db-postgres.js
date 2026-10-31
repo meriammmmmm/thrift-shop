@@ -386,12 +386,13 @@ class PostgresDatabase {
 
       // Videos attached to a product. The clip itself is kept as bytes so the
       // shop can play it straight from the API, and the list endpoint never
-      // has to carry megabytes around.
+      // has to carry megabytes around. A clip does not have to belong to a
+      // product — it can stand on its own in the video section.
       await client.query(`
         CREATE TABLE IF NOT EXISTS product_videos (
           id SERIAL PRIMARY KEY,
           company_id INTEGER NOT NULL,
-          product_id INTEGER NOT NULL,
+          product_id INTEGER,
           title TEXT,
           video BYTEA NOT NULL,
           mime TEXT DEFAULT 'video/mp4',
@@ -405,6 +406,12 @@ class PostgresDatabase {
           FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
         )
       `);
+
+      // The table was created with a product that had to be there. A clip on
+      // its own is allowed now.
+      await client.query(
+        'ALTER TABLE product_videos ALTER COLUMN product_id DROP NOT NULL'
+      );
 
       console.log('✅ PostgreSQL tables initialized');
 

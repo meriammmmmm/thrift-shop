@@ -406,11 +406,12 @@ class DatabaseWrapper {
 
       // Videos attached to a product. The clip itself is kept as bytes so the
       // shop can play it straight from the API, and the list endpoint never
-      // has to carry megabytes around.
+      // has to carry megabytes around. A clip does not have to belong to a
+      // product — it can stand on its own in the video section.
       `CREATE TABLE IF NOT EXISTS product_videos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         company_id INTEGER NOT NULL,
-        product_id INTEGER NOT NULL,
+        product_id INTEGER,
         title TEXT,
         video BLOB NOT NULL,
         mime TEXT DEFAULT 'video/mp4',
@@ -439,6 +440,58 @@ class DatabaseWrapper {
     // Reviews need their approval state on databases created before the
     // workflow existed.
     this.addTestimonialColumns();
+
+    // A clip does not have to belong to a product any more.
+    this.relaxProductVideoProduct();
+  }
+
+  /**
+   * A clip can stand on its own in the video section, so the product it may
+   * belong to is optional. SQLite cannot drop that rule from a table, so the
+   * table is rebuilt when it is still there.
+   */
+  relaxProductVideoProduct() {
+    let columns = [];
+    try {
+      columns = this.db.prepare('PRAGMA table_info(product_videos)').all();
+    } catch {
+      return;
+    }
+
+    const productId = columns.find((column) => column.name === 'product_id');
+    if (!productId || !productId.notnull) return;
+
+    try {
+      this.db.exec('ALTER TABLE product_videos RENAME TO product_videos_old');
+      this.db.exec(`CREATE TABLE product_videos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        product_id INTEGER,
+        title TEXT,
+        video BLOB NOT NULL,
+        mime TEXT DEFAULT 'video/mp4',
+        size INTEGER DEFAULT 0,
+        poster BLOB,
+        poster_mime TEXT,
+        is_active INTEGER DEFAULT 1,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+      )`);
+      this.db.exec(`
+        INSERT INTO product_videos
+          (id, company_id, product_id, title, video, mime, size, poster, poster_mime,
+           is_active, display_order, created_at, updated_at)
+        SELECT id, company_id, product_id, title, video, mime, size, poster, poster_mime,
+               is_active, display_order, created_at, updated_at
+        FROM product_videos_old
+      `);
+      this.db.exec('DROP TABLE product_videos_old');
+      console.log('✅ product_videos can hold a clip without a product');
+    } catch (err) {
+      console.error('Error relaxing product_videos:', err.message);
+    }
   }
 
   addTestimonialColumns() {

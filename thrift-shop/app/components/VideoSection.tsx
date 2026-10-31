@@ -1,66 +1,247 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ShopVideo } from '../../lib/videos';
 
 /**
  * The video section of the shop.
  *
- * Every clip belongs to a piece, so the card shows the piece it belongs to
- * and the price with it. The clip plays inside the card — nothing opens in a
- * new tab and the visitor keeps their place on the page.
+ * A row of vertical clips, the one in the middle plays, and the arrows walk
+ * through them. Every clip carries its own sound button and its own play and
+ * stop buttons, the way the shop's other sections carry their own controls.
  */
 
 interface VideoSectionProps {
   videos: ShopVideo[];
   primary: string;
-  currencySymbol: string;
-  /** Opens the piece of the clip, when the page can show it. */
-  onViewProduct?: (productId: number) => void;
 }
 
-const VideoSection: React.FC<VideoSectionProps> = ({
-  videos,
-  primary,
-  currencySymbol,
-  onViewProduct,
-}) => {
-  /** The clip that is playing right now — only one at a time. */
-  const [playingId, setPlayingId] = useState<number | null>(null);
+/** The marks of the controls. The shop draws its own icons inline, the same
+ * way the rest of the storefront does. */
+
+/** The speaker with sound. */
+const SoundOnIcon = () => (
+  <svg
+    className="w-3.5 h-3.5"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+  </svg>
+);
+
+/** The speaker without sound. */
+const SoundOffIcon = () => (
+  <svg
+    className="w-3.5 h-3.5"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+    <path d="m16 9 5 6" />
+    <path d="m21 9-5 6" />
+  </svg>
+);
+
+/** The play mark. */
+const PlayIcon = () => (
+  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M8 5.2v13.6a.7.7 0 0 0 1.07.6l10.6-6.8a.7.7 0 0 0 0-1.2L9.07 4.6A.7.7 0 0 0 8 5.2Z" />
+  </svg>
+);
+
+/** The pause mark. */
+const PauseIcon = () => (
+  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+    <rect x="6" y="4.5" width="4.2" height="15" rx="1.2" />
+    <rect x="13.8" y="4.5" width="4.2" height="15" rx="1.2" />
+  </svg>
+);
+
+/** The stop mark. */
+const StopIcon = () => (
+  <svg
+    className="w-3 h-3"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.6"
+    strokeLinecap="round"
+  >
+    <path d="m6.5 6.5 11 11" />
+    <path d="m17.5 6.5-11 11" />
+  </svg>
+);
+
+/** The arrow that walks the row. */
+const ArrowIcon = ({ direction }: { direction: 'left' | 'right' }) => (
+  <svg
+    className="w-4 h-4"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={direction === 'left' ? 'm15 5-7 7 7 7' : 'm9 5 7 7-7 7'} />
+  </svg>
+);
+
+const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
+  /** The clip in the middle — the one that plays. */
+  const [active, setActive] = useState(0);
+  /** The sound starts off, the way every browser wants it, and stays as the
+   * customer left it once they turn it on. */
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(true);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
+  const trackRef = useRef<HTMLDivElement | null>(null);
+
+  const goTo = useCallback(
+    (index: number) => {
+      if (!videos.length) return;
+      const next = (index + videos.length) % videos.length;
+      setActive(next);
+      cardRefs.current[next]?.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    },
+    [videos.length]
+  );
+
+  /** When the row is dragged by hand, the clip in the middle of it is the one
+   * that plays. The scroll tells us which card that is. */
+  const syncActiveFromScroll = useCallback(() => {
+    const track = trackRef.current;
+    if (!track || !cardRefs.current.length) return;
+
+    const middle = track.scrollLeft + track.clientWidth / 2;
+    let nearest = 0;
+    let smallest = Number.POSITIVE_INFINITY;
+
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return;
+      const centre = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(centre - middle);
+      if (distance < smallest) {
+        smallest = distance;
+        nearest = index;
+      }
+    });
+
+    setActive((current) => (current === nearest ? current : nearest));
+  }, []);
+
+  // The first clip starts in the middle, whatever the browser remembered from
+  // the last visit.
+  useEffect(() => {
+    if (!videos.length) return;
+    const card = cardRefs.current[0];
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+  }, [videos.length]);
+
+  // Only the clip in the middle runs. The others wait with their first frame
+  // showing, so the row looks like a row of films and not a row of blanks.
+  useEffect(() => {
+    videos.forEach((video, index) => {
+      const element = videoRefs.current[video.id];
+      if (!element) return;
+
+      if (index === active) {
+        element.muted = muted;
+        const started = element.play();
+        if (started && typeof started.catch === 'function') {
+          started.catch(() => setPlaying(false));
+        }
+      } else {
+        element.pause();
+        element.muted = true;
+      }
+    });
+  }, [active, muted, videos]);
 
   if (!videos.length) return null;
 
-  const togglePlay = (video: ShopVideo) => {
-    if (playingId === video.id) {
-      videoRefs.current[video.id]?.pause();
-      setPlayingId(null);
+  /** Pause or resume the clip in the middle. */
+  const togglePlay = (index: number) => {
+    const element = videoRefs.current[videos[index].id];
+    if (!element) return;
+
+    if (index !== active) {
+      goTo(index);
       return;
     }
 
-    // Stop whatever was playing before.
-    if (playingId !== null) {
-      videoRefs.current[playingId]?.pause();
-    }
-
-    setPlayingId(video.id);
-    // The element is only in the tree once it is playing, so the play call
-    // has to wait for the render.
-    window.setTimeout(() => {
-      const element = videoRefs.current[video.id];
-      if (element) {
-        element.play().catch(() => {
-          // The browser refused to start on its own — the controls stay
-          // there, so the visitor can start the clip by hand.
-        });
+    if (element.paused) {
+      const started = element.play();
+      if (started && typeof started.catch === 'function') {
+        started.catch(() => setPlaying(false));
       }
-    }, 0);
+      setPlaying(true);
+    } else {
+      element.pause();
+      setPlaying(false);
+    }
   };
 
+  /** Stop the clip and put it back at its first frame. */
+  const stopVideo = (index: number) => {
+    const element = videoRefs.current[videos[index].id];
+    if (!element) return;
+
+    element.pause();
+    try {
+      element.currentTime = 0;
+    } catch {
+      // A clip that is not ready yet cannot be rewound, but it is stopped.
+    }
+    setPlaying(false);
+  };
+
+  /** The sound on or off. Clicking it on a card that is not playing also brings
+   * that card to the middle, so the customer hears what they pressed. */
+  const toggleSound = (index: number) => {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+
+    if (index !== active) {
+      goTo(index);
+      return;
+    }
+
+    const element = videoRefs.current[videos[index].id];
+    if (element) element.muted = nextMuted;
+  };
+
+  /** The round button every clip carries in its top corner. The dark back
+   * keeps the white mark readable over a bright frame. */
+  const controlClass =
+    'w-8 h-8 rounded-full bg-black/35 backdrop-blur-md text-white ring-1 ring-white/25 flex items-center justify-center hover:bg-black/55 active:bg-black/65 transition-colors';
+
   return (
-    <section className="relative py-10 sm:py-16 md:py-20 bg-white overflow-hidden scroll-animate scroll-fadeInUp">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-6 sm:mb-12">
+    <section
+      className="relative py-12 sm:py-16 md:py-20 overflow-hidden scroll-animate scroll-fadeInUp"
+      style={{
+        background: `linear-gradient(180deg, ${primary}12 0%, #ffffff 45%, #ffffff 100%)`,
+      }}
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 sm:mb-12">
           <span
             className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-2 sm:mb-4"
             style={{ backgroundColor: `${primary}15`, color: primary }}
@@ -71,139 +252,155 @@ const VideoSection: React.FC<VideoSectionProps> = ({
             Videos
           </h2>
           <p className="text-gray-500 text-xs sm:text-sm tracking-wide">
-            A closer look at the pieces, filmed and styled for you
+            A closer look, filmed and styled for you
           </p>
         </div>
 
-        {/* The clips, in a row that scrolls sideways on a small screen */}
-        <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
-          {videos.map((video) => {
-            const isPlaying = playingId === video.id;
+        {/* The row of clips */}
+        <div className="relative">
+          <div
+            ref={trackRef}
+            onScroll={syncActiveFromScroll}
+            className="flex items-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide px-12 sm:px-16"
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {videos.map((video, index) => {
+              const isActive = index === active;
+              const title = video.title || 'Video';
 
-            return (
-              <div
-                key={video.id}
-                className="w-[78vw] max-w-[320px] sm:w-[300px] flex-shrink-0 snap-start"
-              >
-                <div className="group relative rounded-2xl overflow-hidden bg-gray-100 shadow-md aspect-[4/5]">
-                  {isPlaying ? (
-                    <video
-                      ref={(element) => {
-                        videoRefs.current[video.id] = element;
-                      }}
-                      src={video.video_url}
-                      poster={video.poster_url || undefined}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover bg-black"
-                    />
-                  ) : (
-                    <>
-                      {video.poster_url ? (
-                        <img
-                          src={video.poster_url}
-                          alt={video.title || video.product.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                      ) : video.product.image ? (
-                        <img
-                          src={video.product.image}
-                          alt={video.product.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <svg
-                            className="w-12 h-12 text-gray-300"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
-                            />
-                          </svg>
-                        </div>
-                      )}
+              return (
+                <div
+                  key={video.id}
+                  ref={(element) => {
+                    cardRefs.current[index] = element;
+                  }}
+                  onClick={() => !isActive && goTo(index)}
+                  className={`relative flex-shrink-0 w-[210px] sm:w-[250px] aspect-[9/16] rounded-[22px] overflow-hidden bg-gray-200 transition-all duration-500 ease-out cursor-pointer ${
+                    isActive
+                      ? 'scale-100 opacity-100 z-10 shadow-2xl'
+                      : 'scale-[0.86] opacity-45 hover:opacity-70 z-0'
+                  }`}
+                  style={{ scrollSnapAlign: 'center' }}
+                >
+                  <video
+                    ref={(element) => {
+                      videoRefs.current[video.id] = element;
+                    }}
+                    src={video.video_url}
+                    poster={video.poster_url || undefined}
+                    className="w-full h-full object-cover bg-black"
+                    preload="metadata"
+                    muted={isActive ? muted : true}
+                    loop
+                    playsInline
+                    onPlay={() => isActive && setPlaying(true)}
+                    onPause={() => isActive && setPlaying(false)}
+                  />
 
-                      {/* The play button */}
-                      <button
-                        type="button"
-                        onClick={() => togglePlay(video)}
-                        aria-label={`Play ${video.title || video.product.name}`}
-                        className="absolute inset-0 flex items-center justify-center focus:outline-none"
-                      >
-                        <span
-                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-xl transition-transform duration-300 group-hover:scale-110"
-                          style={{ backgroundColor: primary }}
-                        >
-                          <svg
-                            className="w-6 h-6 text-white translate-x-[1px]"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M8 5.14v13.72a1 1 0 001.54.84l10.5-6.86a1 1 0 000-1.68L9.54 4.3A1 1 0 008 5.14z" />
-                          </svg>
-                        </span>
-                      </button>
-
-                      {/* The piece it belongs to */}
-                      {video.product.name && (
-                        <div className="absolute top-3 left-3 right-3">
-                          <span className="inline-block px-2.5 py-1 rounded-md bg-black/55 backdrop-blur-sm text-[10px] sm:text-xs font-medium uppercase tracking-wider text-white">
-                            {video.product.category || video.product.brand}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div className="pt-3 space-y-1">
-                  <h3 className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">
-                    {video.title || video.product.name}
-                  </h3>
-                  {video.product.name && video.title && (
-                    <p className="text-xs text-gray-500 uppercase tracking-wide line-clamp-1">
-                      {video.product.name}
+                  {/* The name of the clip */}
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none">
+                    <p className="text-white text-xs sm:text-sm font-medium tracking-wide text-center line-clamp-2">
+                      {title}
                     </p>
-                  )}
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <span
-                      className="text-base font-semibold"
-                      style={{ color: primary }}
+                  </div>
+
+                  {/* The controls of the clip */}
+                  <div
+                    className="absolute top-3 right-3 flex items-center gap-2"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {/* The sound */}
+                    <button
+                      type="button"
+                      onClick={() => toggleSound(index)}
+                      aria-label={muted ? 'Turn the sound on' : 'Turn the sound off'}
+                      title={muted ? 'Turn the sound on' : 'Turn the sound off'}
+                      className={controlClass}
                     >
-                      {currencySymbol}
-                      {video.product.price}
-                    </span>
-                    {video.product.original_price &&
-                      video.product.original_price > video.product.price && (
-                        <span className="text-xs text-gray-400 line-through">
-                          {currencySymbol}
-                          {video.product.original_price}
-                        </span>
-                      )}
-                    {onViewProduct && (
+                      {muted ? <SoundOffIcon /> : <SoundOnIcon />}
+                    </button>
+
+                    {/* The stop */}
+                    {isActive && (
                       <button
                         type="button"
-                        onClick={() => onViewProduct(video.product.id)}
-                        className="ml-auto text-xs font-medium underline underline-offset-2 hover:opacity-70 transition-opacity"
-                        style={{ color: primary }}
+                        onClick={() => stopVideo(index)}
+                        aria-label="Stop the clip"
+                        title="Stop the clip"
+                        className={controlClass}
                       >
-                        View piece
+                        <StopIcon />
                       </button>
                     )}
+
+                    {/* The play and the pause */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlay(index)}
+                      aria-label={
+                        isActive
+                          ? playing
+                            ? 'Pause the clip'
+                            : 'Play the clip'
+                          : 'Play this clip'
+                      }
+                      title={
+                        isActive
+                          ? playing
+                            ? 'Pause the clip'
+                            : 'Play the clip'
+                          : 'Play this clip'
+                      }
+                      className={controlClass}
+                    >
+                      {isActive && playing ? <PauseIcon /> : <PlayIcon />}
+                    </button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* The arrows */}
+          {videos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => goTo(active - 1)}
+                aria-label="Previous video"
+                className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-xl text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
+              >
+                <ArrowIcon direction="left" />
+              </button>
+              <button
+                type="button"
+                onClick={() => goTo(active + 1)}
+                aria-label="Next video"
+                className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-xl text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
+              >
+                <ArrowIcon direction="right" />
+              </button>
+            </>
+          )}
         </div>
+
+        {/* The dots */}
+        {videos.length > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {videos.map((video, index) => (
+              <button
+                key={video.id}
+                type="button"
+                onClick={() => goTo(index)}
+                aria-label={`Video ${index + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === active ? 'w-7' : 'w-1.5 opacity-40 hover:opacity-70'
+                }`}
+                style={{ backgroundColor: primary }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

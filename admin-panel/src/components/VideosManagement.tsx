@@ -1,30 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
 import { useNotifications } from '../hooks/useNotifications';
 
 /**
  * "Videos".
  *
- * A clip is attached to a product and shown in the video section of the shop.
- * The file is uploaded from here and kept by the backend, which serves it
- * back with range support so the browser can play and seek it.
+ * A clip is uploaded from here and shown in the video section of the shop.
+ * The file is kept by the backend, which serves it back with range support so
+ * the browser can play and seek it.
  */
 
 interface VideosManagementProps {
   authToken: string;
 }
 
-interface ProductOption {
-  id: number;
-  name: string;
-  brand: string;
-  price: number;
-  images?: string[];
-}
-
 interface VideoRow {
   id: number;
-  product_id: number;
   title: string | null;
   mime: string;
   size: number;
@@ -32,15 +23,6 @@ interface VideoRow {
   display_order: number;
   video_url: string;
   poster_url: string | null;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    original_price: number | null;
-    brand: string;
-    category: string;
-    image: string | null;
-  };
 }
 
 /** The biggest clip the backend takes. */
@@ -65,16 +47,13 @@ const readAsDataUri = (file: File): Promise<string> =>
 
 const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
   const [videos, setVideos] = useState<VideoRow[]>([]);
-  const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  const [productId, setProductId] = useState<string>('');
   const [title, setTitle] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [search, setSearch] = useState('');
 
   const { showSuccess, showError } = useNotifications();
 
@@ -112,43 +91,13 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
     }
   }, [authToken, showError]);
 
-  const loadProducts = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/products/admin/products?limit=500`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (!response.ok) return;
-      const data = await response.json();
-      setProducts(data.products || []);
-    } catch {
-      // The picker simply stays empty; the videos still work.
-    }
-  }, [authToken]);
-
   useEffect(() => {
     loadVideos();
-    loadProducts();
-  }, [loadVideos, loadProducts]);
-
-  const filteredProducts = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return products.slice(0, 100);
-    return products
-      .filter(
-        (product) =>
-          product.name?.toLowerCase().includes(term) ||
-          product.brand?.toLowerCase().includes(term)
-      )
-      .slice(0, 100);
-  }, [products, search]);
-
-  const selectedProduct = products.find(
-    (product) => String(product.id) === productId
-  );
+  }, [loadVideos]);
 
   const handleUpload = async () => {
-    if (!productId) {
-      showError('Videos', 'Pick the product this clip belongs to');
+    if (!title.trim()) {
+      showError('Videos', 'Give the clip a title');
       return;
     }
     if (!videoFile) {
@@ -174,8 +123,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
-          product_id: parseInt(productId, 10),
-          title: title.trim() || selectedProduct?.name || 'Video',
+          title: title.trim(),
           video,
           poster,
         }),
@@ -190,8 +138,6 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
       setTitle('');
       setVideoFile(null);
       setPosterFile(null);
-      setProductId('');
-      setSearch('');
       await loadVideos();
     } catch (err) {
       const message =
@@ -287,7 +233,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
             Videos
           </h2>
           <p className="text-gray-600">
-            Attach a clip to a product and it shows in the video section of your shop
+            Upload a clip and it shows in the video section of your shop
           </p>
         </div>
         <button
@@ -313,41 +259,32 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product
-              </label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products…"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent mb-2"
-              />
-              <select
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
-              >
-                <option value="">Choose a product…</option>
-                {filteredProducts.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                    {product.brand ? ` — ${product.brand}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Title
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={selectedProduct?.name || 'The name of the video'}
+                placeholder="The name of the video"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Poster image (optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPosterFile(e.target.files?.[0] || null)}
+                className="w-full text-sm text-gray-600 file:mr-4 file:rounded-xl file:border-0 file:bg-gray-200 file:px-5 file:py-2.5 file:text-gray-700 file:font-semibold hover:file:bg-gray-300"
+              />
+              {posterFile && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {posterFile.name} — {formatSize(posterFile.size)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -365,23 +302,6 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
               {videoFile && (
                 <p className="text-xs text-gray-500 mt-2">
                   {videoFile.name} — {formatSize(videoFile.size)}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Poster image (optional)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPosterFile(e.target.files?.[0] || null)}
-                className="w-full text-sm text-gray-600 file:mr-4 file:rounded-xl file:border-0 file:bg-gray-200 file:px-5 file:py-2.5 file:text-gray-700 file:font-semibold hover:file:bg-gray-300"
-              />
-              {posterFile && (
-                <p className="text-xs text-gray-500 mt-2">
-                  {posterFile.name} — {formatSize(posterFile.size)}
                 </p>
               )}
             </div>
@@ -444,13 +364,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
                   {video.poster_url ? (
                     <img
                       src={video.poster_url}
-                      alt={video.title || video.product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : video.product.image ? (
-                    <img
-                      src={video.product.image}
-                      alt={video.product.name}
+                      alt={video.title || 'Video'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -468,12 +382,8 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
                 {/* The details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-gray-900 truncate">
-                    {video.title || video.product.name}
+                    {video.title || 'Video'}
                   </h4>
-                  <p className="text-sm text-gray-500 truncate">
-                    {video.product.name}
-                    {video.product.brand ? ` — ${video.product.brand}` : ''}
-                  </p>
                   <p className="text-xs text-gray-400 mt-1">
                     {formatSize(video.size)} · {video.mime}
                   </p>

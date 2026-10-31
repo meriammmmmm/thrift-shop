@@ -37,9 +37,11 @@ const bodyEtag = (buffer) =>
 
 /** The shape the storefront and the panel both work with. */
 function toVideo(row, baseUrl) {
+  const hasProduct = row.product_id !== null && row.product_id !== undefined;
+
   return {
     id: row.id,
-    product_id: row.product_id,
+    product_id: hasProduct ? row.product_id : null,
     title: row.title || null,
     mime: row.mime,
     size: row.size,
@@ -48,20 +50,22 @@ function toVideo(row, baseUrl) {
     created_at: row.created_at,
     video_url: `${baseUrl}/videos/${row.id}/stream`,
     poster_url: row.poster_mime ? `${baseUrl}/videos/${row.id}/poster` : null,
-    product: {
-      id: row.product_id,
-      name: row.product_name,
-      price: row.price !== null && row.price !== undefined ? parseFloat(row.price) : 0,
-      original_price:
-        row.original_price !== null && row.original_price !== undefined
-          ? parseFloat(row.original_price)
-          : null,
-      brand: row.brand,
-      category: row.category,
-      in_stock: row.in_stock === true || row.in_stock === 1,
-      visible: row.visible === true || row.visible === 1 || row.visible === null,
-      image: firstProductImageUrl(row.product_id, row.images, baseUrl),
-    },
+    product: hasProduct
+      ? {
+          id: row.product_id,
+          name: row.product_name,
+          price: row.price !== null && row.price !== undefined ? parseFloat(row.price) : 0,
+          original_price:
+            row.original_price !== null && row.original_price !== undefined
+              ? parseFloat(row.original_price)
+              : null,
+          brand: row.brand,
+          category: row.category,
+          in_stock: row.in_stock === true || row.in_stock === 1,
+          visible: row.visible === true || row.visible === 1 || row.visible === null,
+          image: firstProductImageUrl(row.product_id, row.images, baseUrl),
+        }
+      : null,
   };
 }
 
@@ -71,7 +75,7 @@ const VIDEO_SELECT = `
          p.name AS product_name, p.price, p.original_price, p.brand, p.category,
          p.images, p.in_stock, p.visible
   FROM product_videos v
-  JOIN products p ON p.id = v.product_id
+  LEFT JOIN products p ON p.id = v.product_id
 `;
 
 /**
@@ -241,18 +245,23 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 
     const { product_id, title, video, poster } = req.body;
-    const productId = parseInt(product_id, 10);
+    const productId = product_id ? parseInt(product_id, 10) : null;
 
-    if (!productId) {
-      return res.status(400).json({ error: 'A product is required' });
+    // A clip can belong to a piece, or stand on its own in the video
+    // section. A clip on its own needs a name, so it can be recognised.
+    if (productId) {
+      const product = await db.get(
+        'SELECT id FROM products WHERE id = ? AND company_id = ?',
+        [productId, companyId]
+      );
+      if (!product) {
+        return res.status(404).json({ error: 'This product is not in your shop' });
+      }
     }
 
-    const product = await db.get(
-      'SELECT id FROM products WHERE id = ? AND company_id = ?',
-      [productId, companyId]
-    );
-    if (!product) {
-      return res.status(404).json({ error: 'This product is not in your shop' });
+    const clipTitle = title ? String(title).slice(0, 120) : null;
+    if (!productId && !clipTitle) {
+      return res.status(400).json({ error: 'A clip without a piece needs a title' });
     }
 
     const clip = decodeDataUri(video);
@@ -295,7 +304,7 @@ router.post('/', requireAdmin, async (req, res) => {
       [
         companyId,
         productId,
-        title ? String(title).slice(0, 120) : null,
+        clipTitle,
         clip.buffer,
         clip.mime,
         clip.buffer.length,
@@ -374,13 +383,17 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     if (product_id !== undefined) {
-      const productId = parseInt(product_id, 10);
-      const product = await db.get(
-        'SELECT id FROM products WHERE id = ? AND company_id = ?',
-        [productId, companyId]
-      );
-      if (!product) {
-        return res.status(404).json({ error: 'This product is not in your shop' });
+      // An empty product takes the clip out of the piece and leaves it in the
+      // video section on its own.
+      const productId = product_id ? parseInt(product_id, 10) : null;
+      if (productId) {
+        const product = await db.get(
+          'SELECT id FROM products WHERE id = ? AND company_id = ?',
+          [productId, companyId]
+        );
+        if (!product) {
+          return res.status(404).json({ error: 'This product is not in your shop' });
+        }
       }
       await db.run(`UPDATE product_videos SET product_id = ? WHERE id = ?`, [productId, id]);
     }
