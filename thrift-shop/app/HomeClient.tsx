@@ -18,6 +18,7 @@ import { Product, User } from './types';
 import { api } from '../lib/api';
 import { buildBrandIndex } from '../lib/brands';
 import ReviewCarousel from './components/ReviewCarousel';
+import LoveButton from './components/LoveButton';
 import StarRating from './components/StarRating';
 import { getVisitorKey } from '../lib/visitor';
 import { toBooleanFlag } from '../lib/flags';
@@ -280,6 +281,23 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
 
     return total / rated.length;
   }, [testimonials]);
+
+  /**
+   * The pieces the customers love the most.
+   *
+   * The section is called "Most Loved Pieces", so it ranks by the love count
+   * the customers gave. A piece nobody has loved yet still shows up — the
+   * newest one comes first among those.
+   */
+  const mostLovedProducts = useMemo(
+    () =>
+      [...products].sort(
+        (a, b) =>
+          (b.likes ?? 0) - (a.likes ?? 0) ||
+          new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
+      ),
+    [products]
+  );
 
   // Filter and search
   const filteredProducts = products.filter(product => {
@@ -923,8 +941,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
                 className="flex transition-transform duration-300 ease-out"
                 style={{ transform: `translateX(-${currentTrendingIndex * 100}%)` }}
               >
-                {products
-                  .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+                {mostLovedProducts
                   .slice(0, 3)
                   .map((product, index) => (
                   <div 
@@ -968,6 +985,13 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
                             <span className="text-xs text-gray-400 line-through">{companyCurrency.symbol}{product.originalPrice}</span>
                           )}
                         </div>
+                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                          <LoveButton
+                            productId={product.id}
+                            likes={product.likes ?? 0}
+                            liked={product.liked_by_me ?? false}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1010,8 +1034,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
 
           {/* Desktop Grid */}
           <div className="hidden md:grid grid-cols-3 gap-8">
-            {products
-              .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+            {mostLovedProducts
               .slice(0, 3)
               .map((product, index) => (
               <div 
@@ -1057,6 +1080,13 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
                     {product.originalPrice && product.originalPrice > product.price && (
                       <span className="text-xs text-gray-400 line-through">{companyCurrency.symbol}{product.originalPrice}</span>
                     )}
+                  </div>
+                  <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                    <LoveButton
+                      productId={product.id}
+                      likes={product.likes ?? 0}
+                      liked={product.liked_by_me ?? false}
+                    />
                   </div>
                 </div>
               </div>
