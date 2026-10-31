@@ -27,6 +27,44 @@ function visitorKey(req) {
 }
 
 /**
+ * The product columns the admin panel is allowed to write.
+ *
+ * The panel sends the whole product back when it saves, and a product carries
+ * fields that are not columns — `liked_by_me`, the company object, the view
+ * counter. Writing those as columns makes the save fail with a 500, so the
+ * real, editable columns are spelled out here instead.
+ *
+ * `views`, `likes`, `display_order`, `reservation_status` and
+ * `reserved_by_order_id` are on purpose missing: the server owns them, and a
+ * save should not write back a stale copy of a counter.
+ */
+const EDITABLE_PRODUCT_FIELDS = [
+  'name',
+  'description',
+  'price',
+  'original_price',
+  'images',
+  'brand',
+  'size',
+  'category',
+  'condition',
+  'color',
+  'material',
+  'measurements',
+  'care_instructions',
+  'tags',
+  'seller_name',
+  'seller_rating',
+  'seller_location',
+  'in_stock',
+  'visible',
+];
+
+/** The product columns that hold a number, and the ones that hold a flag. */
+const NUMERIC_PRODUCT_FIELDS = ['price', 'original_price', 'seller_rating'];
+const BOOLEAN_PRODUCT_FIELDS = ['in_stock', 'visible'];
+
+/**
  * Attach the love count (and whether this visitor already loved the piece) to
  * a list of product rows.
  *
@@ -768,11 +806,6 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     const { id } = req.params;
-    const updates = req.body;
-
-    // Log the update request for debugging
-    console.log(`PUT /api/products/${id} - Update request from company ${companyId}`);
-    console.log('Update fields:', Object.keys(updates));
 
     // Check if product belongs to admin's company
     const existingProduct = await db.get('SELECT company_id FROM products WHERE id = ?', [id]);
@@ -784,36 +817,61 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     // Validate images array size (allow base64 for AI-generated images)
-    if (updates.images) {
-      if (Array.isArray(updates.images)) {
-        // Check if images field is too large (increased limit for base64 images)
-        const imagesStr = JSON.stringify(updates.images);
-        const sizeInKB = (imagesStr.length / 1024).toFixed(2);
-        console.log(`📦 Images data size: ${sizeInKB} KB (${updates.images.length} images)`);
-        
-        if (imagesStr.length > 5000000) { // 5MB limit for base64 images (allows ~10-12 compressed images)
-          console.error(`Images field too large: ${sizeInKB} KB`);
-          return res.status(400).json({ 
-            error: `Images data too large (${sizeInKB} KB). Maximum 5MB allowed.` 
-          });
-        }
+    if (Array.isArray(req.body.images)) {
+      // Check if images field is too large (increased limit for base64 images)
+      const imagesStr = JSON.stringify(req.body.images);
+      const sizeInKB = (imagesStr.length / 1024).toFixed(2);
+      console.log(`📦 Images data size: ${sizeInKB} KB (${req.body.images.length} images)`);
+
+      if (imagesStr.length > 5000000) { // 5MB limit for base64 images (allows ~10-12 compressed images)
+        console.error(`Images field too large: ${sizeInKB} KB`);
+        return res.status(400).json({ 
+          error: `Images data too large (${sizeInKB} KB). Maximum 5MB allowed.` 
+        });
       }
-      updates.images = JSON.stringify(updates.images);
     }
 
+    // Keep only the fields that are real, editable columns. The panel sends
+    // the whole product back, and the product carries fields that are not
+    // columns — writing those as columns makes the save fail.
+    const updates = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (!EDITABLE_PRODUCT_FIELDS.includes(key)) continue;
+      if (value === undefined) continue;
+      updates[key] = value;
+    }
+
+    // Log the update request for debugging
+    console.log(`PUT /api/products/${id} - Update request from company ${companyId}`);
+    console.log('Update fields:', Object.keys(updates));
+
     // Convert arrays/objects to JSON strings
+    if (updates.images) updates.images = JSON.stringify(updates.images);
     if (updates.measurements) updates.measurements = JSON.stringify(updates.measurements);
     if (updates.care_instructions) updates.care_instructions = JSON.stringify(updates.care_instructions);
     if (updates.tags) updates.tags = JSON.stringify(updates.tags);
 
-    // Remove any fields that shouldn't be updated or don't exist in products table
-    delete updates.id;
-    delete updates.created_at;
-    delete updates.updated_at;
-    delete updates.company_id;
-    delete updates.company_name;
-    delete updates.company_description;
-    delete updates.company;
+    // A number column rejects an empty string, so a cleared field becomes NULL.
+    for (const field of NUMERIC_PRODUCT_FIELDS) {
+      if (!(field in updates)) continue;
+      if (updates[field] === '' || updates[field] === null) {
+        updates[field] = null;
+      } else {
+        const parsed = Number(updates[field]);
+        updates[field] = Number.isFinite(parsed) ? parsed : null;
+      }
+    }
+
+    // A flag column only accepts true or false.
+    for (const field of BOOLEAN_PRODUCT_FIELDS) {
+      if (!(field in updates)) continue;
+      const value = updates[field];
+      if (typeof value === 'string') {
+        updates[field] = value === 'true' || value === '1';
+      } else {
+        updates[field] = Boolean(value);
+      }
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
