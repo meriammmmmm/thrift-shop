@@ -342,7 +342,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       setLoading(true);
       setLoadError('');
 
-      const response = await fetch('/api/testimonials', {
+      const response = await fetch(`${API_BASE_URL}/testimonials`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -357,7 +357,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       setTestimonials((data.testimonials || []).map(transform));
 
       // Load testimonials visibility setting
-      const settingsResponse = await fetch('/api/companies/me', {
+      const settingsResponse = await fetch(`${API_BASE_URL}/companies/me`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -386,7 +386,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
   const handleToggleTestimonials = async () => {
     const nextValue = !showTestimonials;
     try {
-      const response = await fetch('/api/testimonials/section/visibility', {
+      const response = await fetch(`${API_BASE_URL}/testimonials/section/visibility`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -438,7 +438,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
   const handleSaveTestimonial = async (testimonial: Testimonial) => {
     try {
       if (isAddingNew) {
-        const response = await fetch('/api/testimonials', {
+        const response = await fetch(`${API_BASE_URL}/testimonials`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -462,7 +462,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
         const data = await response.json();
         setTestimonials(prev => [transform(data.testimonial), ...prev]);
       } else {
-        const response = await fetch(`/api/testimonials/${testimonial.id}`, {
+        const response = await fetch(`${API_BASE_URL}/testimonials/${testimonial.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     if (!window.confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      const response = await fetch(`/api/testimonials/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/testimonials/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -523,7 +523,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
     setBusyId(id);
 
     try {
-      const response = await fetch(`/api/testimonials/${id}/${action}`, {
+      const response = await fetch(`${API_BASE_URL}/testimonials/${id}/${action}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${authToken}`,
