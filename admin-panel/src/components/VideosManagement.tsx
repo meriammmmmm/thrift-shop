@@ -26,9 +26,34 @@ interface VideoRow {
 }
 
 /** The biggest clip the backend takes. */
-const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
 /** The biggest still the backend takes. */
 const MAX_POSTER_BYTES = 3 * 1024 * 1024;
+
+/** The kinds of clip the backend takes. */
+const ALLOWED_VIDEO_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/ogg',
+];
+
+/** Some phones do not know their own movies, so the name decides. */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  ogv: 'video/ogg',
+  ogg: 'video/ogg',
+};
+
+/** The kind of the clip, whether the browser knows it or not. */
+const mimeOf = (file: File): string => {
+  if (file.type && ALLOWED_VIDEO_TYPES.includes(file.type)) return file.type;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  return MIME_BY_EXTENSION[extension] || 'video/mp4';
+};
 
 const formatSize = (bytes: number): string => {
   if (!bytes) return '0 KB';
@@ -105,7 +130,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
       return;
     }
     if (videoFile.size > MAX_VIDEO_BYTES) {
-      showError('Videos', 'That video is too large (25 MB is the limit)');
+      showError('Videos', 'That video is too large (200 MB is the limit)');
       return;
     }
     if (posterFile && posterFile.size > MAX_POSTER_BYTES) {
@@ -116,22 +141,31 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
     try {
       setUploading(true);
 
-      const video = await readAsDataUri(videoFile);
-      const poster = posterFile ? await readAsDataUri(posterFile) : undefined;
-
-      const response = await fetch(`${API_BASE_URL}/videos`, {
+      // The file goes up as itself — no base64 — so a big clip costs only its
+      // own weight on the wire and the backend can take it.
+      const response = await fetch(`${API_BASE_URL}/videos/upload`, {
         method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          title: title.trim(),
-          video,
-          poster,
-        }),
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': mimeOf(videoFile),
+          'X-Video-Title': title.trim(),
+        },
+        body: videoFile,
       });
 
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(data?.error || 'The video could not be uploaded');
+      }
+
+      // The still comes after, it is small enough to travel as a data URI.
+      if (posterFile) {
+        const poster = await readAsDataUri(posterFile);
+        await fetch(`${API_BASE_URL}/videos/${data.video.id}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ poster }),
+        });
       }
 
       showSuccess('Success', 'The video is uploaded and live in the shop');
@@ -251,7 +285,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
           Upload a video
         </h3>
         <p className="text-sm text-gray-500 mb-5">
-          MP4, WebM, MOV or OGG, up to 25 MB. A poster image is optional — it is
+          MP4, WebM, MOV or OGG, up to 200 MB. A poster image is optional — it is
           the still shown before the clip is played.
         </p>
 
@@ -295,7 +329,7 @@ const VideosManagement: React.FC<VideosManagementProps> = ({ authToken }) => {
               </label>
               <input
                 type="file"
-                accept="video/mp4,video/webm,video/quicktime,video/ogg"
+                accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.m4v,.webm,.mov,.ogv,.ogg"
                 onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                 className="w-full text-sm text-gray-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[var(--color-primary)] file:px-5 file:py-2.5 file:text-white file:font-semibold hover:file:bg-[var(--color-primary-hover)]"
               />

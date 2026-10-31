@@ -9,6 +9,9 @@ class PostgresDatabase {
       throw new Error('DATABASE_URL not found');
     }
 
+    /** The routes use this to know which of the two databases they talk to. */
+    this.isPostgres = true;
+
     this.pool = new Pool({
       connectionString,
       ssl: connectionString.includes('supabase') || connectionString.includes('pooler') 

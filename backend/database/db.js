@@ -47,6 +47,9 @@ try {
 
 class DatabaseWrapper {
   constructor() {
+    /** The routes use this to know which of the two databases they talk to. */
+    this.isPostgres = false;
+
     try {
       this.db = new Database(dbPath);
       console.log('📦 Connected to SQLite database at:', dbPath);

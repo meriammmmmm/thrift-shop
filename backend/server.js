@@ -87,6 +87,12 @@ app.use(helmet({
 // A video upload is much bigger than the JSON the rest of the API takes, so
 // the video routes get their own limit. This parser runs first for them and
 // the general one below skips a body that was already read.
+//
+// The big clip path sends the file itself as the body, so it needs a raw
+// parser with a much bigger limit. It sits above the JSON one: the file is
+// not JSON, and the parser marks the body as read so the JSON parser below
+// steps over it.
+app.use('/api/videos/upload', express.raw({ type: () => true, limit: '260mb' }));
 app.use('/api/videos', express.json({ limit: '40mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

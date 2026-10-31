@@ -10,6 +10,36 @@ const {
 
 const router = express.Router();
 
+/** How much of a clip is held in memory while it is being served. */
+const STREAM_CHUNK_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Reads one piece of a clip out of the database.
+ *
+ * The bytes are asked for by their place in the file, so the server never
+ * holds a whole movie in memory. Postgres hands the piece over as text,
+ * which keeps it small on the way in and out.
+ */
+async function readVideoChunk(id, offset, length) {
+  if (db.isPostgres) {
+    const row = await db.get(
+      "SELECT encode(substr(video, ?, ?), 'base64') AS chunk FROM product_videos WHERE id = ?",
+      [offset + 1, length, id]
+    );
+    if (!row?.chunk) return Buffer.alloc(0);
+    return Buffer.from(String(row.chunk), 'base64');
+  }
+
+  const row = await db.get(
+    'SELECT substr(video, ?, ?) AS chunk FROM product_videos WHERE id = ?',
+    [offset + 1, length, id]
+  );
+  if (!row?.chunk) return Buffer.alloc(0);
+  return Buffer.isBuffer(row.chunk)
+    ? row.chunk
+    : Buffer.from(String(row.chunk), 'base64');
+}
+
 /**
  * Videos for the products of a company.
  *
@@ -21,7 +51,8 @@ const router = express.Router();
  */
 
 /** The biggest clip we accept. Base64 makes it a third bigger on the wire. */
-const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
+const MAX_VIDEO_MB = MAX_VIDEO_BYTES / 1024 / 1024;
 const MAX_POSTER_BYTES = 3 * 1024 * 1024;
 
 const ALLOWED_VIDEO_MIMES = [
@@ -135,24 +166,33 @@ router.get('/admin/list', requireAdmin, async (req, res) => {
  *
  * Range requests are answered, so the browser can start playing before the
  * whole file has arrived and can seek to any point in it.
+ *
+ * A big clip is never held whole in memory. The bytes are read in small
+ * pieces straight from the database and handed to the browser as they come,
+ * so a two hundred megabyte movie costs the server no more than a small one.
  */
 router.get('/:id/stream', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const row = await db.get(`SELECT video, mime FROM product_videos WHERE id = ?`, [id]);
-    if (!row?.video) {
+
+    // How long the clip is, without touching the bytes.
+    const meta = await db.get(
+      db.isPostgres
+        ? 'SELECT mime, octet_length(video) AS bytes FROM product_videos WHERE id = ?'
+        : 'SELECT mime, length(video) AS bytes FROM product_videos WHERE id = ?',
+      [id]
+    );
+    if (!meta) {
       return res.status(404).json({ error: 'No video with this id' });
     }
 
-    const buffer = Buffer.isBuffer(row.video)
-      ? row.video
-      : Buffer.from(String(row.video), 'base64');
-    if (!buffer.length) {
+    const total = Number(meta.bytes || 0);
+    if (!total) {
       return res.status(404).json({ error: 'No video with this id' });
     }
 
-    const mime = row.mime || 'video/mp4';
-    const etag = bodyEtag(buffer);
+    const mime = meta.mime || 'video/mp4';
+    const etag = `W/"video-${id}-${total}"`;
 
     res.set({
       'Content-Type': mime,
@@ -165,32 +205,63 @@ router.get('/:id/stream', async (req, res) => {
       return res.status(304).end();
     }
 
+    let start = 0;
+    let end = total - 1;
     const range = req.headers.range;
+
     if (range) {
       const match = /bytes=(\d*)-(\d*)/.exec(range);
       if (match) {
-        const start = match[1] ? parseInt(match[1], 10) : 0;
-        const end = match[2] ? parseInt(match[2], 10) : buffer.length - 1;
-
-        if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= buffer.length) {
-          res.set('Content-Range', `bytes */${buffer.length}`);
-          return res.status(416).end();
+        if (!match[1] && match[2]) {
+          // The last few bytes of the clip.
+          const tail = parseInt(match[2], 10);
+          start = Math.max(0, total - tail);
+        } else {
+          start = match[1] ? parseInt(match[1], 10) : 0;
+          end = match[2] ? parseInt(match[2], 10) : total - 1;
         }
 
-        const safeEnd = Math.min(end, buffer.length - 1);
-        res.status(206).set({
-          'Content-Range': `bytes ${start}-${safeEnd}/${buffer.length}`,
-          'Content-Length': safeEnd - start + 1,
-        });
-        return res.end(buffer.slice(start, safeEnd + 1));
+        if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= total) {
+          res.set('Content-Range', `bytes */${total}`);
+          return res.status(416).end();
+        }
       }
     }
 
-    res.set('Content-Length', buffer.length);
-    return res.end(buffer);
+    const safeEnd = Math.min(end, total - 1);
+    const length = safeEnd - start + 1;
+
+    if (range) {
+      res.status(206).set({
+        'Content-Range': `bytes ${start}-${safeEnd}/${total}`,
+        'Content-Length': length,
+      });
+    } else {
+      res.set('Content-Length', length);
+    }
+
+    // Hand the pieces over as they are read.
+    let offset = start;
+    while (offset <= safeEnd) {
+      const piece = await readVideoChunk(id, offset, Math.min(STREAM_CHUNK_BYTES, safeEnd - offset + 1));
+      if (!piece.length) break;
+
+      const flowing = res.write(piece);
+      offset += piece.length;
+
+      if (!flowing) {
+        await new Promise((resolve) => res.once('drain', resolve));
+      }
+    }
+
+    return res.end();
   } catch (error) {
     console.error('Video stream error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      res.end();
+    }
   }
 });
 
@@ -319,6 +390,76 @@ router.post('/', requireAdmin, async (req, res) => {
       `${VIDEO_SELECT} WHERE v.id = ?`,
       [result.id]
     );
+    res.status(201).json({ video: toVideo(row, publicBaseUrl(req)) });
+  } catch (error) {
+    console.error('Video upload error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * A clip, sent as the file itself.
+ *
+ * The panel puts the bytes straight in the body — no base64, so a big clip
+ * costs only its own weight on the wire — and the title rides in a header.
+ * The bytes are kept the same way the small ones are.
+ */
+router.post('/upload', requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.user.admin_company_id;
+    if (!companyId) {
+      return res.status(403).json({ error: 'Admin not associated with any company' });
+    }
+
+    const clip = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    if (!clip.length) {
+      return res.status(400).json({ error: 'The video could not be read' });
+    }
+    if (clip.length > MAX_VIDEO_BYTES) {
+      return res.status(400).json({
+        error: `That video is ${(clip.length / 1024 / 1024).toFixed(1)} MB. The limit is ${MAX_VIDEO_MB} MB.`,
+      });
+    }
+
+    const mime = String(req.headers['content-type'] || 'video/mp4')
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
+    if (!ALLOWED_VIDEO_MIMES.includes(mime)) {
+      return res.status(400).json({
+        error: `Videos have to be MP4, WebM, MOV or OGG (this one is ${mime})`,
+      });
+    }
+
+    const clipTitle = req.headers['x-video-title']
+      ? String(req.headers['x-video-title']).slice(0, 120)
+      : null;
+    if (!clipTitle) {
+      return res.status(400).json({ error: 'A clip needs a title' });
+    }
+
+    const place = await db.get(
+      `SELECT COALESCE(MAX(display_order), -1) + 1 AS next FROM product_videos WHERE company_id = ?`,
+      [companyId]
+    );
+
+    const result = await db.run(
+      `INSERT INTO product_videos
+         (company_id, product_id, title, video, mime, size, is_active, display_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        companyId,
+        null,
+        clipTitle,
+        clip,
+        mime,
+        clip.length,
+        true,
+        place?.next ?? 0,
+      ]
+    );
+
+    const row = await db.get(`${VIDEO_SELECT} WHERE v.id = ?`, [result.id]);
     res.status(201).json({ video: toVideo(row, publicBaseUrl(req)) });
   } catch (error) {
     console.error('Video upload error:', error);
