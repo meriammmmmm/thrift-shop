@@ -22,7 +22,7 @@ interface VideoSectionProps {
 /** The speaker with sound. */
 const SoundOnIcon = () => (
   <svg
-    className="w-3.5 h-3.5"
+    className="w-4 h-4"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -39,7 +39,7 @@ const SoundOnIcon = () => (
 /** The speaker without sound. */
 const SoundOffIcon = () => (
   <svg
-    className="w-3.5 h-3.5"
+    className="w-4 h-4"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -55,14 +55,14 @@ const SoundOffIcon = () => (
 
 /** The play mark. */
 const PlayIcon = () => (
-  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M8 5.2v13.6a.7.7 0 0 0 1.07.6l10.6-6.8a.7.7 0 0 0 0-1.2L9.07 4.6A.7.7 0 0 0 8 5.2Z" />
   </svg>
 );
 
 /** The pause mark. */
 const PauseIcon = () => (
-  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
     <rect x="6" y="4.5" width="4.2" height="15" rx="1.2" />
     <rect x="13.8" y="4.5" width="4.2" height="15" rx="1.2" />
   </svg>
@@ -71,7 +71,7 @@ const PauseIcon = () => (
 /** The stop mark. */
 const StopIcon = () => (
   <svg
-    className="w-3 h-3"
+    className="w-3.5 h-3.5"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -231,7 +231,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
   /** The round button every clip carries in its top corner. The dark back
    * keeps the white mark readable over a bright frame. */
   const controlClass =
-    'w-8 h-8 rounded-full bg-black/35 backdrop-blur-md text-white ring-1 ring-white/25 flex items-center justify-center hover:bg-black/55 active:bg-black/65 transition-colors';
+    'w-9 h-9 rounded-full bg-black/35 backdrop-blur-md text-white ring-1 ring-white/25 flex items-center justify-center hover:bg-black/55 active:bg-black/65 transition-colors';
 
   return (
     <section
@@ -240,7 +240,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
         background: `linear-gradient(180deg, ${primary}12 0%, #ffffff 45%, #ffffff 100%)`,
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8 sm:mb-12">
           <span
             className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-2 sm:mb-4"
@@ -261,7 +261,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
           <div
             ref={trackRef}
             onScroll={syncActiveFromScroll}
-            className="flex items-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide px-12 sm:px-16"
+            className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide px-14 sm:px-20"
             style={{ scrollSnapType: 'x mandatory' }}
           >
             {videos.map((video, index) => {
@@ -275,10 +275,10 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
                     cardRefs.current[index] = element;
                   }}
                   onClick={() => !isActive && goTo(index)}
-                  className={`relative flex-shrink-0 w-[210px] sm:w-[250px] aspect-[9/16] rounded-[22px] overflow-hidden bg-gray-200 transition-all duration-500 ease-out cursor-pointer ${
+                  className={`relative flex-shrink-0 w-[240px] sm:w-[290px] lg:w-[320px] aspect-[9/16] rounded-[22px] overflow-hidden bg-gray-200 transition-all duration-500 ease-out cursor-pointer ${
                     isActive
                       ? 'scale-100 opacity-100 z-10 shadow-2xl'
-                      : 'scale-[0.86] opacity-45 hover:opacity-70 z-0'
+                      : 'scale-[0.88] opacity-45 hover:opacity-70 z-0'
                   }`}
                   style={{ scrollSnapAlign: 'center' }}
                 >
@@ -299,7 +299,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
 
                   {/* The name of the clip */}
                   <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none">
-                    <p className="text-white text-xs sm:text-sm font-medium tracking-wide text-center line-clamp-2">
+                    <p className="text-white text-sm sm:text-base font-medium tracking-wide text-center line-clamp-2">
                       {title}
                     </p>
                   </div>
