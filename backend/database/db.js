@@ -402,6 +402,26 @@ class DatabaseWrapper {
         mime TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (look_id) REFERENCES looks (id) ON DELETE CASCADE
+      )`,
+
+      // Videos attached to a product. The clip itself is kept as bytes so the
+      // shop can play it straight from the API, and the list endpoint never
+      // has to carry megabytes around.
+      `CREATE TABLE IF NOT EXISTS product_videos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        title TEXT,
+        video BLOB NOT NULL,
+        mime TEXT DEFAULT 'video/mp4',
+        size INTEGER DEFAULT 0,
+        poster BLOB,
+        poster_mime TEXT,
+        is_active INTEGER DEFAULT 1,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
       )`
     ];
 

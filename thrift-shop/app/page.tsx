@@ -11,6 +11,8 @@ import StarRating from './components/StarRating';
 import SafeImage, { normalizeImageList } from './components/SafeImage';
 import { buildBrandIndex } from '../lib/brands';
 import { compareByShopOrder } from '../lib/productOrder';
+import { fetchVideos, ShopVideo } from '../lib/videos';
+import VideoSection from './components/VideoSection';
 import StyleBoard from './components/StyleBoard';
 import LookGallery from './components/LookGallery';
 import { LookDefinition, LookState, fetchLooks } from '../lib/looks';
@@ -114,6 +116,8 @@ export default function Home() {
 
   // Looks are managed in the admin panel, not in code.
   const [looks, setLooks] = useState<LookDefinition[]>([]);
+  /** The clips of the shop, shown in the video section. */
+  const [videos, setVideos] = useState<ShopVideo[]>([]);
   
   // Custom categories (occasions)
   const [customCategories, setCustomCategories] = useState<Array<{id: number, name: string, description?: string, icon?: string}>>([]);
@@ -244,6 +248,8 @@ export default function Home() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       if (apiUrl) {
         fetchLooks(apiUrl, companyId).then(setLooks).catch(() => setLooks([]));
+        // The clips of the shop live in the admin panel too.
+        fetchVideos(apiUrl, companyId).then(setVideos).catch(() => setVideos([]));
       }
 
       // Load testimonials in background without blocking
@@ -651,6 +657,12 @@ export default function Home() {
   const handleViewDetails = (product: Product) => {
     setSelectedProduct(product);
     setIsProductDetailsOpen(true);
+  };
+
+  /** The video section knows a piece by its id — the page knows the piece. */
+  const handleViewProductById = (productId: number) => {
+    const product = products.find((item) => item.id === productId);
+    if (product) handleViewDetails(product);
   };
 
   const cartCount = cart.length;
@@ -1179,6 +1191,14 @@ export default function Home() {
 
       {/* Brand band — the ticker leans into the scroll speed */}
       <MarqueeBand />
+
+      {/* The clips of the shop — every piece that has a video of its own */}
+      <VideoSection
+        videos={videos}
+        primary={theme.primary}
+        currencySymbol={companyCurrency.symbol}
+        onViewProduct={handleViewProductById}
+      />
 
       {/* Clean Out Service Section */}
      

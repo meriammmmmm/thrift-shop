@@ -29,6 +29,7 @@ const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
 const articlesRoutes = require('./routes/articles');
 const looksRoutes = require('./routes/looks');
+const videoRoutes = require('./routes/videos');
 const aiRoutes = require('./routes/ai');
 const tryonRoutes = require('./routes/tryon');
 const db = require('./database/db');
@@ -83,6 +84,10 @@ app.use(helmet({
 // app.use(limiter);
 
 // Body parsing middleware - optimized for faster startup
+// A video upload is much bigger than the JSON the rest of the API takes, so
+// the video routes get their own limit. This parser runs first for them and
+// the general one below skips a body that was already read.
+app.use('/api/videos', express.json({ limit: '40mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -102,6 +107,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 app.use('/api/articles', articlesRoutes);
 app.use('/api/looks', looksRoutes);
+app.use('/api/videos', videoRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/tryon', tryonRoutes);
 

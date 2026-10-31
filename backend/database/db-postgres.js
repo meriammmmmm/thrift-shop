@@ -384,6 +384,28 @@ class PostgresDatabase {
         )
       `);
 
+      // Videos attached to a product. The clip itself is kept as bytes so the
+      // shop can play it straight from the API, and the list endpoint never
+      // has to carry megabytes around.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS product_videos (
+          id SERIAL PRIMARY KEY,
+          company_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          title TEXT,
+          video BYTEA NOT NULL,
+          mime TEXT DEFAULT 'video/mp4',
+          size INTEGER DEFAULT 0,
+          poster BYTEA,
+          poster_mime TEXT,
+          is_active BOOLEAN DEFAULT true,
+          display_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+        )
+      `);
+
       console.log('✅ PostgreSQL tables initialized');
 
       // Run migrations to add missing columns

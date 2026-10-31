@@ -102,6 +102,13 @@ const menuItems = [
     iconColor: 'text-fuchsia-600'
   },
   {
+    id: 'videos',
+    name: 'Videos',
+    icon: 'fas fa-video',
+    bgColor: 'bg-indigo-100',
+    iconColor: 'text-indigo-600'
+  },
+  {
     id: 'theme',
     name: 'Theme Settings',
     icon: 'fas fa-palette',

@@ -12,6 +12,7 @@ import TransactionManagement from './components/TransactionManagement';
 import TestimonialsManagement from './components/TestimonialsManagement';
 import ArticlesManagement from './components/ArticlesManagement';
 import LooksManagement from './components/LooksManagement';
+import VideosManagement from './components/VideosManagement';
 import ThemeSettings from './components/ThemeSettings';
 import AdminProfile from './components/AdminProfile';
 import LoginForm from './components/LoginForm';
@@ -82,6 +83,7 @@ const MainLayout: React.FC<{
             <Route path="/testimonials" element={<TestimonialsManagement authToken={authToken} />} />
             <Route path="/articles" element={<ArticlesManagement authToken={authToken} />} />
             <Route path="/looks" element={<LooksManagement authToken={authToken} />} />
+            <Route path="/videos" element={<VideosManagement authToken={authToken} />} />
             <Route path="/theme" element={<ThemeSettings authToken={authToken} />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" />} />
           </Routes>
