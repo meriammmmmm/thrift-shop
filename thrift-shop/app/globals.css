@@ -3267,6 +3267,226 @@ a {
 }
 
 /* ==========================================================================
+   NEW ARRIVALS DECK
+   --------------------------------------------------------------------------
+   The freshest pieces on a turntable. Five of them stand in a row and the
+   one in the middle is the hero: it is a little larger than the others and
+   it stands in front of them, but only a little — the row has to read as
+   five pieces on a rail, not as one hero with four footnotes. The pieces
+   either side turn away from the viewer and fall back into the stage.
+
+   WHY THE MOVEMENT IS SMOOTH
+   --------------------------
+   Every piece stays mounted for the whole life of the carousel. Its place
+   on the turntable is a signed distance from the piece in the middle, and
+   that distance is written into a custom property, so the CSS transition
+   carries the piece from one place to the next.
+
+   The earlier version keyed the pieces by their slot, so every move tore
+   the whole row down and rebuilt it — which is why it felt like a jump.
+   Here the pieces slide, the outer ones fade as they leave, and the piece
+   that arrives is invisible until it has slid into place.
+   ========================================================================== */
+
+.new-arrivals-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 2rem;
+}
+
+.new-arrivals-deck-wrap {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+}
+
+.new-arrivals-deck {
+  --deck-size: 130px;
+  --deck-step: 70px;
+  position: relative;
+  width: 100%;
+  height: calc(var(--deck-size) + 26px);
+  perspective: 1400px;
+  perspective-origin: 50% 46%;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.new-arrivals-deck:active {
+  cursor: grabbing;
+}
+
+@media (min-width: 640px) {
+  .new-arrivals-deck {
+    --deck-size: 175px;
+    --deck-step: 98px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .new-arrivals-deck {
+    --deck-size: 230px;
+    --deck-step: 128px;
+  }
+}
+
+.new-arrivals-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--deck-size);
+  height: var(--deck-size);
+  margin-top: calc(var(--deck-size) / -2);
+  margin-left: calc(var(--deck-size) / -2);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  /* Phones only have room for the middle three. */
+  opacity: var(--slot-opacity-mobile, 0);
+  transform:
+    translate3d(calc(var(--slot-x, 0) * var(--deck-step)), 0, var(--slot-z, 0px))
+    rotateY(var(--slot-ry, 0deg))
+    scale(var(--slot-scale, 1));
+  transition:
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.55s ease,
+    box-shadow 0.45s ease,
+    filter 0.45s ease;
+  will-change: transform, opacity;
+}
+
+@media (min-width: 640px) {
+  .new-arrivals-circle {
+    opacity: var(--slot-opacity, 0);
+  }
+}
+
+/* The pieces that are only there to be faded out must never catch a
+   click. */
+.new-arrivals-circle[data-far='true'] {
+  pointer-events: none;
+}
+
+.new-arrivals-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* The hero piece catches the light and wears a ring. */
+.new-arrivals-circle[data-hero='true'] {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 26px 58px -16px rgba(0, 0, 0, 0.55);
+}
+
+.new-arrivals-circle:hover {
+  filter: brightness(1.07);
+}
+
+.new-arrivals-sold {
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.85);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.new-arrivals-caption {
+  display: flex;
+  margin-top: 0.75rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+  animation: new-arrivals-caption-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes new-arrivals-caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.new-arrivals-caption-brand {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.new-arrivals-caption-name {
+  color: #ffffff;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 15px;
+}
+
+.new-arrivals-caption-price {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* The arrows sit on glass so they read against the burgundy panel. */
+.new-arrivals-arrow {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.new-arrivals-arrow:hover {
+  transform: scale(1.12);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-arrivals-circle,
+  .new-arrivals-arrow,
+  .new-arrivals-caption {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ==========================================================================
    MOST LOVED PIECES
    --------------------------------------------------------------------------
    The showcase of the pieces the community loves most.

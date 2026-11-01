@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import ProductCard from './components/ProductCard';
 import BrandCarousel from './components/BrandCarousel';
 import LovedPieces from './components/LovedPieces';
+import NewArrivalsDeck from './components/NewArrivalsDeck';
 import ReviewDialog from './components/ReviewDialog';
 import ReviewTrigger from './components/ReviewTrigger';
 import ReviewCarousel from './components/ReviewCarousel';
@@ -79,7 +80,6 @@ export default function Home() {
   const [activeSection, setActiveSection] = useState<'all' | 'new-arrivals' | 'women' | 'designer' | 'premium'>('all');
   const [currentStyleIndex, setCurrentStyleIndex] = useState(0);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
-  const [currentDailyEditIndex, setCurrentDailyEditIndex] = useState(0);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info', isVisible: boolean}>({
@@ -1028,7 +1028,7 @@ export default function Home() {
      
 
       {/* New Arrivals Section - With Animated Stars */}
-      <section className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
+      <section id="new-arrivals" className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
         {/* Original Background Image */}
         <div className="absolute inset-0 overflow-hidden">
           <img
@@ -1086,107 +1086,12 @@ export default function Home() {
           ) : (
             /* Regular carousel when products exist */
             <>
-          {/* Overlapping Product Circles Carousel */}
-          <div className="flex items-center justify-center mb-8 sm:mb-12">
-            {/* Left Arrow */}
-            <button 
-              onClick={() => {
-                setCurrentDailyEditIndex(prev => {
-                  const newIndex = prev - 1;
-                  return newIndex < 0 ? newArrivals.length - 1 : newIndex;
-                });
-              }}
-              className="p-2 sm:p-3 text-white/60 hover:text-white transition-all flex-shrink-0"
-              aria-label="Previous products"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            {/* Circles Container - Centered with overlapping circles */}
-            <div className="flex items-center justify-center mx-1 sm:mx-2">
-              {(() => {
-                if (newArrivals.length === 0) return null;
-                
-                const displayProducts = [];
-                
-                // Get 5 products centered around currentDailyEditIndex (3 on mobile)
-                const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-                const range = isMobile ? 1 : 2;
-                
-                for (let i = -range; i <= range; i++) {
-                  let index = (currentDailyEditIndex + i + newArrivals.length) % newArrivals.length;
-                  const product = newArrivals[index];
-                  if (product) {
-                    displayProducts.push({ product, position: i });
-                  }
-                }
-                
-                return displayProducts.map(({ product, position }, index) => {
-                  if (!product) return null;
-                  
-                  const isCenter = position === 0;
-                  // Responsive sizes: mobile 110px, tablet 150px, desktop 190px
-                  const baseSize = typeof window !== 'undefined' && window.innerWidth < 640 ? 110 : 
-                                   typeof window !== 'undefined' && window.innerWidth < 1024 ? 150 : 190;
-                  const overlap = typeof window !== 'undefined' && window.innerWidth < 640 ? -32 : -68;
-                  
-                  return (
-                    <div 
-                      key={`${product.id}-${position}`}
-                      className="flex-shrink-0 transition-all duration-500 ease-out cursor-pointer"
-                      style={{ 
-                        marginLeft: index === 0 ? '0' : `${overlap}px`,
-                        zIndex: isCenter ? 50 : 40 - Math.abs(position) * 5,
-                        opacity: isCenter ? 1 : 0.7,
-                        transform: isCenter ? 'scale(1.08)' : 'scale(1)'
-                      }}
-                      onClick={() => handleViewDetails(product)}
-                    >
-                      <div 
-                        className="rounded-full overflow-hidden bg-white/80 backdrop-blur-md relative"
-                        style={{
-                          width: `${baseSize}px`,
-                          height: `${baseSize}px`,
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
-                        }}
-                      >
-                        <SafeImage
-                          images={product.images}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          loading="eager"
-                        />
-                        {/* Sold Out Badge for circular images */}
-                        {!product.inStock && (
-                          <div className="absolute top-1 left-1 bg-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold text-white">
-                            SOLD
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-            
-            {/* Right Arrow */}
-            <button 
-              onClick={() => {
-                setCurrentDailyEditIndex(prev => {
-                  const newIndex = prev + 1;
-                  return newIndex >= newArrivals.length ? 0 : newIndex;
-                });
-              }}
-              className="p-2 sm:p-3 text-white/60 hover:text-white transition-all flex-shrink-0"
-              aria-label="Next products"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+          {/* The turntable of fresh pieces */}
+          <NewArrivalsDeck
+            products={newArrivals}
+            currencySymbol={companyCurrency.symbol}
+            onViewDetails={handleViewDetails}
+          />
 
           {/* Content */}
           <div className="text-center animate-fadeIn px-4">
