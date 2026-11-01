@@ -996,7 +996,14 @@ export default function Home() {
 
       {/* Featured Brands Section — swipeable carousel */}
       {brandIndex.length > 0 && (
-        <section className="relative py-6 sm:py-16 md:py-20 bg-gray-50 overflow-hidden scroll-animate scroll-fadeInUp">
+        <section
+          className="relative py-6 sm:py-16 md:py-20 bg-gray-50 overflow-hidden"
+          style={{ '--brand-primary': theme.primary } as React.CSSProperties}
+        >
+          <div className="brand-ambient" aria-hidden="true">
+            <span className="brand-orb brand-orb-a" />
+            <span className="brand-orb brand-orb-b" />
+          </div>
           <BrandCarousel brands={brandIndex} primary={theme.primary} />
         </section>
       )}

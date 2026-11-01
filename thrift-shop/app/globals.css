@@ -2900,7 +2900,25 @@ a {
    --------------------------------------------------------------------------
    The "shop by brand" strip. It is a real swiper without the dependency:
    a scroll-snap rail the customer can drag, flick, tab through or step
-   with the arrow buttons. The cards themselves are unchanged.
+   with the arrow buttons.
+
+   THE 3D STAGE
+   ------------
+   The cards live in real space, and every layer owns exactly one
+   transform, so the three systems that move them can never fight over
+   the same property:
+
+     .brand-tile        the anchor — one shared vanishing point for the
+                        card, plus the slow float that keeps the strip
+                        from ever looking frozen
+     .brand-tile-depth  the coverflow depth: how far the card has turned
+                        away from the viewer and how far it has receded
+     .brand-tile-inner  the entrance — GSAP owns this transform
+     .brand-card        the card itself — cursor tilt and the hover lift
+
+   The depth and the tilt arrive as custom properties, exactly like the
+   spotlight above, so the scroll handler writes numbers instead of
+   grabbing the transform away from GSAP and the hover states.
    ========================================================================== */
 
 .brand-rail {
@@ -2912,6 +2930,8 @@ a {
   padding: 0.25rem 0 0.5rem;
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
+  /* The tiles measure themselves against this box. */
+  position: relative;
 }
 
 /* While a drag is in flight the snap must not fight the pointer. */
@@ -2929,8 +2949,319 @@ a {
   scroll-snap-align: start;
 }
 
+/* --- the stage ------------------------------------------------------- */
+
+/* The whole deck leans towards the pointer as one object, so the strip
+   reads as a set of cards resting on a table rather than a flat row. */
+.brand-stage {
+  perspective: 1500px;
+}
+
+.brand-rail {
+  transform:
+    rotateX(var(--rail-rx, 0deg))
+    rotateY(var(--rail-ry, 0deg));
+}
+
+.brand-tile {
+  /* One vanishing point for the whole card. */
+  perspective: 900px;
+  transform-style: preserve-3d;
+  animation: brand-float 7.5s ease-in-out infinite;
+  /* Each card breathes on its own phase. */
+  animation-delay: calc(var(--brand-i, 0) * -0.58s);
+}
+
+@keyframes brand-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* The depth eases so a hovered card can swing back to face the viewer.
+   While the rail is scrolling the transition is dropped, otherwise the
+   cards would smear behind the scroll. */
+.brand-tile-depth {
+  height: 100%;
+  transform-style: preserve-3d;
+  transform:
+    translate3d(
+      calc(var(--brand-dx, 0px) * var(--brand-straighten, 1)),
+      0,
+      calc(var(--brand-dz, 0px) * var(--brand-straighten, 1))
+    )
+    rotateY(calc(var(--brand-dry, 0deg) * var(--brand-straighten, 1)))
+    scale(var(--brand-ds, 1));
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand-rail.is-scrolling .brand-tile-depth {
+  transition: none;
+}
+
+/* The card under the cursor pulls out of the deck and turns to face it. */
+.brand-tile:hover {
+  --brand-straighten: 0;
+}
+
+.brand-tile-inner {
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.brand-card {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  transform:
+    translateY(var(--brand-lift, 0px))
+    translateZ(var(--brand-pop, 0px))
+    rotateX(var(--brand-rx, 0deg))
+    rotateY(var(--brand-ry, 0deg));
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+/* --- the hover ------------------------------------------------------- */
+
+.group:hover .brand-card {
+  --brand-lift: -6px;
+  --brand-pop: 90px;
+  border-color: var(--brand-primary);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--brand-primary) 26%, transparent);
+}
+
+.group:focus-visible .brand-card {
+  border-color: var(--brand-primary);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent),
+    0 16px 34px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+/* A light sweeps across the card as it comes alive. */
+.brand-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 42%,
+    color-mix(in srgb, var(--brand-primary) 14%, transparent) 50%,
+    transparent 58%
+  );
+  transition: opacity 0.35s ease;
+}
+
+.group:hover .brand-card::after {
+  opacity: 1;
+  animation: brand-sheen 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes brand-sheen {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.brand-icon {
+  transition:
+    transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.4s ease;
+}
+
+.group:hover .brand-icon {
+  transform: rotate(-14deg) scale(1.14);
+}
+
+.brand-name {
+  transition:
+    color 0.4s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .brand-name {
+  color: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+/* --- the heading ----------------------------------------------------- */
+
+/* The word "Brand" carries the theme colour in a slow shimmer. */
+.brand-heading-accent {
+  background-image: linear-gradient(
+    100deg,
+    var(--brand-primary) 0%,
+    color-mix(in srgb, var(--brand-primary) 42%, #ffffff) 38%,
+    var(--brand-primary) 62%,
+    color-mix(in srgb, var(--brand-primary) 42%, #ffffff) 100%
+  );
+  background-size: 260% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: brand-shimmer 7s ease-in-out infinite;
+}
+
+/* Only hide the text colour where the gradient can actually clip it. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .brand-heading-accent {
+    color: transparent;
+  }
+}
+
+@keyframes brand-shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* --- the call to action ---------------------------------------------- */
+
+.brand-cta {
+  position: relative;
+  isolation: isolate;
+}
+
+/* A soft halo breathing behind the button. */
+.brand-cta::before {
+  content: '';
+  position: absolute;
+  inset: -3px -6px;
+  border-radius: 9999px;
+  background: var(--brand-primary);
+  opacity: 0.22;
+  filter: blur(12px);
+  z-index: -1;
+  animation: brand-halo 3.4s ease-in-out infinite;
+}
+
+@keyframes brand-halo {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.16;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.3;
+  }
+}
+
+.brand-cta svg {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand-cta:hover svg {
+  transform: translateX(6px);
+}
+
+/* --- the drifting backdrop ------------------------------------------- */
+
+.brand-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.brand-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+}
+
+.brand-orb-a {
+  width: 46vw;
+  height: 46vw;
+  max-width: 620px;
+  max-height: 620px;
+  left: -12%;
+  top: -34%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--brand-primary) 24%, transparent),
+    transparent 68%
+  );
+  animation: brand-drift-a 18s ease-in-out infinite;
+}
+
+.brand-orb-b {
+  width: 38vw;
+  height: 38vw;
+  max-width: 520px;
+  max-height: 520px;
+  right: -10%;
+  bottom: -36%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--brand-primary) 16%, transparent),
+    transparent 70%
+  );
+  animation: brand-drift-b 22s ease-in-out infinite;
+}
+
+@keyframes brand-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, 8%, 0) scale(1.12);
+  }
+}
+
+@keyframes brand-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  50% {
+    transform: translate3d(-7%, -6%, 0) scale(0.94);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-rail {
     scroll-behavior: auto;
+    transform: none;
+  }
+
+  /* The strip still works — it just stops moving on its own. */
+  .brand-tile,
+  .brand-orb,
+  .brand-cta::before,
+  .brand-heading-accent {
+    animation: none;
+  }
+
+  .brand-tile-depth,
+  .brand-card {
+    transform: none;
+    transition: none;
+  }
+
+  .brand-card::after {
+    display: none;
+  }
+
+  .brand-icon,
+  .brand-name,
+  .brand-cta svg {
+    transition: none;
   }
 }
