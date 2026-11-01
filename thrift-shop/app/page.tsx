@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import ProductCard from './components/ProductCard';
 import BrandCarousel from './components/BrandCarousel';
+import LovedPieces from './components/LovedPieces';
 import ReviewDialog from './components/ReviewDialog';
 import ReviewTrigger from './components/ReviewTrigger';
 import ReviewCarousel from './components/ReviewCarousel';
@@ -80,7 +81,6 @@ export default function Home() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   const [currentDailyEditIndex, setCurrentDailyEditIndex] = useState(0);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
-  const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info', isVisible: boolean}>({
     message: '',
@@ -1008,192 +1008,15 @@ export default function Home() {
         </section>
       )}
 
-      {/* Trending Now Section - Show only most_lovable products */}
-      <section id="products-section" className="py-8 sm:py-10 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
-        <div className="absolute inset-0 opacity-5" style={{ 
-          backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
-          backgroundSize: '40px 40px',
-          color: theme.primary
-        }}></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center mb-6 sm:mb-16 scroll-animate scroll-fadeInDown">
-            <span className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-2 sm:mb-4" style={{ backgroundColor: `${theme.primary}15`, color: theme.primary }}>
-              Trending Now
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-2 sm:mb-3 tracking-tight">Most Loved Pieces</h2>
-            <p className="text-gray-500 text-xs sm:text-sm tracking-wide">Curated favorites from our community</p>
-          </div>
-
-          {/* Mobile Slider */}
-          <div className="md:hidden relative px-2">
-            <div className="overflow-hidden rounded-lg">
-              <div 
-                className="flex transition-transform duration-300 ease-out"
-                style={{ transform: `translateX(-${currentTrendingIndex * 100}%)` }}
-              >
-                {mostLovedProducts
-                  .slice(0, 3)
-                  .map((product, index) => (
-                  <div 
-                    key={product.id}
-                    className="w-full flex-shrink-0 px-2"
-                  >
-                    <div 
-                      className="group cursor-pointer shadow-md rounded-lg overflow-hidden bg-white max-w-[280px] mx-auto"
-                      onClick={() => handleViewDetails(product)}
-                    >
-                      <div className={`relative ${index === 1 ? 'bg-white' : 'bg-gray-50'} aspect-[3/4]`}>
-                        <img 
-                          src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
-                          alt={product.name}
-                          className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'}`}
-                        />
-                        {/* Status Badges - Show only one based on priority */}
-                        {product.reservation_status === 'sold' || !product.inStock ? (
-                          <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
-                            SOLD OUT
-                          </div>
-                        ) : product.reservation_status === 'reserved' ? (
-                          <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
-                            RESERVED
-                          </div>
-                        ) : null}
-                        {wishlist.includes(product.id) && (
-                          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md">
-                            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 space-y-1">
-                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">{product.name}</h3>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">{product.brand}</p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-base font-semibold" style={{ color: theme.primary }}>{companyCurrency.symbol}{product.price}</span>
-                          {product.originalPrice && product.originalPrice > product.price && (
-                            <span className="text-xs text-gray-400 line-through">{companyCurrency.symbol}{product.originalPrice}</span>
-                          )}
-                        </div>
-                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                          <LoveButton
-                            productId={product.id}
-                            likes={product.likes ?? 0}
-                            liked={product.liked_by_me ?? false}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Slider Navigation Arrows - Always visible, disabled when at edges */}
-            <button 
-              onClick={() => currentTrendingIndex > 0 && setCurrentTrendingIndex(prev => prev - 1)}
-              disabled={currentTrendingIndex === 0}
-              className={`absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-xl flex items-center justify-center transition-all z-10 ${
-                currentTrendingIndex === 0 
-                  ? 'opacity-40 cursor-not-allowed' 
-                  : 'hover:scale-110 cursor-pointer'
-              }`}
-              style={{ color: currentTrendingIndex === 0 ? '#9ca3af' : theme.primary }}
-              aria-label="Previous product"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => currentTrendingIndex < 2 && setCurrentTrendingIndex(prev => prev + 1)}
-              disabled={currentTrendingIndex === 2}
-              className={`absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-xl flex items-center justify-center transition-all z-10 ${
-                currentTrendingIndex === 2 
-                  ? 'opacity-40 cursor-not-allowed' 
-                  : 'hover:scale-110 cursor-pointer'
-              }`}
-              style={{ color: currentTrendingIndex === 2 ? '#9ca3af' : theme.primary }}
-              aria-label="Next product"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Desktop Grid */}
-          <div className="hidden md:grid grid-cols-3 gap-8">
-            {mostLovedProducts
-              .slice(0, 3)
-              .map((product, index) => (
-              <div 
-                key={product.id}
-                className={`group cursor-pointer scroll-animate scroll-slideInScale stagger-${index + 1} shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg card-hover-enhanced`}
-                onClick={() => handleViewDetails(product)}
-              >
-                <div data-spotlight className={`relative overflow-hidden rounded-lg ${index === 1 ? 'bg-white' : 'bg-gray-100'} aspect-[3/4] mb-4`}>
-                  <img 
-                    src={product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=500&fit=crop'}
-                    alt={product.name}
-                    className={`w-full h-full ${index === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-500`}
-                  />
-                  {/* Status Badges - Show only one based on priority */}
-                  {product.reservation_status === 'sold' || !product.inStock ? (
-                    <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-red-600">
-                      SOLD OUT
-                    </div>
-                  ) : product.reservation_status === 'reserved' ? (
-                    <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-xs font-bold text-white bg-orange-500">
-                      RESERVED
-                    </div>
-                  ) : null}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <button className="w-full py-2.5 px-4 bg-white text-gray-900 rounded font-medium text-xs tracking-wide uppercase hover:bg-gray-100 transition-colors magnetic-btn">
-                      Quick View
-                    </button>
-                  </div>
-                  {wishlist.includes(product.id) && (
-                    <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md animate-scaleIn animate-heartbeat">
-                      <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1.5 p-2">
-                  <h3 className="font-medium text-gray-900 text-sm group-hover:text-gray-600 transition-colors underline-effect">{product.name}</h3>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">{product.brand}</p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-base font-medium" style={{ color: theme.primary }}>{companyCurrency.symbol}{product.price}</span>
-                    {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-xs text-gray-400 line-through">{companyCurrency.symbol}{product.originalPrice}</span>
-                    )}
-                  </div>
-                  <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                    <LoveButton
-                      productId={product.id}
-                      likes={product.likes ?? 0}
-                      liked={product.liked_by_me ?? false}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-6 sm:mt-12 scroll-animate scroll-fadeInUp">
-            <button 
-              onClick={() => window.location.href = '/products'}
-              className="px-6 sm:px-10 py-2 sm:py-3 rounded font-medium text-white text-[10px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase transition-all duration-300 hover:opacity-90 magnetic-btn"
-              style={{ backgroundColor: theme.primary }}
-            >
-              View All Products
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Most Loved Pieces — the community's favourites, standing on a 3D stage */}
+      <LovedPieces
+        products={mostLovedProducts}
+        primary={theme.primary}
+        currencySymbol={companyCurrency.symbol}
+        wishlist={wishlist}
+        onViewDetails={handleViewDetails}
+        onToggleWishlist={toggleWishlist}
+      />
 
       {/* Brand band — the ticker leans into the scroll speed */}
       <MarqueeBand />
