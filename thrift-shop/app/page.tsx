@@ -29,6 +29,7 @@ import { api } from '../lib/api';
 import { toBooleanFlag } from '../lib/flags';
 import { getVisitorKey } from '../lib/visitor';
 import { useTheme, useThemeStyles } from '../lib/theme';
+import { useReviewDeepLink } from '../lib/reviewDeepLink';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
 
 interface Testimonial {
@@ -38,6 +39,8 @@ interface Testimonial {
   title: string;
   description: string;
   image?: string | null;
+  /** The photo the reviewer attached to the review itself (optional). */
+  review_image?: string | null;
   is_active?: number;
   /** The stars the reviewer gave, 1-5. */
   rating?: number;
@@ -61,6 +64,8 @@ export default function Home() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  // A link like `/?review` opens the review form straight away.
+  useReviewDeepLink(isReviewOpen, () => setIsReviewOpen(true));
   const [user, setUser] = useState<User | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '../../lib/theme';
 import { StarPicker } from './StarRating';
+import { prepareReviewImage, ReviewImageError } from '../../lib/reviewImage';
 
 interface ReviewDialogProps {
   /** Controlled by the parent so any trigger (header, CTA card) can open it. */
@@ -31,9 +32,16 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
   const [mounted, setMounted] = useState(false);
   /** Set when the visitor is signed in — the review is then linked to their account. */
   const [authToken, setAuthToken] = useState<string | null>(null);
+  /** The photo the reviewer attached, as a data URI. Optional. */
+  const [image, setImage] = useState<string | null>(null);
+  /** True while the chosen photo is being shrunk before it is sent. */
+  const [isPreparingImage, setIsPreparingImage] = useState(false);
+  /** What went wrong with the photo, if anything. */
+  const [imageError, setImageError] = useState('');
 
   const nameRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The parent passes a fresh arrow on every render, so the callback is kept
   // in a ref — otherwise the open/close effect below would re-run on each
@@ -114,6 +122,10 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
     setTitle('');
     setMessage('');
     setRating(5);
+    setImage(null);
+    setImageError('');
+    setIsPreparingImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
     // A signed-in customer gets their name filled in and their review linked
     // to their account, so the admin knows exactly who wrote it.
@@ -134,6 +146,38 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
       }
     }
   }, [open]);
+
+  /**
+   * The photo the reviewer picked.
+   *
+   * It is shrunk in the browser before it is sent, so a photo straight from a
+   * phone does not make the review request heavy.
+   */
+  const pickImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImageError('');
+
+    try {
+      setIsPreparingImage(true);
+      const prepared = await prepareReviewImage(file);
+      setImage(prepared);
+    } catch (err) {
+      setImage(null);
+      setImageError(
+        err instanceof ReviewImageError ? err.message : 'We could not read that photo.',
+      );
+    } finally {
+      setIsPreparingImage(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImageError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -169,6 +213,8 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
           message: trimmedMessage,
           rating,
           companyId: companyId || 1,
+          // The photo is optional — it is only sent when there is one.
+          ...(image ? { image } : {}),
         }),
       });
 
@@ -183,6 +229,7 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
       setTitle('');
       setMessage('');
       setRating(5);
+      setImage(null);
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -334,6 +381,73 @@ export default function ReviewDialog({ open, onClose, companyId }: ReviewDialogP
                   <p className="mt-1 text-right text-[11px] text-gray-400">
                     {message.length}/{MAX_MESSAGE}
                   </p>
+                </div>
+
+                {/* The photo is optional — a review with only words is fine. */}
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-xs font-medium text-gray-700">
+                    Add a photo <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
+
+                  <input
+                    ref={fileInputRef}
+                    id="review-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={pickImage}
+                    className="sr-only"
+                  />
+
+                  {image ? (
+                    <div className="relative overflow-hidden rounded-xl border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image}
+                        alt="The photo you attached"
+                        className="h-40 w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute right-2 top-2 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-black/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isPreparingImage}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-5 text-sm font-medium text-gray-500 transition-all duration-200 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.6}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 16V4m0 0L8 8m4-4 4 4" />
+                        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                      </svg>
+                      {isPreparingImage ? 'Preparing your photo…' : 'Choose a photo'}
+                    </button>
+                  )}
+
+                  {imageError && (
+                    <p className="mt-1.5 text-[11px] text-red-600" role="alert">
+                      {imageError}
+                    </p>
+                  )}
+                  {!image && !imageError && (
+                    <p className="mt-1.5 text-[11px] text-gray-400">
+                      A photo of the piece you bought — JPG, PNG or WEBP.
+                    </p>
+                  )}
                 </div>
 
                 {error && (

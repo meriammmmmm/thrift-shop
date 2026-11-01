@@ -20,6 +20,8 @@ export interface ReviewCardData {
   title?: string;
   description: string;
   image?: string | null;
+  /** The photo the reviewer attached to the review itself (optional). */
+  review_image?: string | null;
   rating?: number;
   likes?: number;
   liked_by_me?: boolean;
@@ -158,6 +160,20 @@ export default function ReviewCard({
           &ldquo;{testimonial.description}&rdquo;
         </p>
       </div>
+
+      {/* The photo of the piece the reviewer bought — only there when they
+          attached one. */}
+      {testimonial.review_image && (
+        <div className="relative z-10 mt-4 overflow-hidden rounded-2xl border border-gray-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={testimonial.review_image}
+            alt={`Photo shared by ${reviewerName}`}
+            loading="lazy"
+            className="h-48 w-full bg-gray-50 object-cover"
+          />
+        </div>
+      )}
 
       {/* Reviewer + helpful votes */}
       <div className="relative z-10 mt-auto flex items-center justify-between gap-3 border-t border-gray-100 pt-5">

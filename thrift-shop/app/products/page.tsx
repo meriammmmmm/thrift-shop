@@ -14,6 +14,8 @@ import { useTheme } from '../../lib/theme';
 import { useCinematicScroll } from '../../lib/motion/useCinematicMotion';
 import { compareByShopOrder } from '../../lib/productOrder';
 import ScrollProgress from '../components/ScrollProgress';
+import ReviewDialog from '../components/ReviewDialog';
+import { useReviewDeepLink } from '../../lib/reviewDeepLink';
 
 // --- Session-level product cache for the /products page ---
 const PRODUCTS_CACHE_KEY = 'shop-products-cache';
@@ -48,6 +50,9 @@ export default function ProductsPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  // A link like `/products?review` opens the review form straight away.
+  useReviewDeepLink(isReviewOpen, () => setIsReviewOpen(true));
   const [user, setUser] = useState<User | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1293,6 +1298,13 @@ export default function ProductsPage() {
         selectedSizes={selectedSizes}
         onSizeChange={setSelectedSizes}
         availableSizes={sizes}
+      />
+
+      {/* Customer review form — opened from a `?review` link */}
+      <ReviewDialog
+        open={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        companyId={company?.id}
       />
     </div>
   );
