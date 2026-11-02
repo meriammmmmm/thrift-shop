@@ -257,14 +257,26 @@ export default function LookbookRunway({
        * A click on "next" brings the look that just took focus back into
        * view. The stage is taller than the space the visitor gave it, so
        * without this the new outfit can arrive somewhere they are not
-       * looking. Autoplay never scrolls — that would drag the page away from
-       * whatever the visitor is reading.
+       * looking.
+       *
+       * The page only moves when the focused look is not properly on screen,
+       * and it moves to the centre of the window — a long jump would read as
+       * the page lurching rather than the runway moving. Autoplay never
+       * scrolls: that would drag the page away from whatever the visitor is
+       * reading.
        */
       if (scroll) {
-        stageRef.current?.scrollIntoView({
-          behavior: reduce ? 'auto' : 'smooth',
-          block: 'nearest',
-        });
+        const stage = stageRef.current;
+        if (stage) {
+          const rect = stage.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const visible = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+
+          if (visible < rect.height * 0.7) {
+            const target = window.scrollY + rect.top - (viewportHeight - rect.height) / 2;
+            window.scrollTo({ top: Math.max(0, target), behavior: reduce ? 'auto' : 'smooth' });
+          }
+        }
       }
     },
     [total, position, reduce]
@@ -478,7 +490,7 @@ export default function LookbookRunway({
                 {look.tagline && <p className="runway__panel-tagline">{look.tagline}</p>}
 
                 <ul className="runway__piece-list">
-                  {look.pieces.map((piece) => (
+                  {look.pieces.map((piece, pieceIndex) => (
                     <li key={piece.id}>
                       <button
                         type="button"
@@ -492,6 +504,7 @@ export default function LookbookRunway({
                             className="runway__piece-img"
                             loading="lazy"
                           />
+                          <span className="runway__piece-badge">{pieceIndex + 1}</span>
                         </span>
                         <span className="runway__piece-info">
                           <span className="runway__piece-brand">
