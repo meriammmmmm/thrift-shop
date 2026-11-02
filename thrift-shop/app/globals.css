@@ -1132,6 +1132,100 @@ a {
   scrollbar-width: none;
 }
 
+/* ==========================================================================
+   THE VIDEO ROW — a row of clips a phone can walk through
+
+   On a phone the row is padded by half the width the clip does not take,
+   so the middle of the row is the middle of the screen and the
+   neighbouring clips peek in at both edges. From a tablet upwards the row
+   keeps the padding it always had — the phone is the only screen this
+   changes.
+
+     .video-track          the row of clips
+     .video-card           one clip — the still and the clip inside it
+     .video-placeholder    the branded panel behind a clip with no still
+   ========================================================================== */
+
+.video-track {
+  --video-card-w: 216px;
+  --video-gap: 16px;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--video-gap);
+
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* The row keeps the swipe to itself — a swipe at the edge of the screen
+     must not walk the phone back to the previous page. */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+
+  padding-inline: calc((100% - var(--video-card-w)) / 2);
+  scroll-padding-inline: calc((100% - var(--video-card-w)) / 2);
+
+  scrollbar-width: none;
+}
+
+.video-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .video-track {
+    --video-card-w: 290px;
+    --video-gap: 24px;
+
+    /* The padding the row has always had. */
+    padding-inline: 80px;
+    scroll-padding-inline: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .video-track {
+    --video-card-w: 320px;
+  }
+}
+
+.video-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--video-card-w);
+  aspect-ratio: 9 / 16;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #e5e7eb;
+  cursor: pointer;
+
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+
+  transform: scale(0.88);
+  opacity: 0.45;
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out, box-shadow 0.5s ease-out;
+}
+
+.video-card:hover {
+  opacity: 0.7;
+}
+
+.video-card.is-active {
+  transform: scale(1);
+  opacity: 1;
+  z-index: 10;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* The branded panel behind a clip that has no still of its own. It is a
+   still — but never a black one. */
+.video-placeholder {
+  background:
+    radial-gradient(120% 80% at 50% 10%, rgba(255, 255, 255, 0.22), transparent 60%),
+    linear-gradient(165deg, #a3395a 0%, #712038 55%, #3d0d1c 100%);
+}
+
 /* Custom scrollbar for checkout */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
@@ -4276,6 +4370,9 @@ a {
   perspective-origin: 50% 46%;
   overflow: hidden;
   touch-action: pan-y;
+  /* The stage keeps the sideways swipe to itself — a swipe at the edge of
+     the screen must not walk the phone back to the previous page. */
+  overscroll-behavior-x: contain;
   outline: none;
 }
 
@@ -4740,7 +4837,18 @@ a {
   }
 
   .runway__viewport {
-    height: 320px;
+    height: 340px;
+  }
+
+  /**
+   * The phone wears the same runway as the wide screen: the focused outfit
+   * stands in the middle and the neighbours turn away right beside it, so
+   * the rail is as dense on a phone as it is on a desktop. Only the stage
+   * itself and the label are adjusted — the label sits inside the stage,
+   * because the stage clips what hangs outside it.
+   */
+  .runway-hero__tag {
+    bottom: -0.75rem;
   }
 
   .runway__piece-reason {
@@ -4751,6 +4859,16 @@ a {
     max-width: 6rem;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* The scrubber is a row of numbers on a phone — it gets its own room. */
+  .runway__scrubber {
+    gap: 0.5rem;
+  }
+
+  .runway__arrow {
+    width: 2rem;
+    height: 2rem;
   }
 }
 

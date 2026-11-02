@@ -13,6 +13,7 @@ import { api } from '../../lib/api';
 import { useTheme } from '../../lib/theme';
 import { useCinematicScroll } from '../../lib/motion/useCinematicMotion';
 import { compareByShopOrder } from '../../lib/productOrder';
+import { CATEGORY_FILTERS, matchesCategoryFilter } from '../../lib/categories';
 import ScrollProgress from '../components/ScrollProgress';
 import ReviewDialog from '../components/ReviewDialog';
 import { useReviewDeepLink } from '../../lib/reviewDeepLink';
@@ -273,27 +274,10 @@ export default function ProductsPage() {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            product.brand.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Flexible category matching
-      let matchesCategory = selectedCategory === 'All';
-      if (!matchesCategory) {
-        const productCategory = product.category.toLowerCase();
-        const selectedCategoryLower = selectedCategory.toLowerCase();
-        
-        if (productCategory === selectedCategoryLower) {
-          matchesCategory = true;
-        } else if (selectedCategoryLower === 'bags') {
-          // Match any category containing "bag" or "bags"
-          matchesCategory = productCategory.includes('bag');
-        } else if (selectedCategoryLower === 'shoes') {
-          matchesCategory = ['sneakers', 'boots', 'heels', 'flats', 'sandals'].includes(productCategory) || productCategory.includes('shoe') || productCategory.includes('boot');
-        } else if (selectedCategoryLower === 'accessories') {
-          matchesCategory = ['jewelry', 'watches', 'sunglasses', 'belts', 'scarves', 'hats'].includes(productCategory) || productCategory.includes('accessories');
-        } else if (selectedCategoryLower === 'tops') {
-          matchesCategory = ['tops', 'sweaters', 'jackets'].includes(productCategory) || productCategory.includes('top');
-        } else if (selectedCategoryLower === 'dresses') {
-          matchesCategory = ['dresses', 'skirts'].includes(productCategory) || productCategory.includes('dress');
-        }
-      }
+      // Category matching. The raw categories in the database are free text
+      // ("Mini Skirts", "Crop Tops", "Corsets & Bustiers"), so the chip and
+      // the product are compared as groups instead of raw strings.
+      const matchesCategory = matchesCategoryFilter(product.category, selectedCategory);
       
       // Occasion matching - map occasions to product tags or categories
       let matchesOccasion = selectedOccasion === 'All';
@@ -880,7 +864,7 @@ export default function ProductsPage() {
         <div className="max-w-7xl mx-auto px-4">
           {/* Category Pills - Streamlined */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {['All', 'Dresses', 'Shoes', 'Accessories', 'Tops', 'Bags'].map((category) => (
+            {CATEGORY_FILTERS.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}

@@ -55,13 +55,30 @@ const AUTOPLAY_MS = 6200;
 /**
  * How far a neighbour sits from the focused look, as a share of the stage.
  *
- * The looks stand close together, shoulder to shoulder, the way a row of
- * people stands — not scattered across the stage with gaps between them.
+ * The phone wears the same runway as the wide screen: the focused outfit
+ * stands in the middle with its neighbours turned away right beside it, so
+ * four neighbours are in sight the way they are on a wide screen.
+ *
+ * The step follows the size of the outfit on the stage — on the wide
+ * screen the outfit is about a fifth of the stage and the neighbours stand
+ * that far apart; on a phone the outfit takes up more of the narrow stage,
+ * so the neighbours stand closer in absolute terms and stay beside it.
  */
-const STEP = 22;
+function stepFor(width: number): number {
+  if (width < 520) return 24;
+  return 22;
+}
 
-/** Swipe distance that counts as "next look". */
-const SWIPE_THRESHOLD = 36;
+/**
+ * The smallest drag that counts as a swipe, in pixels.
+ *
+ * It is a share of the distance one look covers, so a swipe feels the same
+ * on a phone and on a wide screen.
+ */
+function swipeThreshold(pixelsPerLook: number): number {
+  if (!pixelsPerLook) return 32;
+  return Math.min(48, Math.max(24, pixelsPerLook * 0.18));
+}
 
 /** The saving the visitor gets for taking the whole look. */
 const BUNDLE_DISCOUNT = 0.1;
@@ -77,6 +94,8 @@ interface SlideProps {
   index: number;
   total: number;
   position: MotionValue<number>;
+  /** The share of the stage one look covers. */
+  step: number;
   reduce: boolean;
   onViewDetails: (product: Product) => void;
 }
@@ -88,7 +107,15 @@ interface SlideProps {
  * run past the last look and wrap round to the first without a slide
  * ever jumping across the stage.
  */
-function RunwaySlide({ look, index, total, position, reduce, onViewDetails }: SlideProps) {
+function RunwaySlide({
+  look,
+  index,
+  total,
+  position,
+  step,
+  reduce,
+  onViewDetails,
+}: SlideProps) {
   const distance = useTransform(position, (value) => {
     if (!total) return 0;
     let d = ((index - value) % total + total) % total;
@@ -97,7 +124,7 @@ function RunwaySlide({ look, index, total, position, reduce, onViewDetails }: Sl
     return d;
   });
 
-  const x = useTransform(distance, (d) => `${d * STEP}%`);
+  const x = useTransform(distance, (d) => `${d * step}%`);
   const rotateY = useTransform(distance, (d) => d * 11);
   const z = useTransform(distance, (d) => 40 - Math.min(Math.abs(d), 2.4) * 150);
   const scale = useTransform(distance, (d) => 1 - Math.min(Math.abs(d), 2.4) * 0.1);
@@ -195,13 +222,21 @@ export default function LookbookRunway({
   const animationRef = useRef<AnimationPlaybackControls | null>(null);
   /** The stage, so a click can bring the focused look back into view. */
   const stageRef = useRef<HTMLDivElement>(null);
+  /**
+   * How much of the stage one look covers. A phone gets a wide step, so a
+   * swipe moves exactly one look and the outfit fills the stage.
+   */
+  const [stageStep, setStageStep] = useState(22);
   /** The drag in progress: where the finger went down and where the rail was. */
   const dragRef = useRef<{
     x: number;
+    y: number;
     position: number;
     moved: boolean;
+    axis: 'x' | 'y' | null;
     velocity: number;
     lastX: number;
+    lastY: number;
     lastTime: number;
   } | null>(null);
   /** Set after a drag, so the click that follows it does not open a product. */
@@ -210,6 +245,29 @@ export default function LookbookRunway({
   useEffect(() => {
     setReduce(prefersReducedMotion());
   }, []);
+
+  /**
+   * How wide the stage is decides how far apart the looks stand.
+   *
+   * A phone gets a wide step: one look fills the stage and a swipe moves
+   * exactly one look. A wide screen gets a narrow step, so several looks
+   * are in sight at once.
+   */
+  useEffect(() => {
+    const measure = () => {
+      const width = stageRef.current?.offsetWidth ?? window.innerWidth;
+      setStageStep(stepFor(width));
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+    };
+  }, [runwayLooks.length]);
 
   /**
    * Deep link: /#complete-look brings the runway into view.
@@ -244,7 +302,7 @@ export default function LookbookRunway({
    * to the first look once it reached the end of the catalogue.
    */
   const goToPosition = useCallback(
-    (target: number, scroll = false) => {
+    (target: number, scroll = false, velocity = 0) => {
       if (!total) return;
 
       currentRef.current = target;
@@ -256,7 +314,17 @@ export default function LookbookRunway({
       if (reduce) {
         position.set(target);
       } else {
-        animationRef.current = animate(position, target, { type: 'spring', ...SPRING.runway });
+        /**
+         * The spring is handed the speed the hand was moving at. A flick
+         * that is let go of keeps travelling the way it was going instead
+         * of stopping dead and starting again — which is what made the
+         * swipe feel like it was fighting the visitor's hand.
+         */
+        animationRef.current = animate(position, target, {
+          type: 'spring',
+          ...SPRING.runway,
+          velocity: Math.max(-14, Math.min(14, velocity)),
+        });
       }
 
       /**
@@ -352,12 +420,12 @@ export default function LookbookRunway({
   /**
    * How many pixels one look is worth on the stage.
    *
-   * The slides are `STEP` percent of the stage apart, so a drag of one
-   * slide-width moves the runway by exactly one look.
+   * The slides are one step apart, so a drag of that distance moves the
+   * runway by exactly one look.
    */
   const pixelsPerLook = () => {
     const width = stageRef.current?.offsetWidth ?? window.innerWidth;
-    return (STEP / 100) * width;
+    return (stageStep / 100) * width;
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -376,10 +444,13 @@ export default function LookbookRunway({
 
     dragRef.current = {
       x: event.clientX,
+      y: event.clientY,
       position: position.get(),
       moved: false,
+      axis: null,
       velocity: 0,
       lastX: event.clientX,
+      lastY: event.clientY,
       lastTime: event.timeStamp,
     };
 
@@ -401,17 +472,39 @@ export default function LookbookRunway({
     const drag = dragRef.current;
     if (!drag || !total) return;
 
-    const distance = event.clientX - drag.x;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
 
-    // A couple of pixels of wobble is still a tap, not a drag.
-    if (!drag.moved && Math.abs(distance) < 6) return;
+    /**
+     * Which way the finger is travelling decides what the gesture means.
+     * A finger that travels sideways walks the runway; a finger that
+     * travels up or down is reading the page and has to be left alone.
+     *
+     * Without this the runway was thrown to a random look every time the
+     * page was scrolled past it — the stage sits right where people are
+     * scrolling, so a page scroll and a swipe are the same movement.
+     */
+    if (!drag.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+
+      // A clearly sideways gesture is a swipe; anything else is a scroll.
+      drag.axis = Math.abs(dx) > Math.abs(dy) * 1.1 ? 'x' : 'y';
+
+      if (drag.axis === 'y') {
+        dragRef.current = null;
+        suppressClickRef.current = true;
+        return;
+      }
+    }
+    if (drag.axis !== 'x') return;
+
     drag.moved = true;
 
     const perLook = pixelsPerLook();
     if (!perLook) return;
 
     // Dragging to the left brings the next look in.
-    const next = drag.position - distance / perLook;
+    const next = drag.position - dx / perLook;
     position.set(next);
 
     // How fast the hand is moving, in pixels per millisecond.
@@ -421,11 +514,35 @@ export default function LookbookRunway({
       drag.velocity = drag.velocity * 0.6 + instant * 0.4;
     }
     drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
     drag.lastTime = event.timeStamp;
 
     // The panel follows the outfit that is taking focus.
     const focus = Math.round(next);
     setActive(((focus % total) + total) % total);
+  };
+
+  /**
+   * The browser took the gesture away.
+   *
+   * This is what happens when the finger decides to scroll the page
+   * instead: the browser cancels the pointer and the runway has to put
+   * itself back where it was. Letting the release run as if it were a
+   * swipe is what threw the runway to a random look mid-scroll.
+   */
+  const cancelDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* Nothing to release. */
+    }
+
+    suppressClickRef.current = true;
+    goToPosition(Math.round(drag.position), false);
   };
 
   const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -459,15 +576,24 @@ export default function LookbookRunway({
     const flicked = Math.abs(drag.velocity) > 0.45;
     if (flicked && target === start) {
       target = start + (drag.velocity < 0 ? 1 : -1);
-    } else if (!flicked && Math.abs(distance) >= SWIPE_THRESHOLD && target === start) {
+    } else if (
+      !flicked &&
+      Math.abs(distance) >= swipeThreshold(perLook) &&
+      target === start
+    ) {
       target = start + (distance < 0 ? 1 : -1);
     }
 
     /**
      * The rail settles on an absolute position. It is never turned back
      * into a look number, so it can never be sent back to where it began.
+     *
+     * The page is left where the visitor left it: they were already
+     * looking at the stage, and a page that moves under a swipe feels
+     * like the page took the gesture away from them.
      */
-    goToPosition(target, true);
+    const carry = perLook ? -(drag.velocity * 1000) / perLook : 0;
+    goToPosition(target, false, carry);
     setInteractionTick((tick) => tick + 1);
   };
 
@@ -538,7 +664,7 @@ export default function LookbookRunway({
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={endDrag}
-              onPointerCancel={endDrag}
+              onPointerCancel={cancelDrag}
               onClickCapture={handleClickCapture}
               onKeyDown={handleKeyDown}
             >
@@ -551,6 +677,7 @@ export default function LookbookRunway({
                     index={index}
                     total={total}
                     position={position}
+                    step={stageStep}
                     reduce={reduce}
                     onViewDetails={onViewDetails}
                   />
@@ -623,14 +750,14 @@ export default function LookbookRunway({
 
           {/* ------------------------------------------------------ panel */}
           <aside className="runway__panel" aria-live="polite">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="popLayout" initial={false}>
               <motion.div
                 key={look.id}
                 className="runway__panel-body"
-                initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+                initial={{ opacity: 0, y: reduce ? 0 : 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: reduce ? 0 : -10 }}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, y: reduce ? 0 : -8, transition: { duration: 0.16 } }}
+                transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="runway__panel-head">
                   <h3 className="runway__panel-title">In this look</h3>

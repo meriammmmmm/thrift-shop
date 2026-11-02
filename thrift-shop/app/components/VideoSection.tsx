@@ -9,6 +9,16 @@ import { ShopVideo } from '../../lib/videos';
  * A row of vertical clips, the one in the middle plays, and the arrows walk
  * through them. Every clip carries its own sound button and its own play and
  * stop buttons, the way the shop's other sections carry their own controls.
+ *
+ * THE STILL BEHIND EVERY CLIP
+ *
+ * A clip only shows a frame once the browser has decoded one. A phone is
+ * slow and these clips are large, so for a while there is no frame at all —
+ * and a video box with nothing in it is a black hole in the middle of the
+ * shop. Every clip therefore stands on a still: the poster the merchant
+ * uploaded, the picture of the piece the clip belongs to, or a branded
+ * panel when there is neither. The clip is painted on top of that still,
+ * so the shop never shows a black box, whatever the network is doing.
  */
 
 interface VideoSectionProps {
@@ -98,6 +108,17 @@ const ArrowIcon = ({ direction }: { direction: 'left' | 'right' }) => (
   </svg>
 );
 
+/**
+ * The still that stands behind a clip.
+ *
+ * The poster the merchant uploaded comes first, then the picture of the
+ * piece the clip belongs to. A clip with neither still gets the branded
+ * panel — a still, but never a black one.
+ */
+function posterFor(video: ShopVideo): string | null {
+  return video.poster_url || video.product?.image || null;
+}
+
 const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
   /** The clip in the middle — the one that plays. */
   const [active, setActive] = useState(0);
@@ -105,55 +126,116 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
    * customer left it once they turn it on. */
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
+  /**
+   * The clips that have actually played at least once.
+   *
+   * The still stands on top of a clip until that clip is running. A clip
+   * that has not started yet has no frame to show, and a clip with no frame
+   * is a black box — so the still holds the place until there is something
+   * real behind it.
+   */
+  const [started, setStarted] = useState<Record<number, boolean>>({});
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const trackRef = useRef<HTMLDivElement | null>(null);
+  /** The scroll listener measures the row; the measurement waits for the
+   * next frame so a fast swipe never measures twice in one frame. */
+  const measureRef = useRef<number | null>(null);
+
+  /**
+   * Put a clip in the middle of the row.
+   *
+   * The row is padded by half the leftover width on each side, so the
+   * middle of the row is the middle of the screen. The scroll is done by
+   * hand on the row itself: asking the browser to scroll an element into
+   * view also scrolls the page around it, and it did nothing at all when
+   * the row was still being measured.
+   */
+  const centerCard = useCallback((index: number, smooth = true) => {
+    const track = trackRef.current;
+    const card = cardRefs.current[index];
+    if (!track || !card) return;
+
+    const target = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2;
+    track.scrollTo({
+      left: Math.max(0, target),
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+  }, []);
 
   const goTo = useCallback(
     (index: number) => {
       if (!videos.length) return;
       const next = (index + videos.length) % videos.length;
       setActive(next);
-      cardRefs.current[next]?.scrollIntoView({
-        behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
-      });
+      centerCard(next, true);
     },
-    [videos.length]
+    [videos.length, centerCard]
   );
 
   /** When the row is dragged by hand, the clip in the middle of it is the one
    * that plays. The scroll tells us which card that is. */
   const syncActiveFromScroll = useCallback(() => {
-    const track = trackRef.current;
-    if (!track || !cardRefs.current.length) return;
+    if (measureRef.current !== null) return;
 
-    const middle = track.scrollLeft + track.clientWidth / 2;
-    let nearest = 0;
-    let smallest = Number.POSITIVE_INFINITY;
+    measureRef.current = requestAnimationFrame(() => {
+      measureRef.current = null;
 
-    cardRefs.current.forEach((card, index) => {
-      if (!card) return;
-      const centre = card.offsetLeft + card.offsetWidth / 2;
-      const distance = Math.abs(centre - middle);
-      if (distance < smallest) {
-        smallest = distance;
-        nearest = index;
-      }
+      const track = trackRef.current;
+      if (!track || !cardRefs.current.length) return;
+
+      const middle = track.scrollLeft + track.clientWidth / 2;
+      let nearest = 0;
+      let smallest = Number.POSITIVE_INFINITY;
+
+      cardRefs.current.forEach((card, index) => {
+        if (!card) return;
+        /**
+         * The card's place in the row, in the row's own coordinates. The
+         * row is positioned, so this is measured against the row and not
+         * against some ancestor further up — measuring against the wrong
+         * box is what made the row activate the wrong clip while it was
+         * being dragged, which left a black clip in front of the visitor.
+         */
+        const centre = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(centre - middle);
+        if (distance < smallest) {
+          smallest = distance;
+          nearest = index;
+        }
+      });
+
+      setActive((current) => (current === nearest ? current : nearest));
     });
-
-    setActive((current) => (current === nearest ? current : nearest));
   }, []);
 
   // The first clip starts in the middle, whatever the browser remembered from
   // the last visit.
   useEffect(() => {
     if (!videos.length) return;
-    const card = cardRefs.current[0];
-    if (!card) return;
-    card.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-  }, [videos.length]);
+    centerCard(0, false);
+  }, [videos.length, centerCard]);
+
+  // A phone turns around and a window is resized — the middle of the row
+  // moves with it, so the clip that was in the middle goes back there.
+  useEffect(() => {
+    if (!videos.length) return;
+
+    const onResize = () => centerCard(active, false);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, [videos.length, active, centerCard]);
+
+  useEffect(() => {
+    return () => {
+      if (measureRef.current !== null) cancelAnimationFrame(measureRef.current);
+    };
+  }, []);
 
   // Only the clip in the middle runs. The others wait with their first frame
   // showing, so the row looks like a row of films and not a row of blanks.
@@ -231,17 +313,17 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
   /** The round button every clip carries in its top corner. The dark back
    * keeps the white mark readable over a bright frame. */
   const controlClass =
-    'w-9 h-9 rounded-full bg-black/35 backdrop-blur-md text-white ring-1 ring-white/25 flex items-center justify-center hover:bg-black/55 active:bg-black/65 transition-colors';
+    'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/35 backdrop-blur-md text-white ring-1 ring-white/25 flex items-center justify-center hover:bg-black/55 active:bg-black/65 transition-colors';
 
   return (
     <section
-      className="relative py-12 sm:py-16 md:py-20 overflow-hidden scroll-animate scroll-fadeInUp"
+      className="relative py-10 sm:py-16 md:py-20 overflow-hidden scroll-animate scroll-fadeInUp"
       style={{
         background: `linear-gradient(180deg, ${primary}12 0%, #ffffff 45%, #ffffff 100%)`,
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 sm:mb-12">
+        <div className="text-center mb-6 sm:mb-12">
           <span
             className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-2 sm:mb-4"
             style={{ backgroundColor: `${primary}15`, color: primary }}
@@ -261,12 +343,12 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
           <div
             ref={trackRef}
             onScroll={syncActiveFromScroll}
-            className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide px-14 sm:px-20"
-            style={{ scrollSnapType: 'x mandatory' }}
+            className="video-track"
           >
             {videos.map((video, index) => {
               const isActive = index === active;
               const title = video.title || 'Video';
+              const still = posterFor(video);
 
               return (
                 <div
@@ -275,26 +357,71 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
                     cardRefs.current[index] = element;
                   }}
                   onClick={() => !isActive && goTo(index)}
-                  className={`relative flex-shrink-0 w-[240px] sm:w-[290px] lg:w-[320px] aspect-[9/16] rounded-[22px] overflow-hidden bg-gray-200 transition-all duration-500 ease-out cursor-pointer ${
-                    isActive
-                      ? 'scale-100 opacity-100 z-10 shadow-2xl'
-                      : 'scale-[0.88] opacity-45 hover:opacity-70 z-0'
+                  className={`video-card ${
+                    isActive ? 'is-active' : ''
                   }`}
-                  style={{ scrollSnapAlign: 'center' }}
                 >
+                  {/* The still the clip stands on — never a black box. */}
+                  <div
+                    className="absolute inset-0 overflow-hidden transition-opacity duration-500"
+                    style={{ opacity: started[video.id] ? 0 : 1 }}
+                    aria-hidden="true"
+                  >
+                    {still ? (
+                      <img
+                        src={still}
+                        alt=""
+                        loading={index === active ? 'eager' : 'lazy'}
+                        className="h-full w-full object-cover"
+                        onError={(event) => {
+                          // A dead still falls back to the branded panel.
+                          event.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="video-placeholder absolute inset-0" />
+                    )}
+                  </div>
+
                   <video
                     ref={(element) => {
                       videoRefs.current[video.id] = element;
                     }}
                     src={video.video_url}
-                    poster={video.poster_url || undefined}
-                    className="w-full h-full object-cover bg-black"
+                    poster={still || undefined}
+                    className="absolute inset-0 h-full w-full object-cover"
                     preload="metadata"
                     muted={isActive ? muted : true}
                     loop
                     playsInline
                     onPlay={() => isActive && setPlaying(true)}
                     onPause={() => isActive && setPlaying(false)}
+                    onPlaying={() =>
+                      setStarted((current) =>
+                        current[video.id] ? current : { ...current, [video.id]: true }
+                      )
+                    }
+                    onLoadedData={(event) => {
+                      /**
+                       * A clip that is not playing still shows its first
+                       * frame — but only once the browser has been asked
+                       * for one. Without this the waiting clips are blank
+                       * boxes until they are played.
+                       */
+                      const element = event.currentTarget;
+                      if (index !== active && element.currentTime === 0) {
+                        try {
+                          element.currentTime = 0.001;
+                        } catch {
+                          // A clip that is not ready yet cannot be rewound.
+                        }
+                      }
+                    }}
+                    onError={(event) => {
+                      // A clip the phone cannot play leaves the still showing.
+                      event.currentTarget.style.display = 'none';
+                      setPlaying(false);
+                    }}
                   />
 
                   {/* The name of the clip */}
@@ -368,7 +495,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
                 type="button"
                 onClick={() => goTo(active - 1)}
                 aria-label="Previous video"
-                className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-xl text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
+                className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white/90 shadow-lg text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
               >
                 <ArrowIcon direction="left" />
               </button>
@@ -376,7 +503,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
                 type="button"
                 onClick={() => goTo(active + 1)}
                 aria-label="Next video"
-                className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-xl text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
+                className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white/90 shadow-lg text-gray-700 flex items-center justify-center hover:text-[var(--color-primary)] transition-colors"
               >
                 <ArrowIcon direction="right" />
               </button>
@@ -386,7 +513,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
 
         {/* The dots */}
         {videos.length > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex items-center justify-center gap-2 mt-6 sm:mt-8">
             {videos.map((video, index) => (
               <button
                 key={video.id}

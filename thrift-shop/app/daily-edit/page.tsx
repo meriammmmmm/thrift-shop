@@ -11,6 +11,7 @@ import SizeSelector from '../components/SizeSelector';
 import { Product, User } from '../types';
 import { api } from '../../lib/api';
 import { useTheme } from '../../lib/theme';
+import { CATEGORY_FILTERS, matchesCategoryFilter } from '../../lib/categories';
 
 export default function DailyEditPage() {
   const { theme, isLoading: themeLoading } = useTheme();
@@ -145,7 +146,7 @@ export default function DailyEditPage() {
   const filteredProducts = weeklyProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.brand.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesCategory = matchesCategoryFilter(product.category, selectedCategory);
     const matchesCondition = selectedCondition === 'All' || product.condition === selectedCondition;
     const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(product.size);
     
@@ -622,7 +623,7 @@ export default function DailyEditPage() {
         <div className="max-w-7xl mx-auto px-4">
           {/* Category Filters */}
           <div className="flex flex-wrap gap-3 mb-4">
-            {['All', 'Dresses', 'Shoes', 'Accessories', 'Tops', 'Bags'].map((category) => (
+            {CATEGORY_FILTERS.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}

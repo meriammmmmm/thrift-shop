@@ -18,7 +18,7 @@ export interface VideoProduct {
 
 export interface ShopVideo {
   id: number;
-  product_id: number;
+  product_id: number | null;
   title: string | null;
   mime: string;
   size: number;
@@ -28,7 +28,8 @@ export interface ShopVideo {
   video_url: string;
   /** The still shown before the clip is played, when there is one. */
   poster_url: string | null;
-  product: VideoProduct;
+  /** The piece the clip belongs to — a clip can also stand on its own. */
+  product: VideoProduct | null;
 }
 
 /** The clips of a company, in the order the admin panel gave them. */
