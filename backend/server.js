@@ -29,6 +29,7 @@ const categoriesRoutes = require('./routes/categories');
 const testimonialsRoutes = require('./routes/testimonials');
 const articlesRoutes = require('./routes/articles');
 const looksRoutes = require('./routes/looks');
+const imagesRoutes = require('./routes/images');
 const videoRoutes = require('./routes/videos');
 const aiRoutes = require('./routes/ai');
 const tryonRoutes = require('./routes/tryon');
@@ -94,6 +95,9 @@ app.use(helmet({
 // steps over it.
 app.use('/api/videos/upload', express.raw({ type: () => true, limit: '260mb' }));
 app.use('/api/videos', express.json({ limit: '40mb' }));
+// An iPhone photo arrives as base64 inside a JSON body, which is a third
+// bigger than the photo itself. The image routes get room for that.
+app.use('/api/images', express.json({ limit: '24mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -113,6 +117,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 app.use('/api/articles', articlesRoutes);
 app.use('/api/looks', looksRoutes);
+app.use('/api/images', imagesRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/tryon', tryonRoutes);
