@@ -222,7 +222,10 @@ function apiLookToDefinition(raw: any, apiBaseUrl: string): LookDefinition {
 
   return {
     id: String(raw.id),
-    name: raw.name || 'Look',
+    // The name is optional. An empty string is kept as-is so each surface can
+    // decide how to label an unnamed look (the storefront uses its number,
+    // "LOOK 01"; the admin panel says "Untitled look").
+    name: raw.name || '',
     occasion: raw.occasion || 'party',
     tagline: raw.tagline || '',
     wornImage,

@@ -242,7 +242,7 @@ export default function StyleBoard({
               style={{ background: 'var(--color-primary, #731528)' }}
               aria-hidden="true"
             />
-            Building from <span className="font-semibold text-gray-900">{activeLook.def.name}</span>
+            Building from <span className="font-semibold text-gray-900">{activeLook.def.name || 'Look'}</span>
             <button
               type="button"
               onClick={() => { onLookChange({}); onLoadLook?.('', {}); }}

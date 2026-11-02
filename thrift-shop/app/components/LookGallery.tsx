@@ -24,7 +24,7 @@ function LookVisual({ look }: { look: ResolvedLook }) {
       <div className="relative w-full h-full">
         <SafeImage
           images={def.wornImage}
-          alt={`${def.name} — complete outfit`}
+          alt={`${def.name || 'Look'} — complete outfit`}
           className="w-full h-full object-cover"
           loading="eager"
         />
@@ -153,7 +153,7 @@ export default function LookGallery({
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <LookVisual look={look} />
                   <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 via-black/25 to-transparent">
-                    <h3 className="text-white text-lg sm:text-xl font-light leading-tight">{def.name}</h3>
+                    <h3 className="text-white text-lg sm:text-xl font-light leading-tight">{def.name || 'Look'}</h3>
                     <p className="text-white/80 text-xs mt-0.5">{def.tagline}</p>
                   </div>
                 </div>

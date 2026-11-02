@@ -65,6 +65,7 @@ interface SlideProps {
   look: {
     id: string;
     name: string;
+    label: string;
     wornImage: string;
     pieces: Product[];
   };
@@ -116,16 +117,16 @@ function RunwaySlide({ look, index, total, position, reduce, onViewDetails }: Sl
             type="button"
             className="runway-hero__surface"
             onClick={() => onViewDetails(look.pieces[0])}
-            aria-label={`View ${look.name}`}
+            aria-label={`View ${look.label}`}
           >
             <SafeImage
               images={look.wornImage}
-              alt={`${look.name} — the complete outfit`}
+              alt={`${look.label} — the complete outfit`}
               className="runway-hero__img"
               loading={index === 0 ? 'eager' : 'lazy'}
             />
           </button>
-          <span className="runway-hero__tag">{look.name}</span>
+          <span className="runway-hero__tag">{look.label}</span>
         </motion.div>
 
         {/* the pieces that make the outfit up, floating at their own depth */}
@@ -174,9 +175,14 @@ export default function LookbookRunway({
     const resolved = resolveLooks(looks, products);
     return resolved
       .filter((look) => Boolean(look.def.wornImage) && look.pieces.length > 0)
-      .map((look) => ({
+      .map((look, position) => ({
         id: look.def.id,
         name: look.def.name,
+        /**
+         * The name is optional in the admin panel, so an unnamed look is
+         * labelled by its number instead — "LOOK 01".
+         */
+        label: look.def.name || `Look ${String(position + 1).padStart(2, '0')}`,
         tagline: look.def.tagline,
         wornImage: look.def.wornImage as string,
         pieces: look.pieces,
@@ -192,6 +198,8 @@ export default function LookbookRunway({
   /** The stage position, in look units. It may run past the ends. */
   const position = useMotionValue(0);
   const currentRef = useRef(0);
+  /** The stage, so a click can bring the focused look back into view. */
+  const stageRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<number | null>(null);
 
   useEffect(() => {
@@ -227,7 +235,7 @@ export default function LookbookRunway({
    * does not send the whole rail sweeping back through the catalogue.
    */
   const goTo = useCallback(
-    (target: number) => {
+    (target: number, scroll = false) => {
       if (!total) return;
 
       const current = currentRef.current;
@@ -244,16 +252,30 @@ export default function LookbookRunway({
       } else {
         animate(position, nextPosition, { type: 'spring', ...SPRING.runway });
       }
+
+      /**
+       * A click on "next" brings the look that just took focus back into
+       * view. The stage is taller than the space the visitor gave it, so
+       * without this the new outfit can arrive somewhere they are not
+       * looking. Autoplay never scrolls — that would drag the page away from
+       * whatever the visitor is reading.
+       */
+      if (scroll) {
+        stageRef.current?.scrollIntoView({
+          behavior: reduce ? 'auto' : 'smooth',
+          block: 'nearest',
+        });
+      }
     },
     [total, position, reduce]
   );
 
   const step = useCallback(
-    (direction: 1 | -1) => {
+    (direction: 1 | -1, scroll = false) => {
       if (!total) return;
       const current = currentRef.current;
       const target = (((current + direction) % total) + total) % total;
-      goTo(target);
+      goTo(target, scroll);
     },
     [total, goTo]
   );
@@ -291,16 +313,16 @@ export default function LookbookRunway({
 
     const distance = event.clientX - start;
     if (Math.abs(distance) < SWIPE_THRESHOLD) return;
-    step(distance < 0 ? 1 : -1);
+    step(distance < 0 ? 1 : -1, true);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowRight') {
       event.preventDefault();
-      step(1);
+      step(1, true);
     } else if (event.key === 'ArrowLeft') {
       event.preventDefault();
-      step(-1);
+      step(-1, true);
     }
   };
 
@@ -344,6 +366,7 @@ export default function LookbookRunway({
           {/* ------------------------------------------------------ stage */}
           <div className="runway__stage">
             <div
+              ref={stageRef}
               className="runway__viewport"
               tabIndex={0}
               role="group"
@@ -374,7 +397,7 @@ export default function LookbookRunway({
                 <button
                   type="button"
                   className="runway__arrow"
-                  onClick={() => step(-1)}
+                  onClick={() => step(-1, true)}
                   aria-label="Previous look"
                 >
                   ←
@@ -394,14 +417,14 @@ export default function LookbookRunway({
                         <button
                           type="button"
                           className={`runway__chapter${index === active ? ' is-active' : ''}`}
-                          onClick={() => goTo(index)}
+                          onClick={() => goTo(index, true)}
                           aria-current={index === active}
                         >
                           <span className="runway__chapter-num">
                             {String(index + 1).padStart(2, '0')}
                           </span>
                           {index === active && (
-                            <span className="runway__chapter-label">{item.name}</span>
+                            <span className="runway__chapter-label">{item.label}</span>
                           )}
                         </button>
                       </li>
@@ -422,7 +445,7 @@ export default function LookbookRunway({
                 <button
                   type="button"
                   className="runway__arrow"
-                  onClick={() => step(1)}
+                  onClick={() => step(1, true)}
                   aria-label="Next look"
                 >
                   →
@@ -448,7 +471,8 @@ export default function LookbookRunway({
                 </div>
 
                 <p className="runway__panel-meta">
-                  Look {String(active + 1).padStart(2, '0')} · {look.name}
+                  Look {String(active + 1).padStart(2, '0')}
+                  {look.name ? ` · ${look.name}` : ''}
                 </p>
 
                 {look.tagline && <p className="runway__panel-tagline">{look.tagline}</p>}

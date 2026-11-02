@@ -4195,9 +4195,8 @@ a {
   position: relative;
   overflow: hidden;
   padding: 3.5rem 0 4rem;
-  background:
-    radial-gradient(110% 75% at 50% 0%, rgba(255, 255, 255, 0.96), transparent 62%),
-    linear-gradient(180deg, #fdfbfb 0%, #f6f1f0 100%);
+  /* The runway sits straight on the page — no painted panel behind it. */
+  background: transparent;
   color: #111827;
 }
 
@@ -4291,9 +4290,9 @@ a {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(50% 44% at 50% 46%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 72%),
-    radial-gradient(32% 38% at 50% 80%, rgba(115, 21, 40, 0.07), transparent 72%);
+  /* Nothing white is painted over the page — only a soft pool of light
+     under the focused look, so the stage does not read as flat. */
+  background: radial-gradient(32% 38% at 50% 80%, rgba(115, 21, 40, 0.07), transparent 72%);
 }
 
 .runway__track {
@@ -4334,7 +4333,7 @@ a {
   padding: 0;
   border: 1px solid rgba(17, 24, 39, 0.08);
   border-radius: 22px;
-  background: #fff;
+  background: transparent;
   overflow: hidden;
   cursor: pointer;
   box-shadow:
@@ -4352,7 +4351,7 @@ a {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
-  background: #f6f4f3;
+  background: transparent;
 }
 
 .runway-hero__tag {
@@ -4422,7 +4421,7 @@ a {
   padding: 0;
   border: 1px solid rgba(17, 24, 39, 0.07);
   border-radius: 16px;
-  background: #fff;
+  background: transparent;
   overflow: hidden;
   cursor: pointer;
   box-shadow: 0 20px 40px -24px rgba(17, 24, 39, 0.45);
@@ -4439,7 +4438,7 @@ a {
   aspect-ratio: 3 / 4;
   object-fit: contain;
   padding: 7px;
-  background: #fff;
+  background: transparent;
 }
 
 .runway-piece__brand {
@@ -4558,10 +4557,11 @@ a {
 .runway__panel {
   position: relative;
   padding: 1.25rem 1.25rem 1.4rem;
+  /* No card behind the panel — just a hairline that separates it from the
+     stage, the way the reference lays the list out. */
   border: 1px solid rgba(17, 24, 39, 0.08);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 26px 64px -42px rgba(17, 24, 39, 0.45);
+  background: transparent;
 }
 
 .runway__panel-head {
