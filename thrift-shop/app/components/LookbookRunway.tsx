@@ -52,14 +52,16 @@ interface LookbookRunwayProps {
 /** How long a look holds the stage before the runway moves on. */
 const AUTOPLAY_MS = 6200;
 
-/** How far a neighbour sits from the focused look, as a share of the stage. */
-const STEP = 38;
+/**
+ * How far a neighbour sits from the focused look, as a share of the stage.
+ *
+ * The looks stand close together, shoulder to shoulder, the way a row of
+ * people stands — not scattered across the stage with gaps between them.
+ */
+const STEP = 22;
 
 /** Swipe distance that counts as "next look". */
 const SWIPE_THRESHOLD = 36;
-
-/** How many of the look's pieces float beside the outfit photo. */
-const MAX_FLOATING = 2;
 
 /** The saving the visitor gets for taking the whole look. */
 const BUNDLE_DISCOUNT = 0.1;
@@ -96,7 +98,7 @@ function RunwaySlide({ look, index, total, position, reduce, onViewDetails }: Sl
   });
 
   const x = useTransform(distance, (d) => `${d * STEP}%`);
-  const rotateY = useTransform(distance, (d) => d * 15);
+  const rotateY = useTransform(distance, (d) => d * 11);
   const z = useTransform(distance, (d) => 40 - Math.min(Math.abs(d), 2.4) * 150);
   const scale = useTransform(distance, (d) => 1 - Math.min(Math.abs(d), 2.4) * 0.1);
   const opacity = useTransform(distance, (d) => 1 - Math.min(Math.abs(d), 2.2) * 0.32);
@@ -131,32 +133,6 @@ function RunwaySlide({ look, index, total, position, reduce, onViewDetails }: Sl
           </button>
           <span className="runway-hero__tag">{look.label}</span>
         </motion.div>
-
-        {/* the pieces that make the outfit up, floating at their own depth */}
-        {look.pieces.slice(0, MAX_FLOATING).map((piece, companionIndex) => (
-          <motion.div
-            key={piece.id}
-            className={`runway-piece runway-piece--${companionIndex}`}
-            style={{ filter: blur, opacity }}
-          >
-            <div className="runway-piece__float">
-              <button
-                type="button"
-                className="runway-piece__surface"
-                onClick={() => onViewDetails(piece)}
-                aria-label={`View ${piece.name}`}
-              >
-                <SafeImage
-                  images={piece.images}
-                  alt={piece.name}
-                  className="runway-piece__img"
-                  loading="lazy"
-                />
-              </button>
-              <span className="runway-piece__brand">{piece.brand || 'Mery Rose'}</span>
-            </div>
-          </motion.div>
-        ))}
       </div>
     </motion.div>
   );

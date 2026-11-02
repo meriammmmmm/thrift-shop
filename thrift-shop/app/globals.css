@@ -4183,10 +4183,8 @@ a {
      .runway-slide            Framer Motion owns the transform (position,
                               turn, depth)
      .runway-slide__stage     the 3D space inside a slide
-     .runway-hero             the hero garment — blur and fade live here
-     .runway-piece            the companion pieces — CSS owns the orbital
-                              placement, Framer owns the blur and the fade
-     .runway-piece__float     the idle drift of a companion piece
+     .runway-hero             the outfit itself — Framer owns the blur and
+                              the fade
 
    Nothing here writes a transform to a layer another layer already owns.
    ========================================================================== */
@@ -4323,7 +4321,7 @@ a {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: clamp(150px, 26%, 280px);
+  width: clamp(140px, 24%, 300px);
   height: clamp(240px, 84%, 460px);
   transform: translate(-50%, -50%);
 }
@@ -4372,88 +4370,11 @@ a {
 
 /* -------------------------------------------------- the companion pieces */
 
-.runway-piece {
-  position: absolute;
-  left: calc(50% + var(--piece-x));
-  top: calc(50% + var(--piece-y));
-  width: clamp(76px, 13%, 132px);
-  transform: translate(-50%, -50%) translateZ(var(--piece-z)) rotateY(var(--piece-ry))
-    scale(var(--piece-scale));
-}
-
-.runway-piece--0 {
-  --piece-x: -25%;
-  --piece-y: 12%;
-  --piece-z: -120px;
-  --piece-ry: 26deg;
-  --piece-scale: 0.94;
-}
-
-.runway-piece--1 {
-  --piece-x: 25%;
-  --piece-y: -10%;
-  --piece-z: -165px;
-  --piece-ry: -24deg;
-  --piece-scale: 0.88;
-}
-
-.runway-piece__float {
-  animation: runway-float 7.5s ease-in-out infinite;
-}
-
-.runway-piece--1 .runway-piece__float {
-  animation-delay: -3.4s;
-}
-
-@keyframes runway-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -12px, 0);
-  }
-}
-
-.runway-piece__surface {
-  display: block;
-  width: 100%;
-  padding: 0;
-  /* The companion piece floats free as well — no card, no frame. */
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: visible;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.runway-piece__surface:hover {
-  transform: translateY(-6px);
-}
-
-.runway-piece__img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: contain;
-  padding: 0;
-  background: transparent;
-  filter: drop-shadow(0 10px 16px rgba(17, 24, 39, 0.14));
-}
-
-.runway-piece__brand {
-  display: block;
-  margin-top: 0.4rem;
-  text-align: center;
-  font-size: 0.5625rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #9ca3af;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/*
+ * The stage shows the outfit and nothing else — the pieces a look is made
+ * of are listed in the panel beside it, where they can be read and added
+ * to the bag. Their old place on the stage has been taken away.
+ */
 
 /* -------------------------------------------------------------- scrubber */
 
@@ -4685,6 +4606,7 @@ a {
 }
 
 .runway__piece-img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -4835,22 +4757,16 @@ a {
 /* ------------------------------------------------------------ reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
-  .runway-piece__float {
-    animation: none;
-  }
-
   .runway__rule-fill,
   .runway__arrow,
   .runway__cta,
-  .runway__hero__surface,
-  .runway__piece__surface {
+  .runway__hero__surface {
     transition: none;
   }
 
   .runway__arrow:hover,
   .runway__cta:hover:not(:disabled),
-  .runway__hero__surface:hover,
-  .runway__piece__surface:hover {
+  .runway__hero__surface:hover {
     transform: none;
   }
 }
