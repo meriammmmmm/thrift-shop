@@ -197,6 +197,12 @@ export default function LookbookRunway({
   const [active, setActive] = useState(0);  const [paused, setPaused] = useState(false);
   const [reduce, setReduce] = useState(false);
   const [adding, setAdding] = useState(false);
+  /**
+   * Bumped by every manual action. The autoplay timer is built on it, so the
+   * runway waits a full beat after the visitor has touched it instead of
+   * yanking the rail out from under their hand.
+   */
+  const [interactionTick, setInteractionTick] = useState(0);
 
   /** The stage position, in look units. It may run past the ends. */
   const position = useMotionValue(0);
@@ -309,7 +315,25 @@ export default function LookbookRunway({
     }, AUTOPLAY_MS);
 
     return () => window.clearInterval(timer);
-  }, [reduce, paused, total, step]);
+  }, [reduce, paused, total, step, interactionTick]);
+
+  /** Stepping on behalf of the visitor — this also restarts the autoplay. */
+  const userStep = useCallback(
+    (direction: 1 | -1) => {
+      setInteractionTick((tick) => tick + 1);
+      step(direction, true);
+    },
+    [step]
+  );
+
+  /** Jumping to a chapter on behalf of the visitor. */
+  const userGoTo = useCallback(
+    (index: number) => {
+      setInteractionTick((tick) => tick + 1);
+      goTo(index, true);
+    },
+    [goTo]
+  );
 
   // Keep the focused look in step with the stage when the looks change.
   useEffect(() => {
@@ -403,6 +427,7 @@ export default function LookbookRunway({
     }
 
     goTo(((target % total) + total) % total, true);
+    setInteractionTick((tick) => tick + 1);
   };
 
   const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -415,10 +440,10 @@ export default function LookbookRunway({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowRight') {
       event.preventDefault();
-      step(1, true);
+      userStep(1);
     } else if (event.key === 'ArrowLeft') {
       event.preventDefault();
-      step(-1, true);
+      userStep(-1);
     }
   };
 
@@ -496,7 +521,7 @@ export default function LookbookRunway({
                 <button
                   type="button"
                   className="runway__arrow"
-                  onClick={() => step(-1, true)}
+                  onClick={() => userStep(-1)}
                   aria-label="Previous look"
                 >
                   ←
@@ -516,7 +541,7 @@ export default function LookbookRunway({
                         <button
                           type="button"
                           className={`runway__chapter${index === active ? ' is-active' : ''}`}
-                          onClick={() => goTo(index, true)}
+                          onClick={() => userGoTo(index)}
                           aria-current={index === active}
                         >
                           <span className="runway__chapter-num">
@@ -544,7 +569,7 @@ export default function LookbookRunway({
                 <button
                   type="button"
                   className="runway__arrow"
-                  onClick={() => step(1, true)}
+                  onClick={() => userStep(1)}
                   aria-label="Next look"
                 >
                   →
