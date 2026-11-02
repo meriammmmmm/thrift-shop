@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { removeBackground } from '../lib/backgroundRemoval';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-wild-skylark-9834.fly.dev/api';
 
@@ -65,6 +66,26 @@ const absoluteUrl = (src: string | null | undefined): string | null => {
 const isStoredPhoto = (src: string | null | undefined): boolean =>
   Boolean(src && src.startsWith('/looks/'));
 
+/**
+ * Is this an iPhone photo?
+ *
+ * HEIC is what an iPhone camera produces, and not one browser can draw it —
+ * stored as they are, the storefront shows a broken image where the outfit
+ * should be. The photo is converted on the server before it is stored.
+ */
+const isHeic = (file: File): boolean =>
+  /^image\/(heic|heif|heic-sequence|heif-sequence)$/i.test(file.type || '') ||
+  /\.(heic|heif)$/i.test(file.name || '');
+
+/** Read a file into a data URI. */
+const readAsDataUri = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('That file could not be read'));
+    reader.readAsDataURL(file);
+  });
+
 interface LookPiece {
   product_id: number;
   name: string;
@@ -104,6 +125,8 @@ const emptyDraft = {
   occasion: 'party',
   tagline: '',
   worn_image: '',
+  /** The photo as it was before the background was cut away. */
+  original_image: '',
   is_active: true,
   display_order: 0,
   items: [] as number[],
@@ -171,8 +194,19 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
 
   /* ---------------------------------------------------------------- upload */
 
-  const handleWornImageUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoNote, setPhotoNote] = useState<string | null>(null);
+  const [photoPercent, setPhotoPercent] = useState<number | null>(null);
+
+  /**
+   * Take the photo the merchant picked and make it usable.
+   *
+   * An iPhone photo arrives as HEIC, which no browser can draw. It is sent
+   * to the server, which hands back an ordinary image the storefront can
+   * show.
+   */
+  const handleWornImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/') && !isHeic(file)) {
       setError('That file is not an image');
       return;
     }
@@ -180,12 +214,94 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
       setError('Please pick an image under 6 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setDraft((prev) => (prev ? { ...prev, worn_image: String(reader.result) } : prev));
+
+    setPhotoBusy(true);
+    setPhotoNote(null);
+    setPhotoPercent(null);
+
+    try {
+      let dataUri: string;
+
+      if (isHeic(file)) {
+        setPhotoNote('Reading the iPhone photo…');
+        const raw = await readAsDataUri(file);
+
+        const res = await fetch(`${API_BASE_URL}/images/convert`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ dataUri: raw, mime: file.type || 'image/heic' }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'That photo could not be read');
+
+        dataUri = data.dataUri;
+        setPhotoNote('Photo converted — it will now show on the storefront.');
+      } else {
+        dataUri = await readAsDataUri(file);
+      }
+
+      setDraft((prev) => (prev ? { ...prev, worn_image: dataUri, original_image: '' } : prev));
       setError(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setPhotoNote(null);
+      setError(err.message || 'Could not read that photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  /**
+   * Cut the background away from the outfit photo.
+   *
+   * The model runs in this browser, so the photo never leaves the machine
+   * and the server is not asked to do anything clever. The result is kept
+   * so the merchant can put the original back if the cut is not right.
+   */
+  const handleRemoveBackground = async () => {
+    if (!draft || !draft.worn_image || photoBusy) return;
+
+    setPhotoBusy(true);
+    setPhotoNote('Starting…');
+    setPhotoPercent(0);
+    setError(null);
+
+    try {
+      const source = draft.worn_image.startsWith('data:')
+        ? draft.worn_image
+        : absoluteUrl(draft.worn_image);
+
+      if (!source) throw new Error('That photo could not be read');
+
+      const cutout = await removeBackground(source, ({ message, percent }) => {
+        setPhotoNote(message);
+        setPhotoPercent(percent);
+      });
+
+      setDraft((prev) =>
+        prev ? { ...prev, worn_image: cutout, original_image: prev.worn_image } : prev
+      );
+      setPhotoNote('Background removed — the outfit now stands on its own.');
+    } catch (err: any) {
+      setPhotoNote(null);
+      setError(
+        err?.message ||
+          'The background could not be removed — the photo has been left as it was.'
+      );
+    } finally {
+      setPhotoBusy(false);
+      setPhotoPercent(null);
+    }
+  };
+
+  /** Put the photo back the way it was before the cut-out. */
+  const handleRestorePhoto = () => {
+    setDraft((prev) =>
+      prev?.original_image
+        ? { ...prev, worn_image: prev.original_image, original_image: '' }
+        : prev
+    );
+    setPhotoNote('The original photo is back.');
   };
 
   /* ----------------------------------------------------------------- save */
@@ -275,6 +391,7 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
       occasion: look.occasion || 'party',
       tagline: look.tagline || '',
       worn_image: look.worn_image || '',
+      original_image: '',
       is_active: look.is_active,
       display_order: look.display_order ?? 0,
       items: (look.items || []).map((i) => i.product_id),
@@ -440,9 +557,24 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
                   Photo of the complete outfit being worn
                 </label>
                 <div className="flex gap-4">
-                  <div className="w-40 h-52 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                  <div
+                    className="w-40 h-52 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative"
+                    style={{
+                      // A faint chequerboard, so a photo whose background has
+                      // been cut away shows the transparency plainly.
+                      backgroundColor: '#f3f4f6',
+                      backgroundImage:
+                        'linear-gradient(45deg,#e5e7eb 25%,transparent 25%),linear-gradient(-45deg,#e5e7eb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e7eb 75%),linear-gradient(-45deg,transparent 75%,#e5e7eb 75%)',
+                      backgroundSize: '16px 16px',
+                      backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                    }}
+                  >
                     {draft.worn_image ? (
-                      <img src={absoluteUrl(draft.worn_image) || ''} alt="Outfit preview" className="w-full h-full object-cover" />
+                      <img
+                        src={absoluteUrl(draft.worn_image) || ''}
+                        alt="Outfit preview"
+                        className="w-full h-full object-contain"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <i className="fas fa-user-dress text-3xl" />
@@ -450,21 +582,51 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="block">
-                      <span className="inline-block px-4 py-2 rounded-lg text-sm border border-gray-300 cursor-pointer hover:bg-gray-50">
-                        <i className="fas fa-upload mr-2" /> Upload photo
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleWornImageUpload(file);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="block">
+                        <span className="inline-block px-4 py-2 rounded-lg text-sm border border-gray-300 cursor-pointer hover:bg-gray-50">
+                          <i className="fas fa-upload mr-2" /> Upload photo
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*,.heic,.heif"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleWornImageUpload(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveBackground}
+                        disabled={photoBusy || !draft.worn_image}
+                        className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <i className="fas fa-magic mr-2" />
+                        {photoBusy ? 'Working…' : 'Remove background'}
+                      </button>
+
+                      {draft.original_image && (
+                        <button
+                          type="button"
+                          onClick={handleRestorePhoto}
+                          className="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50"
+                        >
+                          <i className="fas fa-undo mr-2" /> Put the photo back
+                        </button>
+                      )}
+                    </div>
+
+                    {photoNote && (
+                      <p className="text-xs text-gray-500 mt-3">
+                        {photoNote}
+                        {photoPercent !== null && ` ${Math.round(photoPercent)}%`}
+                      </p>
+                    )}
+
                     <input
                       type="url"
                       value={draft.worn_image.startsWith('data:') || isStoredPhoto(draft.worn_image) ? '' : draft.worn_image}
@@ -479,14 +641,16 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
                     )}
                     {draft.worn_image && (
                       <button
-                        onClick={() => setDraft({ ...draft, worn_image: '' })}
+                        onClick={() => setDraft({ ...draft, worn_image: '', original_image: '' })}
                         className="mt-2 text-xs text-red-600 hover:underline"
                       >
                         Remove photo
                       </button>
                     )}
                     <p className="text-xs text-gray-400 mt-3">
-                      Without a photo the storefront composes a flat-lay from the individual pieces instead.
+                      iPhone photos are converted automatically. &ldquo;Remove background&rdquo;
+                      cuts the room away so the outfit stands on its own — it runs on this
+                      computer, and the first use downloads the model.
                     </p>
                   </div>
                 </div>
