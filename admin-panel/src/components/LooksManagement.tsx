@@ -192,10 +192,6 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
 
   const saveLook = async () => {
     if (!draft) return;
-    if (!draft.name.trim()) {
-      setError('Give the look a name');
-      return;
-    }
     if (draft.items.length === 0) {
       setError('Add at least one piece to the look');
       return;
@@ -249,7 +245,7 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
   };
 
   const deleteLook = async (look: Look) => {
-    if (!window.confirm(`Delete "${look.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${look.name || 'Untitled look'}"? This cannot be undone.`)) return;
     try {
       const res = await fetch(`${API_BASE_URL}/looks/${look.id}`, {
         method: 'DELETE',
@@ -361,7 +357,7 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
             <div key={look.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="relative aspect-[4/5] bg-gray-100">
                 {look.worn_image ? (
-                  <img src={absoluteUrl(look.worn_image) || ''} alt={look.name} className="w-full h-full object-cover" />
+                  <img src={absoluteUrl(look.worn_image) || ''} alt={look.name || 'Look outfit'} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                     <i className="fas fa-image text-3xl mb-2" />
@@ -378,7 +374,7 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
               </div>
 
               <div className="p-4">
-                <h3 className="font-semibold text-gray-800">{look.name}</h3>
+                <h3 className="font-semibold text-gray-800">{look.name || 'Untitled look'}</h3>
                 {look.tagline && <p className="text-xs text-gray-500 mt-0.5">{look.tagline}</p>}
 
                 <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-3 mb-2">
@@ -499,7 +495,9 @@ const LooksManagement: React.FC<LooksManagementProps> = ({ authToken }) => {
               {/* ------------------------------------------------------ fields */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Look name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Look name <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
                   <input
                     value={draft.name}
                     onChange={(e) => setDraft({ ...draft, name: e.target.value })}
