@@ -555,11 +555,33 @@ class PostgresDatabase {
       const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
 
       if (pgSql.trim().toUpperCase().startsWith('INSERT')) {
-        const result = await this.pool.query(pgSql + ' RETURNING id', params);
-        return { 
-          id: result.rows[0]?.id || null,
-          changes: result.rowCount 
-        };
+        /**
+         * `RETURNING id` is how the caller gets the new row's primary key.
+         *
+         * Not every table has an `id` column, though: `look_images` is keyed by
+         * `look_id` (one photo per look) and has no surrogate key at all.
+         * Asking Postgres for `id` there fails with 42703 "column id does not
+         * exist", which used to surface as a 500 when the admin saved a look.
+         *
+         * The error is raised while the statement is parsed, so nothing was
+         * written — it is safe to run the insert again without the `RETURNING`
+         * clause.
+         */
+        try {
+          const result = await this.pool.query(pgSql + ' RETURNING id', params);
+          return {
+            id: result.rows[0]?.id || null,
+            changes: result.rowCount
+          };
+        } catch (error) {
+          if (error.code !== '42703') throw error;
+
+          const result = await this.pool.query(pgSql, params);
+          return {
+            id: result.rows[0]?.id || null,
+            changes: result.rowCount
+          };
+        }
       }
 
       const result = await this.pool.query(pgSql, params);

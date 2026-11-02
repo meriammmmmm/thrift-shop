@@ -340,9 +340,12 @@ router.post('/', authenticateToken, async (req, res) => {
     const { name, occasion, tagline, wornImage, isActive, displayOrder, items } = req.body;
     const companyId = companyOf(req);
 
-    if (!name || !String(name).trim()) {
-      return res.status(400).json({ success: false, error: 'Look name is required' });
-    }
+    /**
+     * The name is optional. A look is recognised by its photo and its pieces,
+     * and the storefront falls back to the look's number ("LOOK 01") when no
+     * name was given — so an unnamed look is still perfectly usable.
+     */
+    const lookName = String(name || '').trim();
 
     const productIds = normaliseItems(items);
     if (productIds.length === 0) {
@@ -354,7 +357,7 @@ router.post('/', authenticateToken, async (req, res) => {
        VALUES (?, ?, ?, ?, NULL, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [
         companyId,
-        String(name).trim(),
+        lookName,
         occasion || null,
         tagline || null,
         isActive !== false,
@@ -364,9 +367,23 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // The photo itself lives in `look_images` (or, for an external URL, on the
     // row) so the storefront never has to download megabytes of base64.
-    await applyWornImage(result.id, wornImage);
+    /**
+     * The row, its photo and its pieces are written one after the other, so a
+     * failure in the middle would otherwise leave a half-built look behind —
+     * a look with a name but no photo and no pieces, which the storefront
+     * skips and the merchant has to clean up by hand. If any step fails the
+     * look is removed again before the error is re-thrown.
+     */
+    try {
+      await applyWornImage(result.id, wornImage);
 
-    await replaceItems(result.id, productIds);
+      await replaceItems(result.id, productIds);
+    } catch (error) {
+      await db.run(`DELETE FROM look_items WHERE look_id = ?`, [result.id]);
+      await db.run(`DELETE FROM look_images WHERE look_id = ?`, [result.id]);
+      await db.run(`DELETE FROM looks WHERE id = ?`, [result.id]);
+      throw error;
+    }
 
     const [created] = await withItems(
       [await db.get(`SELECT * FROM looks WHERE id = ?`, [result.id])],
@@ -391,9 +408,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Look not found' });
     }
 
-    if (!name || !String(name).trim()) {
-      return res.status(400).json({ success: false, error: 'Look name is required' });
-    }
+    // The name is optional — see the create route.
+    const lookName = String(name || '').trim();
 
     const productIds = normaliseItems(items);
     if (productIds.length === 0) {
@@ -410,7 +426,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
               is_active = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND company_id = ?`,
       [
-        String(name).trim(),
+        lookName,
         occasion || null,
         tagline || null,
         storedImage && storedImage.startsWith('http') ? storedImage : null,
