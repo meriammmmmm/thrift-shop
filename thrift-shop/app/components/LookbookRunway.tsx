@@ -7,6 +7,7 @@ import {
   motion,
   useMotionValue,
   useTransform,
+  type AnimationPlaybackControls,
   type MotionValue,
 } from 'framer-motion';
 import { Product } from '../types';
@@ -55,7 +56,7 @@ const AUTOPLAY_MS = 6200;
 const STEP = 38;
 
 /** Swipe distance that counts as "next look". */
-const SWIPE_THRESHOLD = 48;
+const SWIPE_THRESHOLD = 36;
 
 /** How many of the look's pieces float beside the outfit photo. */
 const MAX_FLOATING = 2;
@@ -204,13 +205,29 @@ export default function LookbookRunway({
    */
   const [interactionTick, setInteractionTick] = useState(0);
 
-  /** The stage position, in look units. It may run past the ends. */
+  /**
+   * The absolute position of the rail, in look units.
+   *
+   * The counter is deliberately never wrapped back to zero: the runway is
+   * an endless rail, so the position keeps travelling in one direction for
+   * as long as the visitor wants. The looks repeat around the circle,
+   * which is what stops the rail from ever running out.
+   */
   const position = useMotionValue(0);
   const currentRef = useRef(0);
+  /** The spring that is currently carrying the rail to its next stop. */
+  const animationRef = useRef<AnimationPlaybackControls | null>(null);
   /** The stage, so a click can bring the focused look back into view. */
   const stageRef = useRef<HTMLDivElement>(null);
-  /** The drag in progress: where the finger went down and where the stage was. */
-  const dragRef = useRef<{ x: number; position: number; moved: boolean } | null>(null);
+  /** The drag in progress: where the finger went down and where the rail was. */
+  const dragRef = useRef<{
+    x: number;
+    position: number;
+    moved: boolean;
+    velocity: number;
+    lastX: number;
+    lastTime: number;
+  } | null>(null);
   /** Set after a drag, so the click that follows it does not open a product. */
   const suppressClickRef = useRef(false);
 
@@ -243,26 +260,27 @@ export default function LookbookRunway({
   const total = runwayLooks.length;
 
   /**
-   * Move to a look the short way round, so stepping past the last look
-   * does not send the whole rail sweeping back through the catalogue.
+   * Carry the rail to an absolute position.
+   *
+   * The target is a position on the endless rail, never a look number, so
+   * the rail always travels the way it was told to. Turning the position
+   * back into a look number is what used to send the runway leaping back
+   * to the first look once it reached the end of the catalogue.
    */
-  const goTo = useCallback(
+  const goToPosition = useCallback(
     (target: number, scroll = false) => {
       if (!total) return;
 
-      const current = currentRef.current;
-      let delta = target - current;
-      if (delta > total / 2) delta -= total;
-      if (delta < -total / 2) delta += total;
+      currentRef.current = target;
+      setActive(((Math.round(target) % total) + total) % total);
 
-      const nextPosition = current + delta;
-      currentRef.current = nextPosition;
-      setActive(((nextPosition % total) + total) % total);
+      // A spring still in flight would fight the new move.
+      animationRef.current?.stop();
 
       if (reduce) {
-        position.set(nextPosition);
+        position.set(target);
       } else {
-        animate(position, nextPosition, { type: 'spring', ...SPRING.runway });
+        animationRef.current = animate(position, target, { type: 'spring', ...SPRING.runway });
       }
 
       /**
@@ -285,8 +303,8 @@ export default function LookbookRunway({
           const visible = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
 
           if (visible < rect.height * 0.7) {
-            const target = window.scrollY + rect.top - (viewportHeight - rect.height) / 2;
-            window.scrollTo({ top: Math.max(0, target), behavior: reduce ? 'auto' : 'smooth' });
+            const scrollTarget = window.scrollY + rect.top - (viewportHeight - rect.height) / 2;
+            window.scrollTo({ top: Math.max(0, scrollTarget), behavior: reduce ? 'auto' : 'smooth' });
           }
         }
       }
@@ -294,14 +312,18 @@ export default function LookbookRunway({
     [total, position, reduce]
   );
 
+  /**
+   * One look along the rail.
+   *
+   * The rail keeps its direction: it never rewinds to the look the
+   * visitor started from, and it never runs out of looks to travel to.
+   */
   const step = useCallback(
     (direction: 1 | -1, scroll = false) => {
       if (!total) return;
-      const current = currentRef.current;
-      const target = (((current + direction) % total) + total) % total;
-      goTo(target, scroll);
+      goToPosition(currentRef.current + direction, scroll);
     },
-    [total, goTo]
+    [total, goToPosition]
   );
 
   // The runway moves on by itself until the visitor pauses it.
@@ -329,21 +351,27 @@ export default function LookbookRunway({
   /** Jumping to a chapter on behalf of the visitor. */
   const userGoTo = useCallback(
     (index: number) => {
+      if (!total) return;
+
+      const base = Math.round(currentRef.current);
+      const baseIndex = ((base % total) + total) % total;
+
+      // The chapter the visitor picked, as the nearest stop on the rail.
+      let delta = index - baseIndex;
+      if (delta > total / 2) delta -= total;
+      if (delta < -total / 2) delta += total;
+
       setInteractionTick((tick) => tick + 1);
-      goTo(index, true);
+      goToPosition(base + delta, true);
     },
-    [goTo]
+    [total, goToPosition]
   );
 
-  // Keep the focused look in step with the stage when the looks change.
+  // The merchant may publish or withdraw a look while the rail is running.
   useEffect(() => {
     if (!total) return;
-    if (active >= total) {
-      currentRef.current = 0;
-      position.set(0);
-      setActive(0);
-    }
-  }, [total, active, position]);
+    if (active >= total) setActive(0);
+  }, [total, active]);
 
   /**
    * How many pixels one look is worth on the stage.
@@ -360,7 +388,25 @@ export default function LookbookRunway({
     // A secondary mouse button is not a drag.
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-    dragRef.current = { x: event.clientX, position: position.get(), moved: false };
+    /**
+     * The rail stops exactly where the hand grabs it. A spring still in
+     * flight would otherwise carry the runway out from under the visitor's
+     * fingers, which is what made the swipe feel like it did nothing.
+     */
+    animationRef.current?.stop();
+
+    // A fresh press always clears the drag guard.
+    suppressClickRef.current = false;
+
+    dragRef.current = {
+      x: event.clientX,
+      position: position.get(),
+      moved: false,
+      velocity: 0,
+      lastX: event.clientX,
+      lastTime: event.timeStamp,
+    };
+
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
@@ -377,7 +423,7 @@ export default function LookbookRunway({
    */
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    if (!drag) return;
+    if (!drag || !total) return;
 
     const distance = event.clientX - drag.x;
 
@@ -391,6 +437,15 @@ export default function LookbookRunway({
     // Dragging to the left brings the next look in.
     const next = drag.position - distance / perLook;
     position.set(next);
+
+    // How fast the hand is moving, in pixels per millisecond.
+    const elapsed = event.timeStamp - drag.lastTime;
+    if (elapsed > 0) {
+      const instant = (event.clientX - drag.lastX) / elapsed;
+      drag.velocity = drag.velocity * 0.6 + instant * 0.4;
+    }
+    drag.lastX = event.clientX;
+    drag.lastTime = event.timeStamp;
 
     // The panel follows the outfit that is taking focus.
     const focus = Math.round(next);
@@ -416,17 +471,27 @@ export default function LookbookRunway({
     const distance = event.clientX - drag.x;
     const perLook = pixelsPerLook();
 
-    // The look the rail was left on.
+    // Where the rail came to rest, in look units.
     const settled = perLook ? drag.position - distance / perLook : drag.position;
+    const start = Math.round(drag.position);
     let target = Math.round(settled);
 
-    // A decisive flick always moves the runway on by one, even when the
-    // finger barely travelled.
-    if (Math.abs(distance) >= SWIPE_THRESHOLD && target === Math.round(drag.position)) {
-      target = Math.round(drag.position) + (distance < 0 ? 1 : -1);
+    /**
+     * A flick carries the rail on by one look even when the finger barely
+     * travelled — a quick, short swipe is a swipe all the same.
+     */
+    const flicked = Math.abs(drag.velocity) > 0.45;
+    if (flicked && target === start) {
+      target = start + (drag.velocity < 0 ? 1 : -1);
+    } else if (!flicked && Math.abs(distance) >= SWIPE_THRESHOLD && target === start) {
+      target = start + (distance < 0 ? 1 : -1);
     }
 
-    goTo(((target % total) + total) % total, true);
+    /**
+     * The rail settles on an absolute position. It is never turned back
+     * into a look number, so it can never be sent back to where it began.
+     */
+    goToPosition(target, true);
     setInteractionTick((tick) => tick + 1);
   };
 
@@ -460,7 +525,9 @@ export default function LookbookRunway({
 
   if (!total) return null;
 
-  const look = runwayLooks[active];
+  // The merchant may withdraw a look while the rail is running.
+  const look = runwayLooks[active] ?? runwayLooks[0];
+  if (!look) return null;
   const money = (value: number) => `${currencySymbol}${(Number(value) || 0).toFixed(2)}`;
 
   return (
