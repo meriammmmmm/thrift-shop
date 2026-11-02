@@ -53,6 +53,22 @@ export const BRAND = {
   ink: '#111827',
 } as const;
 
+/**
+ * Spring physics for the Framer Motion layer (the lookbook runway).
+ *
+ * Framer needs numbers rather than CSS easing curves, so the spring feel
+ * lives here next to the CSS easings — the whole site still tunes from one
+ * file.
+ */
+export const SPRING = {
+  /** The runway transit — weighted and cinematic, with no overshoot. */
+  runway: { stiffness: 105, damping: 22, mass: 0.9 },
+  /** Panels and chips popping into place. */
+  pop: { stiffness: 340, damping: 26 },
+  /** Slow settle used when a slide arrives. */
+  settle: { stiffness: 80, damping: 20, mass: 1 },
+} as const;
+
 /** Gap between siblings in a staggered group. */
 export const STAGGER_STEP = 0.035;
 

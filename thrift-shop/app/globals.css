@@ -4168,3 +4168,632 @@ a {
     display: none;
   }
 }
+
+/* ==========================================================================
+   THE LOOKBOOK RUNWAY — "Wear the whole look"
+
+   A rail of complete outfits. The focused look stands upright and sharp;
+   the neighbours turn away, recede and fall out of focus. The panel on the
+   right lists the pieces of the focused look and offers the whole outfit as
+   one bundle.
+
+   LAYERS AND WHO OWNS WHAT
+     .runway__viewport        the perspective — the vanishing point
+     .runway__track           the 3D space the slides live in
+     .runway-slide            Framer Motion owns the transform (position,
+                              turn, depth)
+     .runway-slide__stage     the 3D space inside a slide
+     .runway-hero             the hero garment — blur and fade live here
+     .runway-piece            the companion pieces — CSS owns the orbital
+                              placement, Framer owns the blur and the fade
+     .runway-piece__float     the idle drift of a companion piece
+
+   Nothing here writes a transform to a layer another layer already owns.
+   ========================================================================== */
+
+.runway {
+  position: relative;
+  overflow: hidden;
+  padding: 3.5rem 0 4rem;
+  background:
+    radial-gradient(110% 75% at 50% 0%, rgba(255, 255, 255, 0.96), transparent 62%),
+    linear-gradient(180deg, #fdfbfb 0%, #f6f1f0 100%);
+  color: #111827;
+}
+
+.runway__inner {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ------------------------------------------------------------------ head */
+
+.runway__head {
+  max-width: 46rem;
+  margin-bottom: 2.25rem;
+}
+
+.runway__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--runway-primary, #731528);
+}
+
+.runway__title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  line-height: 1.03;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+}
+
+.runway__title em {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--runway-primary, #731528);
+}
+
+.runway__sub {
+  margin: 0;
+  max-width: 40rem;
+  color: #6b7280;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.runway__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .runway__layout {
+    grid-template-columns: minmax(0, 1fr) 350px;
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+.runway__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* ----------------------------------------------------------------- stage */
+
+.runway__viewport {
+  position: relative;
+  height: clamp(330px, 42vw, 500px);
+  perspective: 1600px;
+  perspective-origin: 50% 46%;
+  overflow: hidden;
+  touch-action: pan-y;
+  outline: none;
+}
+
+.runway__viewport:focus-visible {
+  box-shadow: 0 0 0 2px var(--runway-primary, #731528);
+  border-radius: 1.5rem;
+}
+
+.runway__backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(50% 44% at 50% 46%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(32% 38% at 50% 80%, rgba(115, 21, 40, 0.07), transparent 72%);
+}
+
+.runway__track {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.runway-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.runway-slide__stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* ------------------------------------------------------- the hero piece */
+
+.runway-hero {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(140px, 24%, 250px);
+  transform: translate(-50%, -50%);
+}
+
+.runway-hero__surface {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 22px;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow:
+    0 30px 62px -30px rgba(17, 24, 39, 0.48),
+    0 2px 8px rgba(17, 24, 39, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.runway-hero__surface:hover {
+  transform: translateY(-6px);
+}
+
+.runway-hero__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #f6f4f3;
+}
+
+.runway-hero__tag {
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  transform: translateX(-50%);
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 999px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------- the companion pieces */
+
+.runway-piece {
+  position: absolute;
+  left: calc(50% + var(--piece-x));
+  top: calc(50% + var(--piece-y));
+  width: clamp(76px, 13%, 132px);
+  transform: translate(-50%, -50%) translateZ(var(--piece-z)) rotateY(var(--piece-ry))
+    scale(var(--piece-scale));
+}
+
+.runway-piece--0 {
+  --piece-x: -25%;
+  --piece-y: 12%;
+  --piece-z: -120px;
+  --piece-ry: 26deg;
+  --piece-scale: 0.94;
+}
+
+.runway-piece--1 {
+  --piece-x: 25%;
+  --piece-y: -10%;
+  --piece-z: -165px;
+  --piece-ry: -24deg;
+  --piece-scale: 0.88;
+}
+
+.runway-piece__float {
+  animation: runway-float 7.5s ease-in-out infinite;
+}
+
+.runway-piece--1 .runway-piece__float {
+  animation-delay: -3.4s;
+}
+
+@keyframes runway-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+.runway-piece__surface {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(17, 24, 39, 0.07);
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 20px 40px -24px rgba(17, 24, 39, 0.45);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.runway-piece__surface:hover {
+  transform: translateY(-4px);
+}
+
+.runway-piece__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  padding: 7px;
+  background: #fff;
+}
+
+.runway-piece__brand {
+  display: block;
+  margin-top: 0.4rem;
+  text-align: center;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* -------------------------------------------------------------- scrubber */
+
+.runway__scrubber {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.runway__chapters {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-top: 0.9rem;
+}
+
+.runway__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: rgba(17, 24, 39, 0.12);
+}
+
+.runway__rule-fill {
+  display: block;
+  height: 100%;
+  background: var(--runway-primary, #731528);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.runway__chapter-list {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.runway__chapter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9ca3af;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.runway__chapter:hover {
+  color: #374151;
+}
+
+.runway__chapter.is-active {
+  color: #111827;
+}
+
+.runway__chapter-label {
+  color: var(--runway-primary, #731528);
+  font-size: 0.5625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.runway__arrow {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #111827;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.runway__arrow:hover {
+  transform: translateY(-2px);
+  border-color: var(--runway-primary, #731528);
+  background: #fff;
+}
+
+.runway__arrow--play {
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+}
+
+/* ----------------------------------------------------------------- panel */
+
+.runway__panel {
+  position: relative;
+  padding: 1.25rem 1.25rem 1.4rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 26px 64px -42px rgba(17, 24, 39, 0.45);
+}
+
+.runway__panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.runway__panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.runway__panel-count {
+  color: #9ca3af;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.runway__panel-meta {
+  margin: 0.85rem 0 0;
+  color: var(--runway-primary, #731528);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.runway__panel-tagline {
+  margin: 0.3rem 0 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+.runway__piece-list {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.runway__piece-list li + li {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.runway__piece-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.runway__piece-thumb {
+  flex: none;
+  width: 52px;
+  height: 66px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.runway__piece-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+}
+
+.runway__piece-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.runway__piece-brand {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.5625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.runway__piece-name {
+  display: block;
+  margin-top: 0.15rem;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.runway__piece-reason {
+  display: block;
+  margin-top: 0.2rem;
+  color: #9ca3af;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.runway__piece-cost {
+  flex: none;
+  color: #111827;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.runway__bundle {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.runway__bundle-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.runway__bundle-sub {
+  margin: 0.2rem 0 0;
+  color: #6b7280;
+  font-size: 0.6875rem;
+}
+
+.runway__bundle-price {
+  margin: 0;
+  color: #111827;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.runway__bundle-was {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+.runway__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 14px;
+  background: var(--runway-primary, #731528);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+}
+
+.runway__cta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px -18px rgba(115, 21, 40, 0.85);
+}
+
+.runway__cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* -------------------------------------------------------------- responsive */
+
+@media (max-width: 1023px) {
+  .runway__viewport {
+    height: clamp(320px, 52vw, 430px);
+  }
+}
+
+@media (max-width: 640px) {
+  .runway {
+    padding: 2.75rem 0 3rem;
+  }
+
+  .runway__viewport {
+    height: 320px;
+  }
+
+  .runway__piece-reason {
+    display: none;
+  }
+
+  .runway__chapter-label {
+    max-width: 6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ------------------------------------------------------------ reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .runway-piece__float {
+    animation: none;
+  }
+
+  .runway__rule-fill,
+  .runway__arrow,
+  .runway__cta,
+  .runway__hero__surface,
+  .runway__piece__surface {
+    transition: none;
+  }
+
+  .runway__arrow:hover,
+  .runway__cta:hover:not(:disabled),
+  .runway__hero__surface:hover,
+  .runway__piece__surface:hover {
+    transform: none;
+  }
+}

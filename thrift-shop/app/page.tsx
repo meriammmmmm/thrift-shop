@@ -17,6 +17,7 @@ import { fetchVideos, ShopVideo } from '../lib/videos';
 import VideoSection from './components/VideoSection';
 import StyleBoard from './components/StyleBoard';
 import LookGallery from './components/LookGallery';
+import LookbookRunway from './components/LookbookRunway';
 import { LookDefinition, LookState, fetchLooks } from '../lib/looks';
 import Cart from './components/Cart';
 import Wishlist from './components/Wishlist';
@@ -595,6 +596,37 @@ export default function Home() {
     }
   };
 
+  /**
+   * The lookbook offers a whole outfit as one bundle, so the pieces go into
+   * the bag together and the visitor gets one confirmation, not five.
+   */
+  const addLookToBag = async (pieces: Product[]) => {
+    if (!user) {
+      showNotification('Please create an account or sign in to add items to your bag', 'info');
+      window.location.href = '/login';
+      return;
+    }
+
+    const wanted = pieces.filter((piece) => piece.inStock && !cartItemIds.has(piece.id));
+
+    if (wanted.length === 0) {
+      showNotification('Every piece in this look is already in your bag', 'info');
+      return;
+    }
+
+    try {
+      await Promise.all(wanted.map((piece) => api.addToCart(piece.id)));
+      await loadUserCart();
+      showNotification(
+        `${wanted.length} piece${wanted.length > 1 ? 's' : ''} added to bag!`,
+        'success'
+      );
+    } catch (error: any) {
+      console.error('Add look to cart error:', error);
+      showNotification('Failed to add the look to your bag', 'error');
+    }
+  };
+
   const removeFromCart = async (productId: number) => {
     if (!user) return;
 
@@ -1111,6 +1143,16 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* The lookbook — complete outfits standing on a 3D runway */}
+      <LookbookRunway
+        looks={looks}
+        products={products}
+        primary={theme.primary}
+        currencySymbol={companyCurrency.symbol}
+        onViewDetails={handleViewDetails}
+        onAddLookToBag={addLookToBag}
+      />
 
       {/* Complete looks — curated in the admin panel's "Shop the Look" section */}
       {/* <LookGallery
