@@ -44,6 +44,8 @@ interface LookbookRunwayProps {
   currencySymbol: string;
   onViewDetails: (product: Product) => void;
   onAddLookToBag: (pieces: Product[]) => void | Promise<void>;
+  /** Adds one single piece to the bag — the "+" beside each product. */
+  onAddPieceToBag?: (product: Product) => void | Promise<void>;
 }
 
 /** How long a look holds the stage before the runway moves on. */
@@ -166,6 +168,7 @@ export default function LookbookRunway({
   currencySymbol,
   onViewDetails,
   onAddLookToBag,
+  onAddPieceToBag,
 }: LookbookRunwayProps) {
   /**
    * Only a look with a photo of the outfit being worn belongs on this
@@ -200,7 +203,10 @@ export default function LookbookRunway({
   const currentRef = useRef(0);
   /** The stage, so a click can bring the focused look back into view. */
   const stageRef = useRef<HTMLDivElement>(null);
-  const pointerStart = useRef<number | null>(null);
+  /** The drag in progress: where the finger went down and where the stage was. */
+  const dragRef = useRef<{ x: number; position: number; moved: boolean } | null>(null);
+  /** Set after a drag, so the click that follows it does not open a product. */
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     setReduce(prefersReducedMotion());
@@ -298,6 +304,7 @@ export default function LookbookRunway({
 
     const timer = window.setInterval(() => {
       if (document.hidden) return;
+      if (dragRef.current) return; // never fight the visitor's hand
       step(1);
     }, AUTOPLAY_MS);
 
@@ -314,18 +321,95 @@ export default function LookbookRunway({
     }
   }, [total, active, position]);
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    pointerStart.current = event.clientX;
+  /**
+   * How many pixels one look is worth on the stage.
+   *
+   * The slides are `STEP` percent of the stage apart, so a drag of one
+   * slide-width moves the runway by exactly one look.
+   */
+  const pixelsPerLook = () => {
+    const width = stageRef.current?.offsetWidth ?? window.innerWidth;
+    return (STEP / 100) * width;
   };
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    const start = pointerStart.current;
-    pointerStart.current = null;
-    if (start === null) return;
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // A secondary mouse button is not a drag.
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-    const distance = event.clientX - start;
-    if (Math.abs(distance) < SWIPE_THRESHOLD) return;
-    step(distance < 0 ? 1 : -1, true);
+    dragRef.current = { x: event.clientX, position: position.get(), moved: false };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      /* Pointer capture is a nicety — the drag works without it. */
+    }
+  };
+
+  /**
+   * The rail follows the finger.
+   *
+   * This is what makes the swipe feel like a real rail rather than a button:
+   * the outfit slides under the hand while it is being dragged, and only
+   * settles when the hand lets go.
+   */
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+
+    const distance = event.clientX - drag.x;
+
+    // A couple of pixels of wobble is still a tap, not a drag.
+    if (!drag.moved && Math.abs(distance) < 6) return;
+    drag.moved = true;
+
+    const perLook = pixelsPerLook();
+    if (!perLook) return;
+
+    // Dragging to the left brings the next look in.
+    const next = drag.position - distance / perLook;
+    position.set(next);
+
+    // The panel follows the outfit that is taking focus.
+    const focus = Math.round(next);
+    setActive(((focus % total) + total) % total);
+  };
+
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* Nothing to release. */
+    }
+
+    if (!drag.moved) return; // it was a tap — the buttons handle it
+
+    // A drag that ended on a product must not open it.
+    suppressClickRef.current = true;
+
+    const distance = event.clientX - drag.x;
+    const perLook = pixelsPerLook();
+
+    // The look the rail was left on.
+    const settled = perLook ? drag.position - distance / perLook : drag.position;
+    let target = Math.round(settled);
+
+    // A decisive flick always moves the runway on by one, even when the
+    // finger barely travelled.
+    if (Math.abs(distance) >= SWIPE_THRESHOLD && target === Math.round(drag.position)) {
+      target = Math.round(drag.position) + (distance < 0 ? 1 : -1);
+    }
+
+    goTo(((target % total) + total) % total, true);
+  };
+
+  const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) return;
+    suppressClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -384,7 +468,10 @@ export default function LookbookRunway({
               role="group"
               aria-label="Complete looks — use the arrow keys to browse"
               onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp}
+              onPointerMove={handlePointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              onClickCapture={handleClickCapture}
               onKeyDown={handleKeyDown}
             >
               <div className="runway__backdrop" aria-hidden="true" />
@@ -492,11 +579,7 @@ export default function LookbookRunway({
                 <ul className="runway__piece-list">
                   {look.pieces.map((piece, pieceIndex) => (
                     <li key={piece.id}>
-                      <button
-                        type="button"
-                        className="runway__piece-row"
-                        onClick={() => onViewDetails(piece)}
-                      >
+                      <div className="runway__piece-row">
                         <span className="runway__piece-thumb">
                           <SafeImage
                             images={piece.images}
@@ -506,14 +589,26 @@ export default function LookbookRunway({
                           />
                           <span className="runway__piece-badge">{pieceIndex + 1}</span>
                         </span>
-                        <span className="runway__piece-info">
+                        <button
+                          type="button"
+                          className="runway__piece-info"
+                          onClick={() => onViewDetails(piece)}
+                        >
                           <span className="runway__piece-brand">
                             {piece.brand || 'Mery Rose'}
                           </span>
                           <span className="runway__piece-name">{piece.name}</span>
-                        </span>
-                        <span className="runway__piece-cost">{money(piece.price)}</span>
-                      </button>
+                          <span className="runway__piece-cost">{money(piece.price)}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="runway__piece-add"
+                          onClick={() => onAddPieceToBag?.(piece)}
+                          aria-label={`Add ${piece.name} to bag`}
+                        >
+                          +
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

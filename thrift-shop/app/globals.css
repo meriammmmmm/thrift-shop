@@ -4625,13 +4625,38 @@ a {
 .runway__piece-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.9rem;
   width: 100%;
+}
+
+.runway__piece-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   padding: 0;
   border: 0;
   background: none;
   text-align: left;
   cursor: pointer;
+}
+
+.runway__piece-brand {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.5625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.runway__piece-name {
+  display: block;
+  margin-top: 0.15rem;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 .runway__piece-thumb {
@@ -4667,27 +4692,6 @@ a {
   background: transparent;
 }
 
-.runway__piece-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.runway__piece-brand {
-  display: block;
-  color: #9ca3af;
-  font-size: 0.5625rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.runway__piece-name {
-  display: block;
-  margin-top: 0.15rem;
-  color: #1f2937;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-}
-
 .runway__piece-reason {
   display: block;
   margin-top: 0.2rem;
@@ -4696,11 +4700,40 @@ a {
   line-height: 1.3;
 }
 
+/* The price sits under the name, the way the reference lists it. */
 .runway__piece-cost {
-  flex: none;
+  display: block;
+  margin-top: 0.3rem;
   color: #111827;
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+/* The "+" that puts a single piece in the bag. */
+.runway__piece-add {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.runway__piece-add:hover {
+  background: var(--runway-primary, #731528);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.runway__piece-add:focus-visible {
+  outline: 2px solid var(--runway-primary, #731528);
+  outline-offset: 2px;
 }
 
 .runway__bundle {

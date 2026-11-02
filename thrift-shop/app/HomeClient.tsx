@@ -583,6 +583,34 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
     }
   };
 
+  /** The "+" beside a single piece in the "In this look" list. */
+  const addPieceToBag = async (piece: Product) => {
+    if (!user) {
+      showNotification('Please create an account or sign in to add items to your bag', 'info');
+      window.location.href = '/login';
+      return;
+    }
+
+    if (!piece.inStock) {
+      showNotification('This piece is sold out', 'info');
+      return;
+    }
+
+    if (cartItemIds.has(piece.id)) {
+      showNotification('This piece is already in your bag', 'info');
+      return;
+    }
+
+    try {
+      await api.addToCart(piece.id);
+      await loadUserCart();
+      showNotification(`${piece.name} added to bag!`, 'success');
+    } catch (error: any) {
+      console.error('Add piece to cart error:', error);
+      showNotification('Failed to add the piece to your bag', 'error');
+    }
+  };
+
   const removeFromCart = async (productId: number) => {
     if (!user) return;
 
@@ -1071,6 +1099,7 @@ export default function HomeClient({ initialData }: { initialData: InitialData }
         currencySymbol={companyCurrency.symbol}
         onViewDetails={handleViewDetails}
         onAddLookToBag={addLookToBag}
+        onAddPieceToBag={addPieceToBag}
       />
 
       {/* Complete looks — curated in the admin panel's "Shop the Look" section */}
