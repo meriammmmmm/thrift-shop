@@ -31,6 +31,11 @@ interface LoveButtonProps {
   onChange?: (productId: number, liked: boolean, likes: number) => void;
   /** Extra classes for the button. */
   className?: string;
+  /**
+   * `sm` is the compact size used inside a two-column phone grid, where the
+   * default pill would push the price out of the card.
+   */
+  size?: 'sm' | 'md';
 }
 
 export default function LoveButton({
@@ -39,6 +44,7 @@ export default function LoveButton({
   liked = false,
   onChange,
   className = '',
+  size = 'md',
 }: LoveButtonProps) {
   const { theme } = useTheme();
   const [count, setCount] = useState(likes);
@@ -93,6 +99,11 @@ export default function LoveButton({
     }
   };
 
+  const sizeClasses =
+    size === 'sm'
+      ? 'gap-1 px-1.5 py-0.5 text-[11px] relative after:content-[\'\'] after:absolute after:-inset-x-2 after:-inset-y-2'
+      : 'gap-1.5 px-2.5 py-1 text-xs';
+
   return (
     <button
       type="button"
@@ -105,7 +116,7 @@ export default function LoveButton({
           : 'Love this piece'
       }
       title={isLiked ? 'You loved this piece' : 'Love this piece'}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:opacity-60 ${
+      className={`inline-flex items-center rounded-full border font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:opacity-60 ${sizeClasses} ${
         isLiked
           ? 'border-transparent text-white'
           : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
@@ -114,7 +125,9 @@ export default function LoveButton({
     >
       <svg
         viewBox="0 0 24 24"
-        className={`h-3.5 w-3.5 transition-transform duration-300 ${
+        className={`${
+          size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'
+        } transition-transform duration-300 ${
           isLiked ? 'scale-110' : ''
         }`}
         fill={isLiked ? 'currentColor' : 'none'}

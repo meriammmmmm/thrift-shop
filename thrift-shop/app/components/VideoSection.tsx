@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ShopVideo } from '../../lib/videos';
+import { scrollRailTo, stopRail } from '../../lib/motion/rail';
 
 /**
  * The video section of the shop.
@@ -157,10 +158,19 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
     if (!track || !card) return;
 
     const target = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2;
-    track.scrollTo({
-      left: Math.max(0, target),
-      behavior: smooth ? 'smooth' : 'auto',
-    });
+
+    if (smooth) {
+      // The shared engine drives the move: the clip in the middle is
+      // swapped as the row travels, and the row lands exactly where the
+      // snap would have put it.
+      scrollRailTo(track, target);
+      return;
+    }
+
+    // A row that is put in place rather than moved there — the first
+    // clip, or the clip in the middle after the phone turned around.
+    stopRail(track);
+    track.scrollLeft = Math.max(0, target);
   }, []);
 
   const goTo = useCallback(

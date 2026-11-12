@@ -57,6 +57,18 @@ interface LovedPiecesProps {
 /** How many pieces the showcase shows. */
 const SHOWCASE_SIZE = 3;
 
+/**
+ * How many pieces stand side by side on a phone.
+ *
+ * A phone used to show one piece at a time, which meant a whole screen for a
+ * single shoe. Two pieces now stand together and the rail steps by one, so a
+ * visitor sees the collection instead of one card.
+ */
+const PHONE_VISIBLE = 2;
+
+/** How far the rail travels for one piece, in percent of the rail's width. */
+const PHONE_STEP = 100 / PHONE_VISIBLE;
+
 /** How far the deck leans towards the pointer, in degrees, at its very edge. */
 const MAX_STAGE_TILT_X = 3.2;
 const MAX_STAGE_TILT_Y = 5;
@@ -481,6 +493,12 @@ export default function LovedPieces({
   if (!showcase.length) return null;
 
   const lastIndex = showcase.length - 1;
+  /**
+   * The rail pages by one piece, so the last page must still hold a full row
+   * of pieces — the rail never parks on a page that holds a single piece.
+   */
+  const maxMobileIndex = Math.max(0, showcase.length - PHONE_VISIBLE);
+  const canPage = maxMobileIndex > 0;
 
   return (
     <section
@@ -543,86 +561,80 @@ export default function LovedPieces({
           </div>
         </div>
 
-        {/* Phones — the same pieces, one at a time, turning as they go */}
+        {/* Phones — two pieces side by side, the rail steps by one */}
         <div className="loved-mobile md:hidden">
           <div className="loved-mobile-viewport">
             <div
               className="loved-track"
-              style={{ transform: `translate3d(-${mobileIndex * 100}%, 0, 0)` }}
+              style={
+                {
+                  '--loved-step': `${PHONE_STEP}%`,
+                  transform: `translate3d(-${mobileIndex * PHONE_STEP}%, 0, 0)`,
+                } as React.CSSProperties
+              }
             >
-              {showcase.map((product, index) => {
-                const offset = index - mobileIndex;
-                const distance = Math.min(Math.abs(offset), 1);
-
-                return (
-                  <div
-                    key={product.id}
-                    className="loved-slide"
-                    style={
-                      {
-                        '--loved-m-ry': `${(offset * -22).toFixed(1)}deg`,
-                        '--loved-m-scale': (1 - distance * 0.06).toFixed(3),
-                        '--loved-m-opacity': (1 - distance * 0.4).toFixed(3),
-                      } as React.CSSProperties
-                    }
-                  >
-                    <LovedCard
-                      product={product}
-                      index={index}
-                      currencySymbol={currencySymbol}
-                      saved={savedIds.has(product.id)}
-                      onViewDetails={onViewDetails}
-                      onToggleWishlist={onToggleWishlist}
-                    />
-                  </div>
-                );
-              })}
+              {showcase.map((product, index) => (
+                <div key={product.id} className="loved-slide">
+                  <LovedCard
+                    product={product}
+                    index={index}
+                    currencySymbol={currencySymbol}
+                    saved={savedIds.has(product.id)}
+                    onViewDetails={onViewDetails}
+                    onToggleWishlist={onToggleWishlist}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMobileIndex((current) => Math.max(current - 1, 0))}
-            disabled={mobileIndex === 0}
-            className="loved-nav loved-nav-prev"
-            aria-label="Previous piece"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          {canPage && (
+            <>
+              <button
+                type="button"
+                onClick={() => setMobileIndex((current) => Math.max(current - 1, 0))}
+                disabled={mobileIndex === 0}
+                className="loved-nav loved-nav-prev"
+                aria-label="Previous piece"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              setMobileIndex((current) => Math.min(current + 1, lastIndex))
-            }
-            disabled={mobileIndex === lastIndex}
-            className="loved-nav loved-nav-next"
-            aria-label="Next piece"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setMobileIndex((current) => Math.min(current + 1, maxMobileIndex))
+                }
+                disabled={mobileIndex === maxMobileIndex}
+                className="loved-nav loved-nav-next"
+                aria-label="Next piece"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Call to action */}

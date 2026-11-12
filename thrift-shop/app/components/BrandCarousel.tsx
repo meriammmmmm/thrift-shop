@@ -4,6 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import { BrandEntry, brandHref } from '../../lib/brands';
 import { gsap } from '../../lib/motion/gsap';
+import {
+  flingStop,
+  now,
+  pointerVelocity,
+  railStops,
+  scrollRailBy,
+  scrollRailTo,
+  stopRail,
+  type PointerSample,
+} from '../../lib/motion/rail';
 import { DURATION, EASE, prefersReducedMotion } from '../../lib/motion/tokens';
 
 interface BrandCarouselProps {
@@ -36,6 +46,8 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, moved: false, startX: 0, startScroll: 0 });
+  /** The tail of the drag, so the rail can tell how fast it was thrown. */
+  const samplesRef = useRef<PointerSample[]>([]);
   const tiltRef = useRef<HTMLElement | null>(null);
   const depthFrameRef = useRef(0);
   const scrollTimerRef = useRef(0);
@@ -224,14 +236,18 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
     if (!rail) return;
 
     const distance = Math.max(rail.clientWidth * 0.8, 220);
-    rail.scrollBy({
-      left: direction * distance,
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    });
+    scrollRailBy(rail, direction * distance);
   }, []);
 
-  /** Land on the tile closest to the left edge — the swiper "snap". */
-  const snapToNearest = useCallback(() => {
+  /**
+   * Land on a tile — the swiper "snap".
+   *
+   * A rail that was thrown keeps the speed of the throw: the landing
+   * tile is the one the rail was heading for, not the one under the
+   * pointer when the hand let go. A rail that was dragged slowly
+   * lands on the tile it was left next to.
+   */
+  const snapToNearest = useCallback((velocity = 0) => {
     const rail = railRef.current;
     if (!rail) return;
 
@@ -239,23 +255,15 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
     if (!cards.length) return;
 
     const railLeft = rail.getBoundingClientRect().left;
-    let nearest: HTMLElement | null = null;
-    let nearestDistance = Infinity;
 
-    for (const card of cards) {
-      const distance = Math.abs(card.getBoundingClientRect().left - railLeft);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = card;
-      }
-    }
+    /** The scroll position that puts a tile against the left edge. */
+    const stopOf = (item: HTMLElement) =>
+      rail.scrollLeft + item.getBoundingClientRect().left - railLeft;
 
-    if (!nearest) return;
-    const offset = nearest.getBoundingClientRect().left - railLeft;
-    rail.scrollTo({
-      left: rail.scrollLeft + offset,
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    });
+    const stops = railStops(rail, cards, stopOf);
+    const landing = flingStop(rail.scrollLeft, -velocity, stops);
+
+    scrollRailTo(rail, landing);
   }, []);
 
   /** Let the card settle back to flat. */
@@ -276,12 +284,20 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
     // Touch already scrolls natively, with momentum — do not fight it.
     if (event.pointerType === 'touch' || event.button !== 0) return;
 
+    // A rail that is still animating stops here: the hand takes over.
+    stopRail(rail);
+
+    // The snap stands down from the first touch of the hand — waiting
+    // for the drag threshold would let it pull the rail back once.
+    rail.classList.add('is-dragging');
+
     dragRef.current = {
       active: true,
       moved: false,
       startX: event.clientX,
       startScroll: rail.scrollLeft,
     };
+    samplesRef.current = [{ t: event.timeStamp, x: event.clientX }];
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -326,10 +342,24 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
       rail.classList.add('is-dragging');
     }
 
+    // The tail of the drag, kept short so the speed is the speed of
+    // the hand right now and not of the whole drag.
+    const samples = samplesRef.current;
+    samples.push({ t: event.timeStamp, x: event.clientX });
+    if (samples.length > 6) samples.shift();
+
     rail.scrollLeft = drag.startScroll - delta;
   };
 
-  const endDrag = () => {
+  /**
+   * The hand let go of the rail.
+   *
+   * `thrown` says whether the rail was let go of on purpose. A
+   * pointer that is cancelled — the browser taking the gesture back
+   * for a page scroll, say — is not a throw: the rail simply settles
+   * where it is, without any speed of its own.
+   */
+  const endDrag = (thrown: boolean) => {
     const rail = railRef.current;
     const drag = dragRef.current;
 
@@ -340,7 +370,13 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
     drag.active = false;
     rail?.classList.remove('is-dragging');
 
-    if (drag.moved) snapToNearest();
+    if (drag.moved) {
+      // The rail is thrown as fast as the hand was moving.
+      const velocity = thrown ? pointerVelocity(samplesRef.current) : 0;
+      console.log('[rail-dbg] samples=', JSON.stringify(samplesRef.current), 'velocity=', velocity);
+      samplesRef.current = [];
+      snapToNearest(velocity);
+    }
   };
 
   /** Swallow the click that ends a drag. */
@@ -486,9 +522,9 @@ export default function BrandCarousel({ brands, primary }: BrandCarouselProps) {
           ref={railRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerLeave={endDrag}
-          onPointerCancel={endDrag}
+          onPointerUp={() => endDrag(true)}
+          onPointerLeave={() => endDrag(true)}
+          onPointerCancel={() => endDrag(false)}
           onKeyDown={onKeyDown}
           tabIndex={0}
           role="region"

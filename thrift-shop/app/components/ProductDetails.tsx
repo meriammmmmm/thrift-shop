@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Product } from '../types';
 import Image from 'next/image';
 import SizeGuide from './SizeGuide';
@@ -37,13 +37,15 @@ export default function ProductDetails({
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
+  // The sheet that scrolls — on a phone it is the whole modal.
+  const panelRef = useRef<HTMLDivElement>(null);
+
   // Reset scroll position when product changes or modal opens
   useEffect(() => {
     if (isOpen && product) {
       // Reset scroll to top
-      const modalContent = document.querySelector('.overflow-y-auto');
-      if (modalContent) {
-        modalContent.scrollTop = 0;
+      if (panelRef.current) {
+        panelRef.current.scrollTop = 0;
       }
       // Reset image index
       setSelectedImageIndex(0);
@@ -129,29 +131,31 @@ export default function ProductDetails({
     : 0;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 backdrop-fade"
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 backdrop-fade"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl modal-fade-scale"
+      <div
+        ref={panelRef}
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl modal-fade-scale relative"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="grid md:grid-cols-2 gap-0">
           {/* Close Button - Top Right */}
-          <button 
+          <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:rotate-90"
+            aria-label="Close product details"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 p-2.5 sm:p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:rotate-90"
           >
-            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
           {/* Image Gallery */}
           <div className="relative bg-white">
-            <div 
-              className="relative h-[617px] overflow-hidden bg-white cursor-grab active:cursor-grabbing select-none"
+            <div
+              className="relative h-[42vh] sm:h-[480px] md:h-[617px] overflow-hidden bg-white cursor-grab active:cursor-grabbing select-none"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
@@ -221,10 +225,11 @@ export default function ProductDetails({
                 </>
               )}
 
-              {/* Wishlist Heart */}
+              {/* Wishlist Heart — on a phone it sits beside the close button, never under it */}
               <button
                 onClick={() => onToggleWishlist(product.id)}
-                className="absolute top-4 right-4 p-2.5 rounded-full bg-white shadow-md hover:scale-110 transition-all duration-200"
+                aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                className="absolute top-3 right-14 sm:top-4 sm:right-4 p-2.5 rounded-full bg-white shadow-md hover:scale-110 transition-all duration-200"
               >
                 {isWishlisted ? (
                   <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
@@ -239,15 +244,15 @@ export default function ProductDetails({
 
               {/* Status Badges - Show only one based on priority */}
               {product.reservation_status === 'sold' || !product.inStock ? (
-                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-gray-600 text-white text-sm font-bold shadow-lg">
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gray-600 text-white text-xs sm:text-sm font-bold shadow-lg">
                   ❌ Sold Out
                 </div>
               ) : product.reservation_status === 'reserved' ? (
-                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-orange-500 text-white text-sm font-bold shadow-lg">
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-orange-500 text-white text-xs sm:text-sm font-bold shadow-lg">
                   🔒 Reserved
                 </div>
               ) : discountPercentage > 0 ? (
-                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-sm font-bold" style={{ backgroundColor: theme.primary }}>
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-white text-xs sm:text-sm font-bold" style={{ backgroundColor: theme.primary }}>
                   -{discountPercentage}%
                 </div>
               ) : null}
@@ -263,7 +268,7 @@ export default function ProductDetails({
                 return false;
               }
             }).length > 1 && (
-              <div className="flex gap-2 p-4 overflow-x-auto">
+              <div className="flex gap-2 p-3 sm:p-4 overflow-x-auto">
                 {product.images.filter((image) => {
                   try {
                     if (!image || typeof image !== 'string') return false;
@@ -279,10 +284,10 @@ export default function ProductDetails({
                       setSelectedImageIndex(index);
                       setIsAutoPlaying(false);
                     }}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                    className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden transition-all ${
                       selectedImageIndex === index ? 'ring-2 opacity-100' : 'opacity-50 hover:opacity-75'
                     }`}
-                    style={{ 
+                    style={{
                       borderColor: selectedImageIndex === index ? theme.primary : undefined,
                       borderWidth: selectedImageIndex === index ? '2px' : undefined
                     }}
@@ -295,20 +300,20 @@ export default function ProductDetails({
           </div>
 
           {/* Product Info */}
-          <div className="p-8 flex flex-col">
+          <div className="p-5 sm:p-8 flex flex-col">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500 mb-1">{product.brand}</p>
-                <h1 className="text-xl font-semibold text-gray-900 leading-tight">{product.name}</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 leading-tight">{product.name}</h1>
               </div>
             </div>
 
             {/* Price */}
-            <div className="mb-6">
+            <div className="mb-5 sm:mb-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{currencySymbol}{product.price.toFixed(2)}</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">{currencySymbol}{product.price.toFixed(2)}</span>
                 {product.originalPrice && product.originalPrice !== product.price && (
-                  <span className="text-base text-gray-400 line-through">{currencySymbol}{product.originalPrice.toFixed(2)}</span>
+                  <span className="text-sm sm:text-base text-gray-400 line-through">{currencySymbol}{product.originalPrice.toFixed(2)}</span>
                 )}
               </div>
               {discountPercentage > 0 && (
@@ -329,7 +334,7 @@ export default function ProductDetails({
             </div>
 
             {/* Key Details */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-3 sm:gap-y-4 mb-5 sm:mb-6">
               <div>
                 <span className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Size</span>
                 <div className="flex items-center gap-2">
@@ -361,7 +366,7 @@ export default function ProductDetails({
             <button 
               onClick={() => onAddToCart(product)}
               disabled={!product.inStock || isInCart || product.reservation_status === 'reserved' || product.reservation_status === 'sold'}
-              className={`w-full py-3 rounded-lg font-medium text-sm mb-4 transition-all duration-300 hover:scale-105 magnetic-btn shadow-lg hover:shadow-xl ${
+              className={`w-full py-3.5 sm:py-3 rounded-lg font-medium text-sm mb-4 transition-all duration-300 hover:scale-105 magnetic-btn shadow-lg hover:shadow-xl ${
                 !product.inStock || isInCart || product.reservation_status === 'reserved' || product.reservation_status === 'sold'
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   : 'text-white hover:opacity-90'
@@ -379,7 +384,7 @@ export default function ProductDetails({
 
             {/* Tabs */}
             <div className="border-b border-gray-200 mb-4">
-              <nav className="flex gap-6">
+              <nav className="flex gap-4 sm:gap-6">
                 {[
                   { id: 'details', label: 'Details' },
                   { id: 'measurements', label: 'Measurements' },
@@ -388,7 +393,7 @@ export default function ProductDetails({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-2 border-b-2 text-xs font-medium transition-colors ${
+                    className={`py-2.5 sm:py-2 border-b-2 text-xs font-medium transition-colors ${
                       activeTab === tab.id ? '' : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                     style={{

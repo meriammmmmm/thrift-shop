@@ -786,7 +786,7 @@ export default function Home() {
               <div className="flex items-center space-x-1.5 sm:space-x-3 md:space-x-6">
                 <button 
                   onClick={() => window.location.href = '/products'}
-                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
+                  className="text-[11px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide py-3.5 sm:py-0"
                 >
                   SHOP
                 </button>
@@ -796,7 +796,7 @@ export default function Home() {
                   onClick={() => setIsReviewOpen(true)}
                   aria-label="Leave a review"
                   title="Leave a review"
-                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-1.5 text-[9px] font-semibold whitespace-nowrap transition-all duration-300 hover:scale-[1.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-xs md:text-sm"
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-2.5 text-[9px] font-semibold whitespace-nowrap transition-all duration-300 hover:scale-[1.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-xs md:text-sm"
                   style={{ backgroundColor: `${theme.primary}14`, color: theme.primary }}
                 >
                   <svg
@@ -818,12 +818,12 @@ export default function Home() {
               {/* Center - Logo */}
               <div 
                 onClick={() => window.location.href = '/'}
-                className="flex items-center justify-center hover:opacity-90 transition-opacity duration-300 cursor-pointer flex-1"
+                className="flex items-center justify-center hover:opacity-90 transition-opacity duration-300 cursor-pointer flex-1 min-w-0"
               >
                 <img 
                   src="/images/mery-rose-logo.png" 
                   alt="Mery Rose" 
-                  className="w-28 sm:w-44 md:w-56 lg:w-72 h-auto object-contain"
+                  className="w-32 sm:w-44 md:w-56 lg:w-72 h-auto max-w-full object-contain"
                 />
               </div>
 
@@ -832,10 +832,10 @@ export default function Home() {
                 {/* Wishlist */}
                 <button 
                   onClick={() => setIsWishlistOpen(true)}
-                  className="relative p-1 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
+                  className="relative p-3 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
                   aria-label="Wishlist"
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                   </svg>
                   {wishlist.length > 0 && (
@@ -848,10 +848,10 @@ export default function Home() {
                 {/* Cart */}
                 <button 
                   onClick={() => setIsCartOpen(true)}
-                  className="relative p-1 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
+                  className="relative p-3 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
                   aria-label="Shopping bag"
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
                   </svg>
                   {cartCount > 0 && (
@@ -900,7 +900,7 @@ export default function Home() {
                 ) : (
                   <button 
                     onClick={() => window.location.href = '/login'}
-                    className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-xs md:text-sm font-semibold text-white transition-all hover:opacity-90 whitespace-nowrap"
+                    className="px-2.5 sm:px-3 md:px-4 py-3.5 sm:py-1.5 rounded-lg text-[11px] sm:text-xs md:text-sm font-semibold text-white transition-all hover:opacity-90 whitespace-nowrap"
                     style={{ backgroundColor: theme.primary }}
                   >
                     Sign In
@@ -957,7 +957,7 @@ export default function Home() {
                   <button
                     onClick={() => window.location.href = '/products'}
                     data-hero-part
-                    className="px-4 sm:px-10 py-2 sm:py-3.5 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase border border-white/80 hover:bg-white hover:text-gray-900 transition-all duration-300"
+                    className="px-4 sm:px-10 py-3.5 sm:py-3.5 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase border border-white/80 hover:bg-white hover:text-gray-900 transition-all duration-300"
                   >
                     {heroSlides[currentHeroSlide].buttonText}
                   </button>
@@ -1237,63 +1237,63 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-5 sm:gap-6">
             {/* Hand-Selected Quality */}
-            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
-              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
-                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full mx-auto mb-2 sm:mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
+                <svg className="w-4 h-4 sm:w-7 sm:h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+              <h3 className="text-[11px] sm:text-lg font-medium text-gray-900 text-center mb-1 sm:mb-3 leading-tight">
                 Hand-Selected
               </h3>
-              <p className="text-gray-600 text-sm text-center leading-relaxed">
+              <p className="hidden sm:block text-gray-600 text-sm text-center leading-relaxed">
                 Every item is personally chosen and inspected for quality, authenticity, and style.
               </p>
             </div>
 
             {/* Like-New Condition */}
-            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
-              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
-                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full mx-auto mb-2 sm:mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
+                <svg className="w-4 h-4 sm:w-7 sm:h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+              <h3 className="text-[11px] sm:text-lg font-medium text-gray-900 text-center mb-1 sm:mb-3 leading-tight">
                 Like-New Quality
               </h3>
-              <p className="text-gray-600 text-sm text-center leading-relaxed">
+              <p className="hidden sm:block text-gray-600 text-sm text-center leading-relaxed">
                 Premium pieces in excellent condition that look and feel brand new.
               </p>
             </div>
 
             {/* Sustainable Fashion */}
-            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
-              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
-                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full mx-auto mb-2 sm:mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
+                <svg className="w-4 h-4 sm:w-7 sm:h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+              <h3 className="text-[11px] sm:text-lg font-medium text-gray-900 text-center mb-1 sm:mb-3 leading-tight">
                 Eco-Friendly
               </h3>
-              <p className="text-gray-600 text-sm text-center leading-relaxed">
+              <p className="hidden sm:block text-gray-600 text-sm text-center leading-relaxed">
                 Reduce fashion waste and your carbon footprint with every purchase.
               </p>
             </div>
 
             {/* Designer Brands */}
-            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
-              <div data-cinematic="why-rose-icon" className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
-                <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
+              <div data-cinematic="why-rose-icon" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full mx-auto mb-2 sm:mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
+                <svg className="w-4 h-4 sm:w-7 sm:h-7" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-3">
+              <h3 className="text-[11px] sm:text-lg font-medium text-gray-900 text-center mb-1 sm:mb-3 leading-tight">
                 Designer Brands
               </h3>
-              <p className="text-gray-600 text-sm text-center leading-relaxed">
+              <p className="hidden sm:block text-gray-600 text-sm text-center leading-relaxed">
                 Access luxury fashion at a fraction of the original price.
               </p>
             </div>

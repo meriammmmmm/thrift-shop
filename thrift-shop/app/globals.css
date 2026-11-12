@@ -3035,6 +3035,30 @@ a {
   user-select: none;
 }
 
+/* ------------------------------------------------------------------
+   A RAIL IN FLIGHT
+   ------------------------------------------------------------------
+   The rail engine drives the row by hand: it writes the scroll offset
+   on every frame of the move, so the move can carry a fling and land
+   on a card.
+
+   CSS snapping cannot take part in that. The snap decides the row
+   belongs on the nearest card, which is usually not where the
+   animation is heading — so the row would be dragged back halfway
+   through the move. While the row is in flight the snap stands down;
+   the engine puts it back on the card itself.
+   ------------------------------------------------------------------ */
+
+.is-in-flight {
+  scroll-snap-type: none !important;
+}
+
+/* A rail that is being dragged is driven by the hand for the same
+   reason: the snap would take the rail back while it is being moved. */
+.is-dragging {
+  scroll-snap-type: none !important;
+}
+
 .brand-rail::-webkit-scrollbar {
   display: none;
 }
@@ -4160,10 +4184,14 @@ a {
   will-change: transform;
 }
 
-/* The piece in front faces the viewer; its neighbours turn away. */
+/* Two pieces stand on a phone. The rail moves by one piece at a time. */
 .loved-slide {
-  flex: 0 0 100%;
-  padding: 0 14px;
+  flex: 0 0 var(--loved-step, 50%);
+  /* A flex item may not be narrower than its own content unless it is told
+     to — a long brand name would otherwise push one piece wider than the
+     others and break the row. */
+  min-width: 0;
+  padding: 0 7px;
   opacity: var(--loved-m-opacity, 1);
   transform:
     perspective(1100px)
@@ -4179,13 +4207,11 @@ a {
   margin: 0 auto;
 }
 
+/* The arrows step through the pieces and sit under the rail, where they
+   cannot cover the picture of a piece. */
 .loved-nav {
-  position: absolute;
-  top: 50%;
   z-index: 5;
   display: flex;
-  width: 38px;
-  height: 38px;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
@@ -4194,27 +4220,95 @@ a {
   border: 1px solid rgba(15, 23, 42, 0.08);
   color: var(--loved-primary);
   box-shadow: 0 12px 26px -16px rgba(15, 23, 42, 0.7);
-  transform: perspective(320px) translateY(-50%);
   transition:
     transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.3s ease;
 }
 
-.loved-nav-prev {
-  left: -4px;
-}
-
-.loved-nav-next {
-  right: -4px;
-}
-
-.loved-nav:hover:not(:disabled) {
-  transform: perspective(320px) translateY(-50%) rotateY(18deg) scale(1.06);
-}
-
 .loved-nav:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/**
+ * The phone layout of the showcase.
+ *
+ * Everything in here belongs to the phone alone, so it stays inside a query.
+ * These rules are not part of a cascade layer, and a rule outside a layer
+ * beats a Tailwind utility in one — so an unlayered `display` here would
+ * override the `md:hidden` that keeps the phone rail off the wide screen.
+ */
+@media (max-width: 767px) {
+  /* The rail and the arrows under it. */
+  .loved-mobile {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .loved-mobile-viewport {
+    flex: 0 0 100%;
+  }
+
+  .loved-nav {
+    position: static;
+    width: 46px;
+    height: 46px;
+    transform: none;
+  }
+
+  .loved-mobile .loved-nav:hover:not(:disabled) {
+    transform: scale(1.06);
+  }
+
+  /* The tile is narrow on a phone, so the details under the picture tighten. */
+  .loved-info {
+    padding: 14px 2px 0;
+  }
+
+  .loved-name {
+    font-size: 13px;
+  }
+
+  .loved-price {
+    font-size: 15px;
+  }
+
+  .loved-buy {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .loved-love {
+    margin-left: 0;
+  }
+
+  /* The brand is one line on a phone, so the footers of two pieces line up. */
+  .loved-meta {
+    min-width: 0;
+  }
+
+  .loved-brand {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A finger has no hover, so the quick view stays on the picture. */
+  .loved-quick {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    padding: 8px 12px;
+    font-size: 9px;
+  }
+
+  /* The heart on the picture is a button — it needs a real target. */
+  .loved-heart {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* --- reduced motion ---------------------------------------------------- */

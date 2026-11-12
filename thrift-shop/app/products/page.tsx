@@ -687,10 +687,10 @@ export default function ProductsPage() {
 
   // Skeleton card for loading state — shown inline (not a full-page blocker)
   const SkeletonCard = () => (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+    <div className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-gray-100">
       <div className="aspect-[3/4] bg-gray-200 animate-pulse" />
-      <div className="p-4 space-y-2.5">
-        <div className="flex justify-between">
+      <div className="p-2.5 sm:p-4 space-y-2 sm:space-y-2.5">
+        <div className="flex justify-between gap-2">
           <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
           <div className="h-4 w-8 bg-gray-200 rounded-full animate-pulse" />
         </div>
@@ -700,7 +700,6 @@ export default function ProductsPage() {
         <div className="flex gap-2 pt-1">
           <div className="h-9 flex-1 bg-gray-200 rounded-xl animate-pulse" />
           <div className="h-9 w-14 bg-gray-200 rounded-xl animate-pulse" />
-          <div className="h-9 flex-1 bg-gray-200 rounded-xl animate-pulse" />
         </div>
       </div>
     </div>
@@ -712,19 +711,19 @@ export default function ProductsPage() {
       {/* Header */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'}`} style={{ backgroundColor: theme.background }}>
         {/* Top Promo Banner */}
-        <div className="text-center py-2 px-4 text-xs sm:text-sm font-medium luxury-shimmer text-white overflow-hidden" style={{ backgroundColor: theme.primary }}>
+        <div className="text-center py-1.5 sm:py-2 px-4 text-[11px] sm:text-sm font-medium luxury-shimmer text-white overflow-hidden" style={{ backgroundColor: theme.primary }}>
           <span className="inline-block">✨ Next Drop: Friday at 21:00 Tunis Time ✨</span>
         </div>
 
         {/* Main Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="w-full px-2 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-1 sm:gap-3 md:gap-6 h-20 sm:h-24 md:h-28 lg:h-32">
+            <div className="flex items-center justify-between gap-1 sm:gap-3 md:gap-6 h-16 sm:h-24 md:h-28 lg:h-32">
               {/* Left - Navigation */}
               <div className="flex items-center space-x-1.5 sm:space-x-3 md:space-x-6">
                 <button
                   onClick={() => window.location.href = '/products'}
-                  className="text-[9px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide"
+                  className="text-[11px] sm:text-xs md:text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors whitespace-nowrap tracking-wide py-3.5 sm:py-0"
                 >
                   SHOP
                 </button>
@@ -737,26 +736,26 @@ export default function ProductsPage() {
               </div>
 
               {/* Center - Logo */}
-              <div 
+              <div
                 onClick={() => window.location.href = '/'}
-                className="flex items-center justify-center hover:opacity-90 transition-opacity duration-300 cursor-pointer flex-1"
+                className="flex items-center justify-center hover:opacity-90 transition-opacity duration-300 cursor-pointer flex-1 min-w-0"
               >
-                <img 
-                  src="/images/mery-rose-logo.png" 
-                  alt="Mery Rose" 
-                  className="w-28 sm:w-44 md:w-56 lg:w-72 h-auto object-contain"
+                <img
+                  src="/images/mery-rose-logo.png"
+                  alt="Mery Rose"
+                  className="w-32 sm:w-44 md:w-56 lg:w-72 h-auto max-w-full object-contain"
                 />
               </div>
 
               {/* Right - Icons */}
-              <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+              <div className="flex items-center space-x-0.5 sm:space-x-2 md:space-x-4">
                 {/* Wishlist */}
-                <button 
+                <button
                   onClick={() => setIsWishlistOpen(true)}
-                  className="relative p-1 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
+                  className="relative p-3 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
                   aria-label="Wishlist"
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                   </svg>
                   {wishlist.length > 0 && (
@@ -767,12 +766,12 @@ export default function ProductsPage() {
                 </button>
 
                 {/* Cart */}
-                <button 
+                <button
                   onClick={() => setIsCartOpen(true)}
-                  className="relative p-1 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
+                  className="relative p-3 sm:p-1.5 text-gray-700 hover:text-[var(--color-primary)] transition-colors"
                   aria-label="Shopping bag"
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
                   </svg>
                   {cartCount > 0 && (
@@ -796,21 +795,21 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </button>
-                    
+
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <button 
+                      <button
                         onClick={() => window.location.href = '/profile'}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         My Profile
                       </button>
-                      <button 
+                      <button
                         onClick={() => window.location.href = '/orders'}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         My Orders
                       </button>
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                       >
@@ -819,9 +818,9 @@ export default function ProductsPage() {
                     </div>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => window.location.href = '/login'}
-                    className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-xs md:text-sm font-semibold text-white transition-all hover:opacity-90 whitespace-nowrap"
+                    className="px-2.5 sm:px-3 md:px-4 py-3.5 sm:py-1.5 rounded-lg text-[11px] sm:text-xs md:text-sm font-semibold text-white transition-all hover:opacity-90 whitespace-nowrap"
                     style={{ backgroundColor: theme.primary }}
                   >
                     Sign In
@@ -833,62 +832,64 @@ export default function ProductsPage() {
         </div>
       </header>
       {/* Hero Section with Background Image */}
-      <section className="relative py-16 text-white overflow-hidden"
-               style={{ 
-                 background: `linear-gradient(to right, ${theme.primary}dd, ${theme.primaryHover}dd)` 
+      <section className="relative py-10 sm:py-16 text-white overflow-hidden"
+               style={{
+                 background: `linear-gradient(to right, ${theme.primary}dd, ${theme.primaryHover}dd)`
                }}>
         <div className="absolute inset-0">
-          <img 
-            src="/images/premium-7ba67846.webp" 
+          <img
+            src="/images/premium-7ba67846.webp"
             alt="Products background"
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
         </div>
-        
+
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center flex flex-col items-center">
-          <h1 className="text-6xl font-bold mb-4 animate-fade-in">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4 animate-fade-in break-words">
             {company?.name ? `${company.name} Products` : 'Mery Rose Products'}
           </h1>
-          <p className="text-2xl mb-8 opacity-90 animate-slide-up text-center" style={{ animationDelay: '200ms' }}>
+          <p className="text-base sm:text-2xl mb-4 sm:mb-8 opacity-90 animate-slide-up text-center" style={{ animationDelay: '200ms' }}>
             Discover our complete collection of premium secondhand items
           </p>
-          <p className="text-lg opacity-80 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg opacity-80 max-w-2xl mx-auto">
             {company?.description || 'Discover the latest arrivals from the past 7 days. Curated finds that just hit our virtual shelves.'}
           </p>
         </div>
       </section>
 
       {/* Filters Section - Optimized & Clean */}
-      <section className="py-8 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          {/* Category Pills - Streamlined */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {CATEGORY_FILTERS.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105 ${
-                  selectedCategory === category
-                    ? 'text-white shadow-lg transform scale-105'
-                    : 'bg-white text-gray-600 hover:text-gray-800 shadow-sm hover:shadow-md border border-gray-200'
-                }`}
-                style={{
-                  backgroundColor: selectedCategory === category ? theme.primary : undefined
-                }}
-              >
-                {category}
-              </button>
-            ))}
+      <section className="py-5 sm:py-8 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          {/* Category Pills — a swipeable row on a phone, a wrapped row on a wide screen */}
+          <div className="-mx-3 px-3 mb-5 sm:mx-0 sm:px-0 sm:mb-8">
+            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-center sm:overflow-x-visible">
+              {CATEGORY_FILTERS.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`shrink-0 snap-start px-3.5 sm:px-5 py-3.5 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 ${
+                    selectedCategory === category
+                      ? 'text-white shadow-lg transform scale-105'
+                      : 'bg-white text-gray-600 hover:text-gray-800 shadow-sm hover:shadow-md border border-gray-200'
+                  }`}
+                  style={{
+                    backgroundColor: selectedCategory === category ? theme.primary : undefined
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Compact Filter Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 max-w-4xl mx-auto">
             {/* Price Filter */}
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('price')}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
               >
                 <span className="text-left">
                   {priceRange === 'All' ? 'All Prices' : 
@@ -907,7 +908,7 @@ export default function ProductsPage() {
                         setPriceRange(option.value === 'All' ? 'All' : option.value);
                         setIsPriceDropdownOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm text-black hover:bg-gray-50 transition-colors ${
+                      className={`w-full px-3 sm:px-4 py-3 sm:py-2 text-left text-xs sm:text-sm text-black hover:bg-gray-50 transition-colors ${
                         priceRange === option.value ? 'font-medium' : ''
                       }`}
                       style={{ color: priceRange === option.value ? theme.primary : 'black' }}
@@ -922,7 +923,7 @@ export default function ProductsPage() {
             {/* Size Filter */}
             <button
               onClick={() => setIsSizeSelectorOpen(true)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-sm text-black focus:outline-none hover:border-gray-300 transition-all duration-200 flex items-center justify-between shadow-sm hover:shadow-md"
+              className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none hover:border-gray-300 transition-all duration-200 flex items-center justify-between shadow-sm hover:shadow-md"
             >
               <span className="text-left">
                 {selectedSizes.length === 0 
@@ -941,7 +942,7 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('condition')}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
               >
                 <span className="text-left">{selectedCondition === 'All' ? 'All Conditions' : selectedCondition}</span>
                 <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isConditionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -957,7 +958,7 @@ export default function ProductsPage() {
                         setSelectedCondition(option === 'All' ? 'All' : option);
                         setIsConditionDropdownOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm text-black hover:bg-gray-50 transition-colors ${
+                      className={`w-full px-3 sm:px-4 py-3 sm:py-2 text-left text-xs sm:text-sm text-black hover:bg-gray-50 transition-colors ${
                         selectedCondition === option ? 'font-medium' : ''
                       }`}
                       style={{ color: selectedCondition === option ? theme.primary : 'black' }}
@@ -973,7 +974,7 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('occasion')}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
               >
                 <span className="text-left">{selectedOccasion === 'All' ? 'All Occasions' : selectedOccasion}</span>
                 <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isOccasionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -989,7 +990,7 @@ export default function ProductsPage() {
                         setSelectedOccasion(option === 'All' ? 'All' : option);
                         setIsOccasionDropdownOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm text-black hover:bg-gray-50 transition-colors ${
+                      className={`w-full px-3 sm:px-4 py-3 sm:py-2 text-left text-xs sm:text-sm text-black hover:bg-gray-50 transition-colors ${
                         selectedOccasion === option ? 'font-medium' : ''
                       }`}
                       style={{ color: selectedOccasion === option ? theme.primary : 'black' }}
@@ -1005,7 +1006,7 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('sort')}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
               >
                 <span className="text-left">
                   {sortBy === 'newest' ? 'Newest First' :
@@ -1035,7 +1036,7 @@ export default function ProductsPage() {
                         setSortBy(option.value);
                         setIsSortDropdownOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm text-black hover:bg-gray-50 transition-colors ${
+                      className={`w-full px-3 sm:px-4 py-3 sm:py-2 text-left text-xs sm:text-sm text-black hover:bg-gray-50 transition-colors ${
                         sortBy === option.value ? 'font-medium' : ''
                       }`}
                       style={{ color: sortBy === option.value ? theme.primary : 'black' }}
@@ -1050,28 +1051,28 @@ export default function ProductsPage() {
 
           {/* Custom Price Range - Improved */}
           {priceRange === 'Custom' && (
-            <div className="flex items-center justify-center space-x-4 mt-6 p-4 bg-white rounded-xl shadow-sm border border-gray-200 max-w-md mx-auto">
-              <span className="text-sm font-medium text-gray-600">Price Range:</span>
+            <div className="flex items-center justify-center space-x-4 mt-5 sm:mt-6 p-3 sm:p-4 bg-white rounded-xl shadow-sm border border-gray-200 max-w-md mx-auto">
+              <span className="text-xs sm:text-sm font-medium text-gray-600">Price Range:</span>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">{companyCurrency.symbol}</span>
+                <span className="text-xs sm:text-sm text-gray-500">{companyCurrency.symbol}</span>
                 <input
                   type="number"
                   placeholder="0"
                   value={customPriceMin}
                   onChange={(e) => setCustomPriceMin(e.target.value)}
-                  className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-opacity-30 text-center"
+                  className="w-16 sm:w-20 px-2 sm:px-3 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-30 text-center"
                 />
-                <span className="text-sm text-gray-400">to</span>
-                <span className="text-sm text-gray-500">{companyCurrency.symbol}</span>
+                <span className="text-xs sm:text-sm text-gray-400">to</span>
+                <span className="text-xs sm:text-sm text-gray-500">{companyCurrency.symbol}</span>
                 <input
                   type="number"
                   placeholder="∞"
                   value={customPriceMax}
                   onChange={(e) => setCustomPriceMax(e.target.value)}
-                  className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-opacity-30 text-center"
+                  className="w-16 sm:w-20 px-2 sm:px-3 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-30 text-center"
                 />
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-[10px] sm:text-xs text-gray-500">
                 {companyCurrency.currency}
               </div>
             </div>
@@ -1080,8 +1081,8 @@ export default function ProductsPage() {
           {/* Active Filters & Clear Button */}
           {(selectedCategory !== 'All' || selectedCondition !== 'All' || selectedOccasion !== 'All' || selectedBrand !== 'All' || selectedSizes.length > 0 || priceRange !== 'All' || customPriceMin || customPriceMax || searchQuery) && (
             <div className="text-center mt-6">
-              <div className="inline-flex items-center space-x-3 px-6 py-3 bg-white rounded-full shadow-md border border-gray-200">
-                <span className="text-sm text-gray-600">
+              <div className="inline-flex items-center gap-2 sm:gap-3 max-w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-white rounded-full shadow-md border border-gray-200">
+                <span className="text-xs sm:text-sm text-gray-600 text-left break-words">
                   {[
                     selectedCategory !== 'All' && selectedCategory,
                     selectedOccasion !== 'All' && selectedOccasion,
@@ -1122,15 +1123,15 @@ export default function ProductsPage() {
       </section>
 
       {/* Products Grid */}
-      <section className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="py-8 sm:py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
           {/* Results Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">
+          <div className="flex justify-between items-center mb-5 sm:mb-8">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold text-gray-900">
                 {sortedProducts.length} Products
               </h2>
-              <p className="text-gray-600 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
                 {selectedCategory !== 'All' && `${selectedCategory} • `}
                 {selectedOccasion !== 'All' && `${selectedOccasion} • `}
                 {selectedBrand !== 'All' && `${selectedBrand} • `}
@@ -1147,7 +1148,7 @@ export default function ProductsPage() {
           {/* Products Grid */}
           {loading ? (
             // Skeleton grid while products are loading
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 xl:gap-6">
               {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : sortedProducts.length === 0 ? (
@@ -1176,7 +1177,7 @@ export default function ProductsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 xl:gap-6">
               {sortedProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -1195,20 +1196,20 @@ export default function ProductsPage() {
 
           {/* Load More / Pagination */}
           {sortedProducts.length > 0 && (
-            <div className="text-center mt-12">
-              <p className="text-gray-600 mb-4">
+            <div className="text-center mt-8 sm:mt-12">
+              <p className="text-gray-600 mb-4 text-sm">
                 Showing all {sortedProducts.length} items
               </p>
-              <div className="flex justify-center space-x-4">
-                <button 
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-0 sm:space-x-4">
+                <button
                   onClick={() => window.location.href = '/daily-edit'}
-                  className="px-6 py-3 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   View {company?.name || 'Daily'} Edit
                 </button>
-                <button 
+                <button
                   onClick={() => window.location.href = '/'}
-                  className="px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-white"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-white"
                   style={{ backgroundColor: theme.primary }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.primaryHover}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.primary}
