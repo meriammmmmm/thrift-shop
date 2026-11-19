@@ -67,6 +67,12 @@ const nextConfig: NextConfig = {
   compress: true,
   experimental: {
     optimizePackageImports: ['react-icons'],
+    // Set by `next upgrade --agent=security`: the app was moved from
+    // Next.js 16.4.2 to 16.4.6 because 16.4.2 is covered by a published
+    // security advisory (cache leak / information disclosure through
+    // `use cache` and `unstable_cache`). See the commit message for the
+    // advisory links.
+    agentUpgrade: "security",
   },
 };
 
