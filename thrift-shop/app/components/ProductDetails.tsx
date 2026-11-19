@@ -187,7 +187,7 @@ export default function ProductDetails({
                       src={image}
                       alt={`${product.name} ${index + 1}`}
                       fill
-                      className="object-cover object-top"
+                      className="object-contain"
                       draggable={false}
                     />
                   </div>

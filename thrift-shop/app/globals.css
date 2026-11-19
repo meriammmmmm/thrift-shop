@@ -4925,13 +4925,83 @@ a {
   }
 }
 
+/**
+ * Fourteen chapter numbers, three arrows and a label do not fit on a
+ * narrow screen. The numbers become a strip that scrolls sideways and
+ * the focused one is brought back into view by the component — a row
+ * that is cut off at the edge hides the looks the visitor has not
+ * reached yet.
+ */
+@media (max-width: 900px) {
+  .runway__chapter-list {
+    justify-content: flex-start;
+    gap: 1.15rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.2rem;
+  }
+
+  .runway__chapter-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .runway__chapter-list > li {
+    flex: none;
+  }
+
+  .runway__chapter {
+    flex: none;
+    scroll-snap-align: center;
+  }
+
+  /* A finger needs a target it can hit. */
+  .runway__arrow {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .runway__scrubber {
+    gap: 0.4rem;
+  }
+}
+
 @media (max-width: 640px) {
   .runway {
     padding: 2.75rem 0 3rem;
   }
 
+  .runway__inner {
+    padding: 0 1rem;
+  }
+
+  /*
+   * The title is the anchor of the section, but on a phone it only has
+   * to fit — it does not need to shout.
+   */
+  .runway__title {
+    font-size: clamp(1.875rem, 8.5vw, 2.375rem);
+    line-height: 1.08;
+  }
+
+  .runway__sub {
+    font-size: 0.875rem;
+  }
+
+  .runway__head {
+    margin-bottom: 1.5rem;
+  }
+
   .runway__viewport {
     height: 340px;
+  }
+
+  /* The outfit is the reason for the section — it gets more of the screen. */
+  .runway-hero {
+    width: clamp(170px, 46%, 300px);
+    height: clamp(250px, 86%, 460px);
   }
 
   /**
@@ -4949,20 +5019,37 @@ a {
     display: none;
   }
 
+  .runway__chapter {
+    /* The numbers are the only way to reach a look on a phone — they need
+       a target a thumb can find. */
+    padding: 0.95rem 0.1rem;
+  }
+
   .runway__chapter-label {
     max-width: 6rem;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* The scrubber is a row of numbers on a phone — it gets its own room. */
-  .runway__scrubber {
-    gap: 0.5rem;
+  /* The "+" beside a piece is a button, so it is a button on a phone too. */
+  .runway__piece-add {
+    width: 44px;
+    height: 44px;
   }
 
-  .runway__arrow {
-    width: 2rem;
-    height: 2rem;
+  .runway__piece-row {
+    gap: 0.7rem;
+  }
+
+  /* The total sits under its own line rather than against the edge. */
+  .runway__bundle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .runway__bundle-price {
+    text-align: left;
   }
 }
 

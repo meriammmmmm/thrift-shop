@@ -101,19 +101,26 @@ const applyThemeToDocument = (themeColors: ThemeColors) => {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Start with cached or default theme — NO loading delay, page renders instantly
-  const [theme, setTheme] = useState<ThemeColors>(() => {
-    const cached = getCachedTheme();
-    return cached || defaultTheme;
-  });
+  /**
+   * The theme starts as the default — on the server AND on the browser's
+   * first render.
+   *
+   * It used to be read from the cache while the component was initialising,
+   * but the browser's cache and the server's HTML then disagreed: the
+   * server rendered the default burgundy and the browser rendered the
+   * merchant's own colour, so React refused the whole tree and reported a
+   * hydration mismatch on every page.
+   *
+   * The merchant's colours are applied one paint later, in the effect
+   * below — the page is never rendered with the wrong colour, it is only
+   * repainted once.
+   */
+  const [theme, setTheme] = useState<ThemeColors>(defaultTheme);
   // isLoading is always false — we never block rendering on theme
   const [isLoading, setIsLoading] = useState(false);
 
   const loadTheme = async () => {
     try {
-      // Apply what we have immediately first
-      applyThemeToDocument(theme);
-
       const response = await api.getSetting('theme');
       if (response.theme) {
         setTheme(response.theme);
@@ -123,8 +130,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         applyThemeToDocument(defaultTheme);
       }
     } catch {
-      // Backend unreachable — keep using default/cached theme silently
-      applyThemeToDocument(theme);
+      // Backend unreachable — keep using the theme we already have.
     }
   };
 
@@ -138,8 +144,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    // Apply theme immediately on mount (no await, no blocking)
-    applyThemeToDocument(theme);
+    // The cached theme is only read after the first paint, so the server
+    // and the browser agree on every attribute the browser renders.
+    const cached = getCachedTheme();
+    if (cached) {
+      setTheme(cached);
+      applyThemeToDocument(cached);
+    } else {
+      applyThemeToDocument(defaultTheme);
+    }
 
     // Then fetch updated theme from backend in background — does NOT block render
     loadTheme().catch(() => {/* silently ignore */});

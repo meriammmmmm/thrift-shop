@@ -102,7 +102,12 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+          /*
+           * `contain` and not `cover`: the customer is buying the piece,
+           * so the whole piece has to be on the card. `cover` cut the item
+           * off at the edge of the frame and hid what was being sold.
+           */
+          className="object-contain group-hover:scale-[1.03] transition-transform duration-500"
         />
       </div>
 
@@ -131,10 +136,12 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, on
           {product.name}
         </button>
 
-        {/* Description — too much text for a two-column phone tile */}
-        <p className="hidden sm:block text-xs text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-          {product.description || `${product.condition} condition. ${product.material || 'Quality materials'}.`}
-        </p>
+        {/*
+          The description is not on the card: it is a long paragraph that
+          pushed the price and the buttons below the fold of the tile. The
+          "Details" button opens the piece, and the full description is
+          written there.
+        */}
 
         {/* Price + how many people loved the piece */}
         <div className="flex items-center justify-between gap-1.5 mb-3 sm:mb-4">

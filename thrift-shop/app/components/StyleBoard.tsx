@@ -317,7 +317,7 @@ export default function StyleBoard({
                         <SafeImage
                           images={piece.images}
                           alt={piece.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                         {activeSlot === slot && <span className="style-slot__sweep" aria-hidden="true" />}
                         {slotBursts.map((b, k) => (
@@ -506,7 +506,7 @@ export default function StyleBoard({
                     <SafeImage
                       images={suggestion.product.images}
                       alt={suggestion.product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <div className="p-2.5">

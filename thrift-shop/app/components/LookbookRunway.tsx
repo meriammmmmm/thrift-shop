@@ -222,6 +222,7 @@ export default function LookbookRunway({
   const animationRef = useRef<AnimationPlaybackControls | null>(null);
   /** The stage, so a click can bring the focused look back into view. */
   const stageRef = useRef<HTMLDivElement>(null);
+  const chapterListRef = useRef<HTMLOListElement>(null);
   /**
    * How much of the stage one look covers. A phone gets a wide step, so a
    * swipe moves exactly one look and the outfit fills the stage.
@@ -416,6 +417,25 @@ export default function LookbookRunway({
     if (!total) return;
     if (active >= total) setActive(0);
   }, [total, active]);
+
+  /**
+   * On a narrow screen the chapter numbers are a strip that scrolls sideways,
+   * so the focused chapter has to be brought back into view — otherwise the
+   * rail moves on and the numbers under it stay where they were.
+   */
+  useEffect(() => {
+    const list = chapterListRef.current;
+    if (!list) return;
+
+    const focused = list.querySelector<HTMLElement>('.runway__chapter.is-active');
+    if (!focused) return;
+
+    // On a wide screen the numbers all fit and there is nothing to scroll.
+    if (list.scrollWidth <= list.clientWidth + 4) return;
+
+    const left = focused.offsetLeft - (list.clientWidth - focused.offsetWidth) / 2;
+    list.scrollTo({ left: Math.max(0, left), behavior: reduce ? 'auto' : 'smooth' });
+  }, [active, total, reduce]);
 
   /**
    * How many pixels one look is worth on the stage.
@@ -705,7 +725,7 @@ export default function LookbookRunway({
                     />
                   </span>
 
-                  <ol className="runway__chapter-list">
+                  <ol className="runway__chapter-list" ref={chapterListRef}>
                     {runwayLooks.map((item, index) => (
                       <li key={item.id}>
                         <button

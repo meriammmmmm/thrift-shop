@@ -1068,6 +1068,19 @@ export default function Home() {
         </section>
       )}
 
+      {/* The lookbook — complete outfits standing on a 3D runway.
+          It sits right under the brand rail: the two belong together,
+          because a look is built from the brands above it. */}
+      <LookbookRunway
+        looks={looks}
+        products={products}
+        primary={theme.primary}
+        currencySymbol={companyCurrency.symbol}
+        onViewDetails={handleViewDetails}
+        onAddLookToBag={addLookToBag}
+        onAddPieceToBag={addPieceToBag}
+      />
+
       {/* Most Loved Pieces — the community's favourites, standing on a 3D stage */}
       <LovedPieces
         products={mostLovedProducts}
@@ -1171,17 +1184,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {/* The lookbook — complete outfits standing on a 3D runway */}
-      <LookbookRunway
-        looks={looks}
-        products={products}
-        primary={theme.primary}
-        currencySymbol={companyCurrency.symbol}
-        onViewDetails={handleViewDetails}
-        onAddLookToBag={addLookToBag}
-        onAddPieceToBag={addPieceToBag}
-      />
 
       {/* Complete looks — curated in the admin panel's "Shop the Look" section */}
       {/* <LookGallery
