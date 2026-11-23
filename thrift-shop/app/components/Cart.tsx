@@ -279,13 +279,13 @@ export default function Cart({
                   className="flex-1 rounded-full px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
                   style={{ backgroundColor: theme.primary }}
                 >
-                  {user ? 'Checkout' : 'Sign in to checkout'}
+                  Checkout
                 </button>
               </div>
 
               {!user && (
                 <p className="mt-2.5 text-center text-[11px] text-gray-500">
-                  You need an account to complete your purchase
+                  No account needed — you will give your delivery details at checkout
                 </p>
               )}
             </div>

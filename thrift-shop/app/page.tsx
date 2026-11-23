@@ -26,7 +26,6 @@ import ProductDetails from './components/ProductDetails';
 import UserOrders from './components/UserOrders';
 import ScrollProgress from './components/ScrollProgress';
 import MarqueeBand from './components/MarqueeBand';
-import StoryScroll from './components/StoryScroll';
 import { Product, User } from './types';
 import { api } from '../lib/api';
 import { toBooleanFlag } from '../lib/flags';
@@ -34,6 +33,44 @@ import { getVisitorKey } from '../lib/visitor';
 import { useTheme, useThemeStyles } from '../lib/theme';
 import { useReviewDeepLink } from '../lib/reviewDeepLink';
 import { useCinematicScroll, useHeroCinematic } from '../lib/motion/useCinematicMotion';
+import {
+  addToGuestCart,
+  guestCartAsProducts,
+  guestCartTotal,
+  readGuestCart,
+  removeFromGuestCart,
+} from '../lib/guestCart';
+
+/**
+ * The stars of the New Arrivals panel.
+ *
+ * They used to be placed with `Math.random()` while the page was
+ * rendering, which meant the server put the stars in one set of places
+ * and the browser put them in another — a hydration mismatch — and every
+ * later re-render (a change in the bag, a theme refresh) moved all
+ * eighty of them again.
+ *
+ * Each star is now placed from its own number instead, so the server and
+ * the browser agree, the stars stay where they were put, and the panel
+ * costs nothing to re-render.
+ */
+const STAR_COUNT = 80;
+
+const STAR_ACTIONS = ['twinkle', 'float', 'pulse', 'drift'];
+
+function starValue(index: number, salt: number): number {
+  const hashed = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
+  return hashed - Math.floor(hashed);
+}
+
+const STARS = Array.from({ length: STAR_COUNT }, (_, index) => ({
+  left: starValue(index, 1) * 100,
+  top: starValue(index, 2) * 100,
+  size: 6 + starValue(index, 3) * 10,
+  animation: STAR_ACTIONS[index % STAR_ACTIONS.length],
+  duration: 2 + starValue(index, 4) * 5,
+  delay: starValue(index, 5) * 5,
+}));
 
 interface Testimonial {
   id: number;
@@ -394,6 +431,9 @@ export default function Home() {
       setUser(JSON.parse(userData));
       loadUserCart();
       loadUserWishlist();
+    } else {
+      // No account — the bag lives in the browser until they sign in.
+      loadGuestCart();
     }
     
     // Load products and wait for completion
@@ -410,6 +450,19 @@ export default function Home() {
     if (savedPicture) {
       setProfilePicture(savedPicture);
     }
+  };
+
+  /**
+   * The bag of a visitor who has not signed up.
+   *
+   * It is kept in the browser, and it is handed over to their account
+   * the moment they sign in.
+   */
+  const loadGuestCart = () => {
+    const items = readGuestCart();
+    setCart(guestCartAsProducts(items));
+    setCartTotal(guestCartTotal(items));
+    setCartItemIds(new Set<number>(items.map((item) => item.id)));
   };
 
   const loadUserCart = async () => {
@@ -483,65 +536,20 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * The bag's checkout button.
+   *
+   * The order is placed on the checkout page, where the customer gives
+   * their delivery details and the server checks the total. It used to
+   * be placed from here, with a made-up address.
+   */
   const handleCheckout = async () => {
-    if (!user) {
-      showNotification('Please create an account or sign in to checkout', 'info');
-      window.location.href = '/login';
-      return;
-    }
-    
     if (cart.length === 0) {
-      showNotification('Your cart is empty', 'error');
+      showNotification('Your bag is empty', 'error');
       return;
     }
-    
-    try {
-      const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: 1
-        })),
-        shipping_address: {
-          name: user.name || user.email,
-          street: "123 Main St",
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        billing_address: {
-          name: user.name || user.email,
-          street: "123 Main St", 
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        payment_method: "credit_card"
-      };
 
-      const response = await api.createOrder(orderData);
-      setCart([]);
-      await api.clearCart();
-      showNotification(`Order #${response.order.id} created successfully!`, 'success');
-      setIsCartOpen(false);
-    } catch (error: any) {
-      console.error('Checkout error:', error);
-      
-      // Handle token expiration
-      if (error.message?.includes('token') || error.message?.includes('expired') || error.message?.includes('Invalid')) {
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('user');
-        setUser(null);
-        showNotification('Your session has expired. Please sign in again.', 'error');
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
-        return;
-      }
-      
-      showNotification('Checkout failed. Please try again.', 'error');
-    }
+    window.location.href = '/checkout';
   };
 
   const handleLogout = () => {
@@ -553,8 +561,20 @@ export default function Home() {
 
   const addToCart = async (product: Product) => {
     if (!user) {
-      showNotification('Please create an account or sign in to add items to your bag', 'info');
-      window.location.href = '/login';
+      // No account needed — the bag waits in the browser.
+      if (cartItemIds.has(product.id)) {
+        showNotification('This item is already in your bag', 'info');
+        return;
+      }
+
+      if (!product.inStock) {
+        showNotification('This item is no longer available', 'error');
+        return;
+      }
+
+      addToGuestCart(product);
+      loadGuestCart();
+      showNotification(`${product.name} added to bag!`, 'success');
       return;
     }
     
@@ -656,7 +676,12 @@ export default function Home() {
   };
 
   const removeFromCart = async (productId: number) => {
-    if (!user) return;
+    if (!user) {
+      removeFromGuestCart(productId);
+      loadGuestCart();
+      showNotification('Item removed from bag', 'info');
+      return;
+    }
 
     try {
       await api.removeProductFromCart(productId);
@@ -926,6 +951,8 @@ export default function Home() {
               src={heroSlides[currentHeroSlide].image}
               alt={heroSlides[currentHeroSlide].title}
               className="w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
@@ -1101,7 +1128,7 @@ export default function Home() {
      
 
       {/* New Arrivals Section - With Animated Stars */}
-      <section id="new-arrivals" className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden animate-fadeIn" style={{ backgroundColor: theme.primary }}>
+      <section id="new-arrivals" data-cinematic="arrivals" className="relative py-12 sm:py-16 md:py-20 text-white overflow-hidden" style={{ backgroundColor: theme.primary }}>
         {/* Original Background Image */}
         <div className="absolute inset-0 overflow-hidden">
           <img
@@ -1116,28 +1143,23 @@ export default function Home() {
         {/* Animated Stars Layer - 4-Pointed Sparkle Stars */}
        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
   <div data-cinematic="starfield" className="absolute inset-0 will-change-transform">
-    {[...Array(80)].map((_, i) => {
-      const animations = ['twinkle', 'float', 'pulse', 'drift'];
-      const randomAnimation = animations[i % animations.length];
-      const size = Math.random() * 10 + 6;
-      return (
+    {STARS.map((star, i) => (
         <span
           key={`star-${i}`}
           className="absolute select-none"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            fontSize: `${size}px`,
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            fontSize: `${star.size}px`,
             color: '#ffc2d0',
-            animation: `${randomAnimation} ${Math.random() * 5 + 2}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 5}s`,
+            animation: `${star.animation} ${star.duration}s ease-in-out infinite`,
+            animationDelay: `${star.delay}s`,
             lineHeight: 1,
           }}
         >
           ✦
         </span>
-      );
-    })}
+      ))}
   </div>
 </div>
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6">
@@ -1166,15 +1188,17 @@ export default function Home() {
             onViewDetails={handleViewDetails}
           />
 
-          {/* Content */}
-          <div className="text-center animate-fadeIn px-4">
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-light mb-1.5 sm:mb-3 tracking-tight">New Arrivals</h2>
-            <p className="text-[9px] sm:text-xs mb-4 sm:mb-8 opacity-80 tracking-wide">
+          {/* Content — the copy waits for the reader, it no longer fades
+              in behind their back while the page is still loading. */}
+          <div className="text-center px-4">
+            <h2 data-cinematic="arrivals-heading" className="text-xl sm:text-3xl md:text-4xl font-light mb-1.5 sm:mb-3 tracking-tight">New Arrivals</h2>
+            <p data-cinematic="arrivals-lede" className="text-[9px] sm:text-xs mb-4 sm:mb-8 opacity-80 tracking-wide">
               Discover {newArrivals.length} fresh finds just added to our collection.
             </p>
             
             <button 
               onClick={() => window.location.href = '/products'}
+              data-cinematic="arrivals-cta"
               className="px-4 sm:px-9 py-1.5 sm:py-3 border border-white/80 text-white font-medium text-[9px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase hover:bg-white hover:text-gray-900 transition-all duration-300"
             >
               Shop New Arrivals
@@ -1201,7 +1225,9 @@ export default function Home() {
 
      
 
-      {/* The Craft — scroll-based storytelling */}
+      {/* The Craft — scroll-based storytelling.
+          The section is built and waiting in app/components/StoryScroll.tsx.
+          It is not on the page: the storefront reads better without it. */}
 
       {/* Why Mery Rose Section */}
       <section data-cinematic="why-rose" className="relative py-16 sm:py-24 bg-white overflow-hidden">
@@ -1239,7 +1265,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-5 sm:gap-6">
+          <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {/* Hand-Selected Quality */}
             <div data-cinematic="why-rose-card" className="bg-gray-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-8 border border-gray-100 hover:shadow-lg transition-shadow duration-300 card-hover-enhanced">
               <div data-cinematic="why-rose-icon" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full mx-auto mb-2 sm:mb-5 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}15` }}>
@@ -1366,11 +1392,11 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 sm:py-16">
+      <footer data-cinematic="footer" className="bg-gray-900 text-white py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
             {/* Brand Section */}
-            <div className="sm:col-span-2 lg:col-span-1">
+            <div data-cinematic="footer-column" className="sm:col-span-2 lg:col-span-1">
               <h3 className="text-2xl font-bold mb-4 tracking-wide">
                 {company?.name?.toUpperCase() || 'MERY ROSE'}
               </h3>
@@ -1399,7 +1425,7 @@ export default function Home() {
             </div>
             
             {/* Shop Section */}
-            <div>
+            <div data-cinematic="footer-column">
               <h4 className="text-sm font-bold mb-4 tracking-wider">SHOP</h4>
               <ul className="space-y-3 text-sm">
                 <li><button onClick={() => window.location.href = '/products'} className="text-gray-400 hover:text-white transition-colors">All Products</button></li>
@@ -1409,7 +1435,7 @@ export default function Home() {
             </div>
             
             {/* About Section */}
-            <div>
+            <div data-cinematic="footer-column">
               <h4 className="text-sm font-bold mb-4 tracking-wider">ABOUT</h4>
               <ul className="space-y-3 text-sm">
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Our Story</a></li>
@@ -1420,7 +1446,7 @@ export default function Home() {
             </div>
             
             {/* Support Section */}
-            <div>
+            <div data-cinematic="footer-column">
               <h4 className="text-sm font-bold mb-4 tracking-wider">SUPPORT</h4>
               <ul className="space-y-3 text-sm">
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
@@ -1432,7 +1458,7 @@ export default function Home() {
           </div>
           
           {/* Bottom Bar */}
-          <div className="border-t border-gray-800 mt-12 pt-8">
+          <div data-cinematic="footer-base" className="border-t border-gray-800 mt-12 pt-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
               <p className="text-gray-400">
                 © 2026 {company?.name || 'Mery Rose'}. All rights reserved.

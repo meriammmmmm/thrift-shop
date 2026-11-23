@@ -144,6 +144,7 @@ export default function SafeImage({
       alt={alt}
       className={className}
       loading={loading}
+      decoding="async"
       onError={() => setIndex((current) => current + 1)}
     />
   );

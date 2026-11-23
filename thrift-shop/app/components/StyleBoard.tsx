@@ -222,7 +222,7 @@ export default function StyleBoard({
       <div className="style-board__inner max-w-7xl mx-auto px-4 sm:px-6">
         {/* ---------------------------------------------------------- header */}
         <div className="text-center mb-10 sm:mb-14">
-          <p className="text-xs font-medium uppercase tracking-[0.24em] mb-3" style={{ color: 'var(--color-accent, #c98c9c)' }}>
+          <p className="eyebrow-rose text-xs font-medium uppercase tracking-[0.24em] mb-3">
             Mix &amp; Match
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-gray-900 mb-4">
@@ -448,7 +448,7 @@ export default function StyleBoard({
         <div className="mt-10 sm:mt-14">
           <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-accent, #c98c9c)' }}>
+              <p className="eyebrow-rose text-[10px] uppercase tracking-[0.2em] mb-1">
                 {picked.length === 0 ? 'Start anywhere' : 'Matched to your picks'}
               </p>
               <h3 className="text-xl sm:text-2xl font-light text-gray-900">
@@ -462,7 +462,7 @@ export default function StyleBoard({
                 <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
                   <span
                     className="inline-block w-1.5 h-1.5 rounded-full"
-                    style={{ background: 'var(--color-accent, #c98c9c)' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-primary,#8b1538) 74%, var(--accent,#ffb6c1))' }}
                     aria-hidden="true"
                   />
                   {suggestions[0].reason}

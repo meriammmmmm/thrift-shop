@@ -352,6 +352,381 @@ function sceneWhyRose() {
 }
 
 /**
+ * The brand backdrop drifts with the page.
+ *
+ * The blurred orbs already have a slow drift of their own in CSS, so the
+ * layer that holds them is what travels: the backdrop of the "Shop by
+ * Brand" section slides behind the rail instead of sitting still.
+ */
+function sceneBrandAmbient() {
+  const ambient = document.querySelector<HTMLElement>('.brand-ambient');
+  if (!ambient) return;
+
+  gsap.fromTo(
+    ambient,
+    { yPercent: 7, scale: 1.02 },
+    {
+      yPercent: -7,
+      scale: 1.1,
+      ease: EASE.linear,
+      scrollTrigger: {
+        trigger: ambient.parentElement ?? ambient,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: true,
+      },
+    },
+  );
+}
+
+/**
+ * The New Arrivals copy arrives when the reader reaches it.
+ *
+ * It used a CSS fade that ran the moment the page loaded — and this block
+ * sits below the fold, so the fade had finished long before anybody could
+ * see it. The copy now waits for the reader, in the order it is read:
+ * heading, then the line under it, then the button.
+ */
+function sceneArrivalsCopy() {
+  const section = document.querySelector<HTMLElement>('[data-cinematic="arrivals"]');
+  if (!section) return;
+
+  const heading = section.querySelector<HTMLElement>('[data-cinematic="arrivals-heading"]');
+  const lede = section.querySelector<HTMLElement>('[data-cinematic="arrivals-lede"]');
+  const cta = section.querySelector<HTMLElement>('[data-cinematic="arrivals-cta"]');
+
+  const timeline = gsap.timeline({
+    scrollTrigger: { trigger: section, start: 'top 82%', once: true },
+    defaults: { ease: EASE.expo },
+  });
+
+  if (heading) {
+    timeline.fromTo(
+      heading,
+      { opacity: 0, y: 24 },
+      { opacity: 1, y: 0, duration: DURATION.slow },
+      0,
+    );
+  }
+
+  if (lede) {
+    timeline.fromTo(
+      lede,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: DURATION.slow },
+      0.08,
+    );
+  }
+
+  if (cta) {
+    timeline.fromTo(
+      cta,
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: DURATION.slow },
+      0.16,
+    );
+  }
+}
+
+/**
+ * The footer rises.
+ *
+ * The last thing on the page deserves an entrance of its own — the columns
+ * come up in a row, like the shelves being put back in place.
+ */
+function sceneFooterRise() {
+  const footer = document.querySelector<HTMLElement>('[data-cinematic="footer"]');
+  if (!footer) return;
+
+  const columns = Array.from(
+    footer.querySelectorAll<HTMLElement>('[data-cinematic="footer-column"]'),
+  );
+  const base = footer.querySelector<HTMLElement>('[data-cinematic="footer-base"]');
+
+  const timeline = gsap.timeline({
+    scrollTrigger: { trigger: footer, start: 'top 92%', once: true },
+    defaults: { ease: EASE.expo },
+  });
+
+  if (columns.length) {
+    timeline.fromTo(
+      columns,
+      { opacity: 0, y: 26 },
+      { opacity: 1, y: 0, duration: DURATION.slow, stagger: 0.06 },
+      0,
+    );
+  }
+
+  if (base) {
+    timeline.fromTo(
+      base,
+      { opacity: 0, y: 18 },
+      { opacity: 1, y: 0, duration: DURATION.slow },
+      0.14,
+    );
+  }
+}
+
+/**
+ * The heading of the video section.
+ *
+ * The section itself wipes in as one block; the heading is given its own
+ * moment so the section reads as a title and a row of clips rather than one
+ * large shape.
+ */
+function sceneVideoHead() {
+  const head = document.querySelector<HTMLElement>('[data-cinematic="video-head"]');
+  if (!head) return;
+
+  gsap.fromTo(
+    head,
+    { opacity: 0, y: 22 },
+    {
+      opacity: 1,
+      y: 0,
+      duration: DURATION.slow,
+      ease: EASE.expo,
+      scrollTrigger: { trigger: head, start: 'top 88%', once: true },
+    },
+  );
+}
+
+/**
+ * The catalogue hero — the banner that stands above the grid.
+ *
+ * The picture behind it comes up slowly while the headline wipes in over
+ * it, and the whole banner drifts against the page as the customer scrolls
+ * towards the collection. The copy dissolves on the way out, so the grid is
+ * what the customer lands on.
+ *
+ * The headline is deliberately *not* split into words: the shop's name
+ * arrives from the API after the page has painted, and React would then
+ * rewrite the text of a headline that no longer owns its text nodes. A
+ * wipe reads just as well and cannot go stale.
+ */
+function sceneCatalogueHero() {
+  const hero = document.querySelector<HTMLElement>('[data-cinematic="catalogue-hero"]');
+  if (!hero) return;
+
+  /**
+   * The hero plays once. The scene is rebuilt whenever the collection
+   * changes — a filter, a new page of products — and the banner should not
+   * introduce itself again every time the grid changes shape.
+   */
+  if (hero.dataset.cinematicPlayed === 'true') return;
+  hero.dataset.cinematicPlayed = 'true';
+
+  const media = hero.querySelector<HTMLElement>('[data-cinematic="catalogue-hero-media"]');
+  const copy = hero.querySelector<HTMLElement>('[data-cinematic="catalogue-hero-copy"]');
+  const title = hero.querySelector<HTMLElement>('[data-cinematic="catalogue-hero-title"]');
+  const lede = hero.querySelector<HTMLElement>('[data-cinematic="catalogue-hero-lede"]');
+  const note = hero.querySelector<HTMLElement>('[data-cinematic="catalogue-hero-note"]');
+
+  const timeline = gsap.timeline({ defaults: { ease: EASE.expo } });
+
+  if (media) {
+    timeline.fromTo(
+      media,
+      { opacity: 0.25 },
+      { opacity: 0.6, duration: 1.1, ease: EASE.standard },
+      0,
+    );
+  }
+
+  if (title) {
+    timeline.fromTo(
+      title,
+      { opacity: 0, y: 34, clipPath: 'inset(0% 0% 100% 0%)' },
+      { opacity: 1, y: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.6 },
+      0.12,
+    );
+  }
+
+  if (lede) {
+    timeline.fromTo(lede, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.45 }, 0.3);
+  }
+
+  if (note) {
+    timeline.fromTo(note, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45 }, 0.4);
+  }
+
+  /* The picture travels as the banner leaves; the copy dissolves with it. */
+  if (media) {
+    gsap.fromTo(
+      media,
+      { scale: 1.08 },
+      {
+        scale: 1.22,
+        ease: EASE.linear,
+        scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
+      },
+    );
+  }
+
+  if (copy) {
+    gsap.to(copy, {
+      yPercent: -22,
+      opacity: 0.12,
+      ease: EASE.linear,
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
+    });
+  }
+}
+
+/**
+ * The filter bar.
+ *
+ * The category pills arrive one after another and the row of filters slides
+ * up behind them, so the bar reads as a piece of the shop rather than a
+ * form that happened to be at the top of the page.
+ */
+function sceneCatalogueFilters() {
+  const bar = document.querySelector<HTMLElement>('[data-cinematic="catalogue-filters"]');
+  if (!bar) return;
+
+  if (bar.dataset.cinematicPlayed === 'true') return;
+  bar.dataset.cinematicPlayed = 'true';
+
+  const pills = bar.querySelectorAll<HTMLElement>('[data-cinematic="catalogue-pill"]');
+  const row = bar.querySelector<HTMLElement>('[data-cinematic="catalogue-filter-row"]');
+
+  const timeline = gsap.timeline({ defaults: { ease: EASE.expo } });
+
+  if (pills.length) {
+    timeline.fromTo(
+      pills,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.34, stagger: 0.03 },
+      0,
+    );
+  }
+
+  if (row) {
+    timeline.fromTo(row, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.42 }, 0.14);
+  }
+}
+
+/**
+ * The line above the grid — "142 Products".
+ *
+ * The number is counted up to whatever the collection currently holds, so
+ * a filter that narrows the shop is seen as well as read.
+ */
+function sceneCatalogueHead() {
+  const head = document.querySelector<HTMLElement>('[data-cinematic="catalogue-head"]');
+  if (!head) return;
+
+  const title = head.querySelector<HTMLElement>('[data-cinematic="catalogue-head-title"]');
+  const count = head.querySelector<HTMLElement>('[data-cinematic="catalogue-head-count"]');
+  const note = head.querySelector<HTMLElement>('[data-cinematic="catalogue-head-note"]');
+
+  const timeline = gsap.timeline({
+    scrollTrigger: { trigger: head, start: 'top 90%', once: true },
+    defaults: { ease: EASE.expo },
+  });
+
+  if (count) {
+    const target = Number(count.dataset.count || '0');
+    const counted = Number(count.dataset.counted ?? '-1');
+
+    /**
+     * The number is only counted when it has actually changed. The scene is
+     * rebuilt every time another row of pieces arrives, and the collection
+     * did not get bigger then — only the number of tiles on the screen did.
+     */
+    if (Number.isFinite(target) && target > 0 && target !== counted) {
+      count.dataset.counted = String(target);
+
+      const state = { n: 0 };
+      timeline.to(
+        state,
+        {
+          n: target,
+          duration: 0.85,
+          ease: EASE.standard,
+          onUpdate: () => {
+            count.textContent = String(Math.round(state.n));
+          },
+        },
+        0,
+      );
+    }
+  }
+
+  if (title) {
+    timeline.fromTo(title, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.42 }, 0.06);
+  }
+
+  if (note) {
+    timeline.fromTo(note, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4 }, 0.16);
+  }
+}
+
+/**
+ * The grid of pieces.
+ *
+ * A hundred and forty pieces cannot each be given their own scroll
+ * trigger — that is a wall of wipes rather than a collection. They arrive
+ * in rows instead: the pictures wipe down into their frames while the
+ * names and prices rise underneath them, one row after the next.
+ */
+function sceneCatalogueCards() {
+  /**
+   * Only the pieces that have not arrived yet are animated. The scene is
+   * rebuilt every time another row is added to the grid, and the pieces
+   * that are already on the screen have had their moment.
+   */
+  const cards = gsap.utils.toArray<HTMLElement>(
+    '[data-cinematic="catalogue-card"]:not([data-cinematic-revealed])',
+  );
+  if (!cards.length) return;
+
+  ScrollTrigger.batch(cards, {
+    start: 'top 92%',
+    once: true,
+    onEnter: (batch) => {
+      batch.forEach((card) => {
+        (card as HTMLElement).dataset.cinematicRevealed = 'true';
+      });
+
+      const media = batch
+        .map((card) => card.querySelector<HTMLElement>('[data-cinematic="card-media"]'))
+        .filter(Boolean) as HTMLElement[];
+      const info = batch
+        .map((card) => card.querySelector<HTMLElement>('[data-cinematic="card-info"]'))
+        .filter(Boolean) as HTMLElement[];
+
+      const timeline = gsap.timeline({ defaults: { ease: EASE.expo } });
+
+      timeline.fromTo(
+        batch,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.3, stagger: 0.055 },
+        0,
+      );
+
+      if (media.length) {
+        timeline.fromTo(
+          media,
+          { clipPath: 'inset(0% 0% 100% 0%)' },
+          { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.55, stagger: 0.055 },
+          0,
+        );
+      }
+
+      if (info.length) {
+        timeline.fromTo(
+          info,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.45, stagger: 0.055 },
+          0.08,
+        );
+      }
+    },
+  });
+}
+
+/**
  * Cursor spotlight on product media. A rAF-throttled delegated listener
  * writes CSS custom properties; the visual lives entirely in CSS, so the
  * hover never competes with GSAP for the element's transform.
@@ -427,6 +802,14 @@ export function useCinematicScroll(deps: unknown[] = []) {
       sceneHeroParallax();
       sceneMediaDrift();
       sceneWhyRose();
+      sceneBrandAmbient();
+      sceneArrivalsCopy();
+      sceneVideoHead();
+      sceneCatalogueHero();
+      sceneCatalogueFilters();
+      sceneCatalogueHead();
+      sceneCatalogueCards();
+      sceneFooterRise();
 
       const detachSpotlight = sceneSpotlight();
 

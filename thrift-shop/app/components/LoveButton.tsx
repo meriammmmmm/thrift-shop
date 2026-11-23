@@ -36,6 +36,12 @@ interface LoveButtonProps {
    * default pill would push the price out of the card.
    */
   size?: 'sm' | 'md';
+  /**
+   * `pill` is the button with a border — it stands on its own.
+   * `bare` is the heart and the count with nothing around them, for the
+   * product tile, where the type of the piece is the decoration.
+   */
+  variant?: 'pill' | 'bare';
 }
 
 export default function LoveButton({
@@ -45,11 +51,13 @@ export default function LoveButton({
   onChange,
   className = '',
   size = 'md',
+  variant = 'pill',
 }: LoveButtonProps) {
   const { theme } = useTheme();
   const [count, setCount] = useState(likes);
   const [isLiked, setIsLiked] = useState(liked);
   const [busy, setBusy] = useState(false);
+  const bare = variant === 'bare';
 
   // The list can be replaced by a fresh fetch (a filter change, a re-sort), so
   // the button follows the numbers it is given.
@@ -104,6 +112,20 @@ export default function LoveButton({
       ? 'gap-1 px-1.5 py-0.5 text-[11px] relative after:content-[\'\'] after:absolute after:-inset-x-2 after:-inset-y-2'
       : 'gap-1.5 px-2.5 py-1 text-xs';
 
+  /**
+   * The bare variant carries no border and no pill — it is the heart and
+   * the count sitting among the type of the piece.
+   */
+  const bareClasses = `inline-flex items-center gap-1 text-[11px] font-medium transition-colors duration-300 focus:outline-none disabled:opacity-60 ${
+    isLiked ? 'text-[var(--color-primary)]' : 'text-gray-400 hover:text-gray-600'
+  }`;
+
+  const pillClasses = `inline-flex items-center rounded-full border font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:opacity-60 ${sizeClasses} ${
+    isLiked
+      ? 'border-transparent text-white'
+      : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
+  }`;
+
   return (
     <button
       type="button"
@@ -116,12 +138,8 @@ export default function LoveButton({
           : 'Love this piece'
       }
       title={isLiked ? 'You loved this piece' : 'Love this piece'}
-      className={`inline-flex items-center rounded-full border font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:opacity-60 ${sizeClasses} ${
-        isLiked
-          ? 'border-transparent text-white'
-          : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
-      } ${className}`}
-      style={isLiked ? { backgroundColor: theme.primary } : undefined}
+      className={`${bare ? bareClasses : pillClasses} ${className}`}
+      style={!bare && isLiked ? { backgroundColor: theme.primary } : undefined}
     >
       <svg
         viewBox="0 0 24 24"

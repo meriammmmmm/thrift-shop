@@ -119,8 +119,7 @@ export default function LookGallery({
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10 sm:mb-14">
           <p
-            className="text-xs font-medium uppercase tracking-[0.24em] mb-3"
-            style={{ color: 'var(--color-accent, #c98c9c)' }}
+            className="eyebrow-rose text-xs font-medium uppercase tracking-[0.24em] mb-3"
           >
             Styled by us
           </p>
@@ -161,8 +160,7 @@ export default function LookGallery({
                 {/* -------------------------------------- the individual pieces */}
                 <div className="p-4 sm:p-5">
                   <p
-                    className="text-[10px] uppercase tracking-[0.18em] mb-3"
-                    style={{ color: 'var(--color-accent, #c98c9c)' }}
+                    className="eyebrow-rose text-[10px] uppercase tracking-[0.18em] mb-3"
                   >
                     The {pieceCount} pieces
                   </p>

@@ -14,9 +14,16 @@ function OrderSuccessContent() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<{id: number, name: string} | null>(null);
+  /** Only a customer with an account can look at their order history. */
+  const [hasAccount, setHasAccount] = useState(false);
 
   useEffect(() => {
     loadCompany();
+
+    setHasAccount(
+      typeof window !== 'undefined' && Boolean(localStorage.getItem('auth-token')),
+    );
+
     if (orderId) {
       loadOrder();
     } else {
@@ -37,11 +44,41 @@ function OrderSuccessContent() {
   };
 
   const loadOrder = async () => {
+    // A guest has no account, so there is nothing to ask the server for.
+    if (typeof window !== 'undefined' && !localStorage.getItem('auth-token')) {
+      try {
+        const kept = sessionStorage.getItem('meryrose:last-order');
+        if (kept) {
+          const parsed = JSON.parse(kept);
+          if (parsed?.order && String(parsed.order.id) === orderId) setOrder(parsed.order);
+        }
+      } catch {
+        // Nothing kept — the page still confirms the order.
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       const orderData = await api.getOrder(orderId!);
       setOrder(orderData);
     } catch (error) {
-      console.error('Failed to load order:', error);
+      /**
+       * A guest has no account, so the server does not hand the order
+       * back. The copy the checkout page kept in the browser is used
+       * instead, so the customer still sees what they ordered.
+       */
+      try {
+        const kept = sessionStorage.getItem('meryrose:last-order');
+        if (kept) {
+          const parsed = JSON.parse(kept);
+          if (parsed?.order && String(parsed.order.id) === orderId) {
+            setOrder(parsed.order);
+          }
+        }
+      } catch {
+        // Nothing kept — the page still confirms the order.
+      }
     } finally {
       setLoading(false);
     }
@@ -115,10 +152,12 @@ function OrderSuccessContent() {
                       {Number(order.shipping || 0) === 0 ? 'FREE' : `${Number(order.shipping || 0).toFixed(2)} DT`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="text-gray-900 font-semibold">{Number(order.tax || 0).toFixed(2)} DT</span>
-                  </div>
+                  {Number(order.tax || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tax</span>
+                      <span className="text-gray-900 font-semibold">{Number(order.tax || 0).toFixed(2)} DT</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-xl font-bold border-t border-gray-200 pt-3 mt-3">
                     <span>Total</span>
                     <span style={{ color: theme.primary }}>{Number(order.total || 0)} DT</span>
@@ -131,11 +170,23 @@ function OrderSuccessContent() {
                   <h3 className="font-bold text-gray-900 mb-3">Delivery Address</h3>
                   <div className="text-sm text-gray-700">
                     <p className="font-medium">{order.shipping_address.name}</p>
-                    <p>{order.shipping_address.street}</p>
-                    <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zip}</p>
-                    <p>{order.shipping_address.country}</p>
+                    {order.shipping_address.address && <p>{order.shipping_address.address}</p>}
+                    {order.shipping_address.street && <p>{order.shipping_address.street}</p>}
+                    <p>
+                      {[
+                        order.shipping_address.city,
+                        order.shipping_address.governorate ?? order.shipping_address.state,
+                        order.shipping_address.zip,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                    {order.shipping_address.country && <p>{order.shipping_address.country}</p>}
                     {order.shipping_address.phone && (
                       <p className="mt-2 text-gray-600">Phone: {order.shipping_address.phone}</p>
+                    )}
+                    {order.shipping_address.note && (
+                      <p className="mt-2 text-gray-600">Note: {order.shipping_address.note}</p>
                     )}
                   </div>
                 </div>
@@ -180,13 +231,15 @@ function OrderSuccessContent() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            onClick={() => router.push('/orders')}
-            className="flex-1 px-6 py-4 text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 shadow-lg"
-            style={{ backgroundColor: theme.primary }}
-          >
-            View My Orders
-          </button>
+          {hasAccount && (
+            <button
+              onClick={() => router.push('/orders')}
+              className="flex-1 px-6 py-4 text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 shadow-lg"
+              style={{ backgroundColor: theme.primary }}
+            >
+              View My Orders
+            </button>
+          )}
           <button
             onClick={() => router.push('/')}
             className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-colors"

@@ -373,57 +373,20 @@ export default function DailyEditPage() {
     product.views += 1;
   };
 
+  /**
+   * The bag's checkout button.
+   *
+   * The order is placed on the checkout page, where the customer gives
+   * their delivery details and the server checks the total.
+   */
   const handleCheckout = async () => {
-    if (!user) {
-      showNotification('Please create an account or sign in to checkout', 'info');
-      window.location.href = '/login';
-      return;
-    }
-    
     if (cart.length === 0) {
-      showNotification('Your cart is empty', 'error');
+      showNotification('Your bag is empty', 'error');
       return;
     }
-    
-    try {
-      const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: 1
-        })),
-        shipping_address: {
-          name: user.name || user.email,
-          street: "123 Main St",
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        billing_address: {
-          name: user.name || user.email,
-          street: "123 Main St", 
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        payment_method: "credit_card"
-      };
 
-      const response = await api.createOrder(orderData);
-      
-      setCart([]);
-      await api.clearCart();
-      
-      showNotification(`Order #${response.order.id} created successfully! Your order is confirmed and waiting for delivery.`, 'success');
-      setIsCartOpen(false);
-      
-    } catch (error) {
-      console.error('Checkout error:', error);
-      showNotification('Checkout failed. Please try again.', 'error');
-    }
+    window.location.href = '/checkout';
   };
-
   const cartCount = cart.length;
 
   // Show loading state while theme is loading
@@ -822,7 +785,7 @@ export default function DailyEditPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 xl:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
               {sortedProducts.map((product) => (
                 <ProductCard
                   key={product.id}

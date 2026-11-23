@@ -477,7 +477,7 @@ export default function OrdersPage() {
                           />
                           {/* Status Badge on Image */}
                           {item.product_reservation_status === 'reserved' && (
-                            <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-orange-500 text-white text-[9px] font-bold rounded">
+                            <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-[var(--color-primary)] text-white text-[9px] font-bold rounded">
                               RESERVED
                             </div>
                           )}
@@ -492,7 +492,7 @@ export default function OrdersPage() {
                           <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
                           {/* Status Text */}
                           {item.product_reservation_status === 'reserved' && (
-                            <p className="text-xs text-orange-600 font-medium mt-1">• Reserved</p>
+                            <p className="text-xs text-[var(--color-primary)] font-medium mt-1">• Reserved</p>
                           )}
                           {(item.product_reservation_status === 'sold' || item.product_in_stock === 0) && item.product_reservation_status !== 'reserved' && (
                             <p className="text-xs text-red-600 font-medium mt-1">• Sold Out</p>

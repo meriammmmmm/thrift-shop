@@ -49,7 +49,7 @@ export default function StarRating({
           key={star}
           viewBox="0 0 24 24"
           className={`${dims.box} ${
-            star <= rounded ? 'text-amber-400' : 'text-gray-200'
+            star <= rounded ? 'text-[var(--color-primary)]' : 'text-[#eee3e8]'
           }`}
           fill="currentColor"
           aria-hidden="true"
@@ -134,7 +134,7 @@ export function StarPicker({ value, onChange, label, hint }: StarPickerProps) {
             <svg
               viewBox="0 0 24 24"
               className={`h-7 w-7 transition-colors duration-150 ${
-                star <= active ? 'text-amber-400' : 'text-gray-200'
+                star <= active ? 'text-[var(--color-primary)]' : 'text-[#eee3e8]'
               }`}
               fill="currentColor"
               aria-hidden="true"

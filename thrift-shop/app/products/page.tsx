@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import ProductCard from '../components/ProductCard';
 import Cart from '../components/Cart';
 import Wishlist from '../components/Wishlist';
@@ -12,6 +12,13 @@ import { Product, User } from '../types';
 import { api } from '../../lib/api';
 import { useTheme } from '../../lib/theme';
 import { useCinematicScroll } from '../../lib/motion/useCinematicMotion';
+import {
+  addToGuestCart,
+  guestCartAsProducts,
+  guestCartTotal,
+  readGuestCart,
+  removeFromGuestCart,
+} from '../../lib/guestCart';
 import { compareByShopOrder } from '../../lib/productOrder';
 import { CATEGORY_FILTERS, matchesCategoryFilter } from '../../lib/categories';
 import ScrollProgress from '../components/ScrollProgress';
@@ -355,6 +362,50 @@ export default function ProductsPage() {
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map(p => p.category)))], [products]);
   const sizes = useMemo(() => ['All', ...Array.from(new Set(products.map(p => p.size))).sort()], [products]);
 
+  /**
+   * The collection is given out a row at a time.
+   *
+   * A shop with a hundred and forty pieces should not put a hundred and
+   * forty tiles on the page at once: the browser has to draw them all,
+   * the pictures all arrive at the same moment, and the visitor is left
+   * scrolling past a wall. Instead the grid hands out the first rows and
+   * asks for the next one when the visitor comes close to the end — so
+   * the shop keeps giving, and every new row arrives with its own
+   * entrance.
+   */
+  const ROW_BATCH = 16;
+  const [visibleCount, setVisibleCount] = useState(ROW_BATCH);
+  const moreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const visibleProducts = useMemo(
+    () => sortedProducts.slice(0, visibleCount),
+    [sortedProducts, visibleCount],
+  );
+
+  const hasMore = visibleCount < sortedProducts.length;
+
+  /* A new filter starts the collection again from the beginning. */
+  useEffect(() => {
+    setVisibleCount(ROW_BATCH);
+  }, [sortedProducts]);
+
+  /* The next rows are asked for as the visitor nears the end of the grid. */
+  useEffect(() => {
+    const sentinel = moreSentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        setVisibleCount((current) => Math.min(current + ROW_BATCH, sortedProducts.length));
+      },
+      { rootMargin: '700px 0px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, sortedProducts.length]);
+
   // Check if user is logged in on component mount — kick off all loads in parallel
   useEffect(() => {
     const token = localStorage.getItem('auth-token');
@@ -366,6 +417,9 @@ export default function ProductsPage() {
       // Cart + wishlist in parallel — don't await either
       loadUserCart();
       loadUserWishlist();
+    } else {
+      // No account — the bag lives in the browser until they sign in.
+      loadGuestCart();
     }
     
     // Check URL parameters for filters
@@ -390,6 +444,19 @@ export default function ProductsPage() {
   };
 
   // Load user's cart from API
+  /**
+   * The bag of a visitor who has not signed up.
+   *
+   * It is kept in the browser, and it is handed over to their account
+   * the moment they sign in.
+   */
+  const loadGuestCart = () => {
+    const items = readGuestCart();
+    setCart(guestCartAsProducts(items));
+    setCartTotal(guestCartTotal(items));
+    setCartItemIds(new Set<number>(items.map((item) => item.id)));
+  };
+
   const loadUserCart = async () => {
     try {
       const cartData = await api.getCart();
@@ -427,9 +494,10 @@ export default function ProductsPage() {
   }, []);
 
   // Cinematic scroll choreography (GSAP + ScrollTrigger).
-  // Rebuilt whenever the filtered grid changes so the reveals are
-  // measured against the layout that is actually on screen.
-  useCinematicScroll([sortedProducts]);
+  // Rebuilt whenever the filtered grid changes — and whenever another row
+  // of pieces is added — so the reveals are measured against the layout
+  // that is actually on screen.
+  useCinematicScroll([sortedProducts, visibleCount]);
 
   // Optimized dropdown handlers
   const closeAllDropdowns = useCallback(() => {
@@ -461,8 +529,20 @@ export default function ProductsPage() {
 
   const addToCart = async (product: Product) => {
     if (!user) {
-      showNotification('Please create an account or sign in to add items to your bag', 'info');
-      window.location.href = '/login';
+      // No account needed — the bag waits in the browser.
+      if (!product.inStock) {
+        showNotification('This item is no longer available', 'error');
+        return;
+      }
+
+      if (cartItemIds.has(product.id)) {
+        showNotification('This item is already in your bag', 'info');
+        return;
+      }
+
+      addToGuestCart(product);
+      loadGuestCart();
+      showNotification(`${product.name} added to bag!`, 'success');
       return;
     }
     
@@ -495,7 +575,12 @@ export default function ProductsPage() {
   };
 
   const removeFromCart = async (productId: number) => {
-    if (!user) return;
+    if (!user) {
+      removeFromGuestCart(productId);
+      loadGuestCart();
+      showNotification('Item removed from bag', 'info');
+      return;
+    }
 
     try {
       await api.removeProductFromCart(productId);
@@ -542,57 +627,20 @@ export default function ProductsPage() {
     product.views += 1;
   };
 
+  /**
+   * The bag's checkout button.
+   *
+   * The order is placed on the checkout page, where the customer gives
+   * their delivery details and the server checks the total.
+   */
   const handleCheckout = async () => {
-    if (!user) {
-      showNotification('Please create an account or sign in to checkout', 'info');
-      window.location.href = '/login';
-      return;
-    }
-    
     if (cart.length === 0) {
-      showNotification('Your cart is empty', 'error');
+      showNotification('Your bag is empty', 'error');
       return;
     }
-    
-    try {
-      const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: 1
-        })),
-        shipping_address: {
-          name: user.name || user.email,
-          street: "123 Main St",
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        billing_address: {
-          name: user.name || user.email,
-          street: "123 Main St", 
-          city: "San Francisco",
-          state: "CA",
-          zip: "94102",
-          country: "USA"
-        },
-        payment_method: "credit_card"
-      };
 
-      const response = await api.createOrder(orderData);
-      
-      setCart([]);
-      await api.clearCart();
-      
-      showNotification(`Order #${response.order.id} created successfully! Your order is confirmed and waiting for delivery.`, 'success');
-      setIsCartOpen(false);
-      
-    } catch (error) {
-      console.error('Checkout error:', error);
-      showNotification('Checkout failed. Please try again.', 'error');
-    }
+    window.location.href = '/checkout';
   };
-
   const cartCount = cart.length;
 
   const handleDropdownToggle = useCallback((dropdown: string) => {
@@ -832,12 +880,16 @@ export default function ProductsPage() {
         </div>
       </header>
       {/* Hero Section with Background Image */}
-      <section className="relative py-10 sm:py-16 text-white overflow-hidden"
-               style={{
-                 background: `linear-gradient(to right, ${theme.primary}dd, ${theme.primaryHover}dd)`
-               }}>
+      <section
+        data-cinematic="catalogue-hero"
+        className="relative py-12 sm:py-20 text-white overflow-hidden"
+        style={{
+          background: `linear-gradient(to right, ${theme.primary}dd, ${theme.primaryHover}dd)`
+        }}
+      >
         <div className="absolute inset-0">
           <img
+            data-cinematic="catalogue-hero-media"
             src="/images/premium-7ba67846.webp"
             alt="Products background"
             className="w-full h-full object-cover opacity-30"
@@ -845,37 +897,48 @@ export default function ProductsPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center flex flex-col items-center">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4 animate-fade-in break-words">
+        <div
+          data-cinematic="catalogue-hero-copy"
+          className="relative z-10 max-w-7xl mx-auto px-4 text-center flex flex-col items-center"
+        >
+          <h1
+            data-cinematic="catalogue-hero-title"
+            className="text-3xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4 break-words"
+          >
             {company?.name ? `${company.name} Products` : 'Mery Rose Products'}
           </h1>
-          <p className="text-base sm:text-2xl mb-4 sm:mb-8 opacity-90 animate-slide-up text-center" style={{ animationDelay: '200ms' }}>
+          <p
+            data-cinematic="catalogue-hero-lede"
+            className="text-base sm:text-2xl mb-4 sm:mb-8 opacity-90 text-center"
+          >
             Discover our complete collection of premium secondhand items
           </p>
-          <p className="text-sm sm:text-lg opacity-80 max-w-2xl mx-auto">
+          <p
+            data-cinematic="catalogue-hero-note"
+            className="text-sm sm:text-lg opacity-80 max-w-2xl mx-auto"
+          >
             {company?.description || 'Discover the latest arrivals from the past 7 days. Curated finds that just hit our virtual shelves.'}
           </p>
         </div>
       </section>
 
       {/* Filters Section - Optimized & Clean */}
-      <section className="py-5 sm:py-8 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+      <section
+        data-cinematic="catalogue-filters"
+        className="py-5 sm:py-8 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100"
+      >
         <div className="max-w-7xl mx-auto px-3 sm:px-4">
-          {/* Category Pills — a swipeable row on a phone, a wrapped row on a wide screen */}
-          <div className="-mx-3 px-3 mb-5 sm:mx-0 sm:px-0 sm:mb-8">
-            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-center sm:overflow-x-visible">
+          {/* The categories — tabs with a hairline under the chosen one */}
+          <div className="-mx-3 px-3 mb-6 sm:mx-0 sm:px-0 sm:mb-10">
+            <div className="flex gap-4 sm:gap-7 overflow-x-auto snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-center sm:overflow-x-visible">
               {CATEGORY_FILTERS.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`shrink-0 snap-start px-3.5 sm:px-5 py-3.5 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 ${
-                    selectedCategory === category
-                      ? 'text-white shadow-lg transform scale-105'
-                      : 'bg-white text-gray-600 hover:text-gray-800 shadow-sm hover:shadow-md border border-gray-200'
+                  data-cinematic="catalogue-pill"
+                  className={`catalogue-tab shrink-0 snap-start px-1 py-2 text-xs sm:text-sm transition-colors duration-300 ${
+                    selectedCategory === category ? 'is-active' : ''
                   }`}
-                  style={{
-                    backgroundColor: selectedCategory === category ? theme.primary : undefined
-                  }}
                 >
                   {category}
                 </button>
@@ -883,24 +946,27 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Compact Filter Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 max-w-4xl mx-auto">
+          {/* The drop-downs — quiet lines of text, no boxes */}
+          <div
+            data-cinematic="catalogue-filter-row"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-5 sm:gap-x-12 max-w-4xl mx-auto"
+          >
             {/* Price Filter */}
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('price')}
-                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="catalogue-trigger"
               >
                 <span className="text-left">
                   {priceRange === 'All' ? 'All Prices' : 
                    priceRanges.find(range => range.value === priceRange)?.label || priceRange}
                 </span>
-                <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isPriceDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-transform duration-200 ${isPriceDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isPriceDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">
+                <div className="catalogue-panel absolute top-full left-0 right-0 mt-1.5 z-50">
                   {priceRanges.map((option) => (
                     <button
                       key={option.value}
@@ -923,7 +989,7 @@ export default function ProductsPage() {
             {/* Size Filter */}
             <button
               onClick={() => setIsSizeSelectorOpen(true)}
-              className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none hover:border-gray-300 transition-all duration-200 flex items-center justify-between shadow-sm hover:shadow-md"
+              className="catalogue-trigger"
             >
               <span className="text-left">
                 {selectedSizes.length === 0 
@@ -933,7 +999,7 @@ export default function ProductsPage() {
                     : `${selectedSizes.length} sizes`
                 }
               </span>
-              <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -942,15 +1008,15 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('condition')}
-                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="catalogue-trigger"
               >
                 <span className="text-left">{selectedCondition === 'All' ? 'All Conditions' : selectedCondition}</span>
-                <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isConditionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-transform duration-200 ${isConditionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isConditionDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">
+                <div className="catalogue-panel absolute top-full left-0 right-0 mt-1.5 z-50">
                   {['All', 'New with tags', 'Excellent', 'Very Good', 'Good', 'Fair'].map((option) => (
                     <button
                       key={option}
@@ -974,15 +1040,15 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('occasion')}
-                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="catalogue-trigger"
               >
                 <span className="text-left">{selectedOccasion === 'All' ? 'All Occasions' : selectedOccasion}</span>
-                <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isOccasionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-transform duration-200 ${isOccasionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isOccasionDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">
+                <div className="catalogue-panel absolute top-full left-0 right-0 mt-1.5 z-50">
                   {['All', 'Party & Night Out', 'Casual Everyday', 'Work & Office', 'Date Night', 'Weekend Vibes', 'Special Events'].map((option) => (
                     <button
                       key={option}
@@ -1006,7 +1072,7 @@ export default function ProductsPage() {
             <div className="relative dropdown-container">
               <button
                 onClick={() => handleDropdownToggle('sort')}
-                className="w-full px-3 sm:px-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm text-black focus:outline-none focus:ring-2 focus:ring-opacity-30 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-between"
+                className="catalogue-trigger"
               >
                 <span className="text-left">
                   {sortBy === 'newest' ? 'Newest First' :
@@ -1016,12 +1082,12 @@ export default function ProductsPage() {
                    sortBy === 'popular' ? 'Most Popular' :
                    sortBy === 'custom' ? 'Featured' : 'Featured'}
                 </span>
-                <svg className={`w-4 h-4 text-black transition-transform duration-200 ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-transform duration-200 ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isSortDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2">
+                <div className="catalogue-panel absolute top-full left-0 right-0 mt-1.5 z-50">
                   {[
                     { value: 'custom', label: 'Featured' },
                     { value: 'newest', label: 'Newest First' },
@@ -1126,12 +1192,29 @@ export default function ProductsPage() {
       <section className="py-8 sm:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-4">
           {/* Results Header */}
-          <div className="flex justify-between items-center mb-5 sm:mb-8">
+          <div
+            data-cinematic="catalogue-head"
+            className="flex justify-between items-center mb-5 sm:mb-8"
+          >
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-3xl font-bold text-gray-900">
-                {sortedProducts.length} Products
+              <h2
+                data-cinematic="catalogue-head-title"
+                className="text-xl sm:text-3xl font-bold text-gray-900"
+              >
+                {/*
+                 * The number is counted up to whatever the collection holds
+                 * at that moment, so a filter that narrows the shop is seen
+                 * as well as read.
+                 */}
+                <span data-cinematic="catalogue-head-count" data-count={sortedProducts.length}>
+                  {sortedProducts.length}
+                </span>{' '}
+                Products
               </h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+              <p
+                data-cinematic="catalogue-head-note"
+                className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2"
+              >
                 {selectedCategory !== 'All' && `${selectedCategory} • `}
                 {selectedOccasion !== 'All' && `${selectedOccasion} • `}
                 {selectedBrand !== 'All' && `${selectedBrand} • `}
@@ -1148,7 +1231,7 @@ export default function ProductsPage() {
           {/* Products Grid */}
           {loading ? (
             // Skeleton grid while products are loading
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 xl:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
               {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : sortedProducts.length === 0 ? (
@@ -1177,8 +1260,8 @@ export default function ProductsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 xl:gap-6">
-              {sortedProducts.map((product) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
+              {visibleProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -1197,9 +1280,24 @@ export default function ProductsPage() {
           {/* Load More / Pagination */}
           {sortedProducts.length > 0 && (
             <div className="text-center mt-8 sm:mt-12">
+              {/* The marker that asks for the next row of pieces. */}
+              <div ref={moreSentinelRef} aria-hidden="true" className="h-px" />
+
               <p className="text-gray-600 mb-4 text-sm">
-                Showing all {sortedProducts.length} items
+                {hasMore
+                  ? `Showing ${visibleProducts.length} of ${sortedProducts.length} — more is on its way`
+                  : `Showing all ${sortedProducts.length} items`}
               </p>
+
+              {hasMore && (
+                <div className="flex justify-center mb-6">
+                  <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-[color-mix(in_srgb,var(--color-primary,#8b1538)_70%,white)]" />
+                    Fetching more pieces
+                  </span>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-0 sm:space-x-4">
                 <button
                   onClick={() => window.location.href = '/daily-edit'}

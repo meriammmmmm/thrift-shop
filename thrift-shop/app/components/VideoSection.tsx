@@ -333,7 +333,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-6 sm:mb-12">
+        <div data-cinematic="video-head" className="text-center mb-6 sm:mb-12">
           <span
             className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-2 sm:mb-4"
             style={{ backgroundColor: `${primary}15`, color: primary }}
@@ -400,7 +400,13 @@ const VideoSection: React.FC<VideoSectionProps> = ({ videos, primary }) => {
                     src={video.video_url}
                     poster={still || undefined}
                     className="absolute inset-0 h-full w-full object-cover"
-                    preload="metadata"
+                    /**
+                     * Only the clip in view asks the browser for its
+                     * header. Every clip used to ask for it, and the page
+                     * paid for eleven range requests before the visitor
+                     * had pressed play on a single one of them.
+                     */
+                    preload={isActive ? 'metadata' : 'none'}
                     muted={isActive ? muted : true}
                     loop
                     playsInline

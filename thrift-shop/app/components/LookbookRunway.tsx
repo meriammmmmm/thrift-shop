@@ -242,6 +242,8 @@ export default function LookbookRunway({
   } | null>(null);
   /** Set after a drag, so the click that follows it does not open a product. */
   const suppressClickRef = useRef(false);
+  /** Set once the deep link has been answered, so it is answered only once. */
+  const deepLinkDoneRef = useRef(false);
 
   useEffect(() => {
     setReduce(prefersReducedMotion());
@@ -276,21 +278,97 @@ export default function LookbookRunway({
    * The section only exists once the merchant's looks have arrived, so the
    * browser's own fragment handling fires too early — the scroll is done
    * here instead, once there is something to scroll to.
+   *
+   * The page is still filling up at that moment: the catalogue arrives
+   * after the looks and pushes the runway down the page. So the runway is
+   * aimed at again every time the page grows, until the page has stopped
+   * growing — that is when the runway is finally where it belongs.
+   *
+   * The hash is then taken back off the address bar. It did its job on the
+   * way in, and leaving it there made every later refresh of the page
+   * jump straight back down to the runway — the visitor pressed refresh and
+   * landed in the middle of the page instead of at the top.
    */
   useEffect(() => {
     if (!runwayLooks.length) return;
     if (typeof window === 'undefined') return;
-    if (window.location.hash !== '#complete-look') return;
 
-    const node = document.getElementById('complete-look');
-    if (!node) return;
+    const scrollToRunway = (behavior: ScrollBehavior = 'smooth') => {
+      const node = document.getElementById('complete-look');
+      if (!node) return;
+      node.scrollIntoView({ behavior: reduce ? 'auto' : behavior, block: 'start' });
+    };
 
-    const timer = window.setTimeout(() => {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
+    /**
+     * A hash that is still on the address bar is one this page has not
+     * answered yet — but only the first one. Once the runway has been
+     * brought into view the hash is cleared, so the next refresh starts at
+     * the top of the page.
+     */
+    if (window.location.hash === '#complete-look' && !deepLinkDoneRef.current) {
+      deepLinkDoneRef.current = true;
 
-    return () => window.clearTimeout(timer);
-  }, [runwayLooks.length]);
+      let settled = 0;
+      let lastHeight = 0;
+      let finished = false;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        observer.disconnect();
+        window.clearInterval(watch);
+
+        const { pathname, search } = window.location;
+        window.history.replaceState(window.history.state, '', `${pathname}${search}`);
+      };
+
+      /**
+       * The page grew — the runway has moved, so it is aimed at again.
+       */
+      const observer = new ResizeObserver(() => {
+        settled = 0;
+        scrollToRunway('auto');
+      });
+      observer.observe(document.body);
+
+      /**
+       * The page has not grown for a while: the runway is where it is
+       * going to stay, and the address bar can be tidied up.
+       */
+      const watch = window.setInterval(() => {
+        const height = document.body.scrollHeight;
+
+        if (height !== lastHeight) {
+          lastHeight = height;
+          settled = 0;
+          scrollToRunway('auto');
+          return;
+        }
+
+        settled += 1;
+        if (settled >= 4) finish();
+      }, 200);
+
+      scrollToRunway('auto');
+
+      return () => {
+        observer.disconnect();
+        window.clearInterval(watch);
+      };
+    }
+
+    /**
+     * A link that points at the anchor later on — a shared link, or a
+     * visitor who types the hash in — still gets brought to the runway.
+     */
+    const onHashChange = () => {
+      if (window.location.hash !== '#complete-look') return;
+      scrollToRunway();
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [runwayLooks.length, reduce]);
 
   const total = runwayLooks.length;
 
@@ -770,7 +848,16 @@ export default function LookbookRunway({
 
           {/* ------------------------------------------------------ panel */}
           <aside className="runway__panel" aria-live="polite">
-            <AnimatePresence mode="popLayout" initial={false}>
+            {/**
+             * `mode="wait"` — the panel that is leaving finishes before the
+             * one that is coming in starts.
+             *
+             * With both of them on screen at once the visitor saw two
+             * copies of the same button, one fading over the other, and a
+             * tap could land on the copy of the look that had already
+             * gone.
+             */}
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={look.id}
                 className="runway__panel-body"

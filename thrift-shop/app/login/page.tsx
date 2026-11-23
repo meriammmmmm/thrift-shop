@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { mergeGuestCartIntoAccount } from '@/lib/guestCart';
 
 const FIELD_CLS = "block w-full px-4 py-3 border border-rose-100 rounded-xl shadow-sm text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm";
 const FOCUS_RING = "focus:ring-[#731528]/30";
@@ -32,6 +33,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  /**
+   * The bag of a visitor who was shopping before they signed up.
+   *
+   * It is kept in the browser, and it is handed over to the account they
+   * have just made or signed in to.
+   */
+  const handOverTheBag = async () => {
+    try {
+      await mergeGuestCartIntoAccount((productId, quantity) => api.addToCart(productId, quantity));
+    } catch {
+      // The bag stays in the browser if it cannot be handed over — the
+      // customer still has the pieces.
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -42,6 +58,10 @@ export default function LoginPage() {
         const data = await api.login({ email: formData.email, password: formData.password });
         localStorage.setItem('auth-token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        // The pieces they chose before signing up come with them.
+        await handOverTheBag();
+
         setSuccess('Welcome back! Redirecting…');
         setTimeout(() => router.push(data.user.role === 'ADMIN' ? '/admin' : '/'), 1200);
       } else {
@@ -55,6 +75,10 @@ export default function LoginPage() {
         });
         localStorage.setItem('auth-token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        // The pieces they chose before signing up come with them.
+        await handOverTheBag();
+
         setSuccess('Account created! Welcome 🎉');
         setTimeout(() => router.push('/'), 1200);
       }

@@ -302,12 +302,28 @@ class ApiClient {
   async createOrder(orderData: {
     items: Array<{ product_id: number; quantity: number }>;
     shipping_address: any;
-    billing_address: any;
+    billing_address?: any;
     payment_method: string;
+    contact_info?: any;
   }) {
     return this.request('/orders', {
       method: 'POST',
       body: JSON.stringify(orderData),
+    });
+  }
+
+  /**
+   * The price of a bag, checked by the server.
+   *
+   * The storefront asks for this before the order is placed, so the total
+   * it shows the customer is the total the shop will charge. It works for
+   * a bag that belongs to a guest as well as one that belongs to a
+   * customer — no account needed.
+   */
+  async quoteOrder(items: Array<{ product_id: number; quantity: number }>) {
+    return this.request('/orders/quote', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
     });
   }
 

@@ -1,365 +1,406 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import UserInfoForm from '../components/UserInfoForm';
-import UserInfoDisplay from '../components/UserInfoDisplay';
 import { useTheme } from '../../lib/theme';
 import { api } from '../../lib/api';
+import { GOVERNORATES } from '../../lib/tunisia';
+import {
+  clearGuestCart,
+  guestCartAsProducts,
+  readGuestCart,
+} from '../../lib/guestCart';
+import SafeImage from '../components/SafeImage';
 
-interface UserInfo {
-  fullName: string;
-  email: string;
-  phone: string;
-  optionalPhone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  profile_picture?: string;
-}
+/**
+ * ============================================================
+ *  CHECKOUT — Mery Rose
+ * ============================================================
+ *
+ *  Anyone can buy from the shop: a visitor gives their name, phone
+ *  number, governorate, city and address, and the order is on its way.
+ *  An account is welcome, not required.
+ *
+ *  The total on this page is never worked out in the browser. The server
+ *  prices the bag — it holds the prices, the delivery fee and the tax —
+ *  and answers with the numbers, and the page shows them as they came
+ *  back. The customer is told when the check happened.
+ */
 
-interface CartItem {
+interface CartLine {
   id: number;
   name: string;
-  price: number | string;
+  price: number;
   images: string[];
   brand: string;
   size: string;
   condition: string;
 }
 
+interface Delivery {
+  name: string;
+  phone: string;
+  governorate: string;
+  city: string;
+  address: string;
+  note: string;
+}
+
+interface Totals {
+  subtotal: number;
+  delivery: number;
+  tax: number;
+  total: number;
+  currency: string;
+  verified_at: string;
+}
+
+const EMPTY_DELIVERY: Delivery = {
+  name: '',
+  phone: '',
+  governorate: '',
+  city: '',
+  address: '',
+  note: '',
+};
+
+/** The fields the customer has to fill in before the order can be placed. */
+const REQUIRED_FIELDS: Array<{ key: keyof Delivery; label: string }> = [
+  { key: 'name', label: 'Full name' },
+  { key: 'phone', label: 'Phone number' },
+  { key: 'governorate', label: 'Governorate' },
+  { key: 'city', label: 'City' },
+  { key: 'address', label: 'Delivery address' },
+];
+
+/**
+ * The delivery fee the shop charges everywhere.
+ *
+ * The server has the fee that counts — it is the one that prices the
+ * order. This is the number the page falls back on when the server
+ * cannot be reached, so the customer still sees what the order will
+ * cost rather than a row of zeros.
+ */
+const FALLBACK_DELIVERY_FEE = 8;
+
+/** Where the sparkles sit behind the page. */
+const SPARKLES = [
+  { top: '16%', left: '6%', size: '0.9rem', delay: '0s' },
+  { top: '9%', right: '12%', size: '0.7rem', delay: '1.2s' },
+  { top: '38%', right: '5%', size: '1.1rem', delay: '2.1s' },
+  { top: '62%', left: '4%', size: '0.75rem', delay: '0.6s' },
+  { top: '78%', right: '9%', size: '0.95rem', delay: '1.7s' },
+  { top: '28%', left: '46%', size: '0.65rem', delay: '2.8s' },
+];
+
 export default function CheckoutPage() {
   const { theme } = useTheme();
   const router = useRouter();
-  
-  const [isUserInfoFormOpen, setIsUserInfoFormOpen] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [delivery, setDelivery] = useState<Delivery>(EMPTY_DELIVERY);
+  const [totals, setTotals] = useState<Totals | null>(null);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [backendTotal, setBackendTotal] = useState<number>(0);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<string[]>([]);
+  const [company, setCompany] = useState<{ id: number; name: string } | null>(null);
 
-  // Company info for current store
-  const [company, setCompany] = useState<{id: number, name: string, description: string} | null>(null);
+  /** The visitor has an account — their bag is on the server. */
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
-  useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('auth-token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
+  const currencySymbol = 'DT';
 
-    setUser(JSON.parse(userData));
-    loadCart();
-    loadCompany();
-  }, [router]);
+  /* ------------------------------------------------------------------ *
+   * The bag
+   * ------------------------------------------------------------------ */
 
-  const loadCompany = async () => {
+  const loadGuestBag = useCallback((): CartLine[] => {
+    const lines = guestCartAsProducts(readGuestCart()).map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      images: item.images ?? [],
+      brand: item.brand ?? '',
+      size: item.size ?? '',
+      condition: item.condition ?? '',
+    }));
+
+    setCart(lines);
+    return lines;
+  }, []);
+
+  const loadSignedInBag = useCallback(async (): Promise<CartLine[]> => {
     try {
-      const companyId = process.env.NEXT_PUBLIC_COMPANY_ID || '1';
-      const response = await api.getCompanyProducts(parseInt(companyId), { limit: 1 });
-      
-      if (response.company) {
-        setCompany(response.company);
-      }
-    } catch (error) {
-      console.error('Failed to load company:', error);
-    }
-  };
-
-  const loadCart = async () => {
-    try {
-      setLoading(true);
       const cartData = await api.getCart();
-      
-      console.log('Backend response:', cartData);
-      console.log('Backend total:', cartData.total);
-      
-      // Store the backend's calculated total
-      if (cartData.total !== undefined && cartData.total !== null) {
-        setBackendTotal(parseFloat(cartData.total) || 0);
-      }
-      
-      // Normalize prices to ensure they're valid numbers
-      const normalizedItems = (cartData.items || []).map((item: any) => {
-        let normalizedPrice = 0;
-        
-        // Try to extract a valid number from the price
-        if (item.price !== null && item.price !== undefined) {
-          if (typeof item.price === 'number' && !isNaN(item.price)) {
-            normalizedPrice = item.price;
-          } else {
-            // Try to parse as string
-            const priceStr = String(item.price).replace(/[^\d.]/g, '');
-            const parsed = parseFloat(priceStr);
-            normalizedPrice = (!isNaN(parsed) && parsed >= 0) ? parsed : 0;
-          }
-        }
-        
-        console.log(`Item: ${item.name}, Price: ${normalizedPrice}`);
-        
-        return {
-          ...item,
-          price: normalizedPrice
-        };
-      });
-      
-      setCart(normalizedItems);
-    } catch (error) {
-      console.error('Failed to load cart:', error);
+      const items = (cartData.items || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : item.price || 0,
+        images: Array.isArray(item.images) ? item.images : [],
+        brand: item.brand ?? '',
+        size: item.size ?? '',
+        condition: item.condition ?? '',
+      }));
+      setCart(items);
+      return items;
+    } catch {
       setCart([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
-  };
+  }, []);
 
-  const handleUserInfoSubmit = async (info: UserInfo) => {
+  /* ------------------------------------------------------------------ *
+   * The price — always the server's
+   * ------------------------------------------------------------------ */
+
+  const refreshQuote = useCallback(async (items: CartLine[]) => {
+    if (!items.length) {
+      setTotals(null);
+      return;
+    }
+
     try {
-      // Convert frontend format to backend format
-      const backendInfo = {
-        fullName: info.fullName,
-        email: info.email,
-        phone: info.phone,
-        optionalPhone: info.optionalPhone,
-        address: info.address,
-        city: info.city,
-        state: info.state,
-        zipCode: info.zipCode,
-        country: info.country,
-        profile_picture: info.profile_picture
-      };
+      const response = await api.quoteOrder(
+        items.map((item) => ({ product_id: item.id, quantity: 1 })),
+      );
 
-      const response = userInfo 
-        ? await api.updateUserInfo(backendInfo)
-        : await api.saveUserInfo(backendInfo);
+      const quote = response?.totals;
+      if (!quote) throw new Error('The server did not price the bag');
 
-      if (response.success) {
-        setUserInfo(info);
-        setIsUserInfoFormOpen(false);
-        
-        // Also save to localStorage as backup
-        localStorage.setItem('user-info', JSON.stringify(info));
-      }
-    } catch (error) {
-      console.error('Failed to save user info:', error);
-      alert('Erreur lors de la sauvegarde. Veuillez réessayer.');
+      setTotals(quote);
+      setVerifiedAt(quote.verified_at ?? new Date().toISOString());
+      setError(null);
+    } catch (err: any) {
+      /**
+       * The server could not be reached, or the shop is still on the
+       * older version of the API.
+       *
+       * The customer still has to see what the order costs, so the
+       * prices that are on screen are added up here and the fee the shop
+       * charges is added to them. The order itself is still priced by
+       * the server when it is placed — this is only what the customer
+       * reads in the meantime.
+       */
+      const subtotal = items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+      const delivery = FALLBACK_DELIVERY_FEE;
+
+      setTotals({
+        subtotal: Number(subtotal.toFixed(2)),
+        delivery,
+        tax: 0,
+        total: Number((subtotal + delivery).toFixed(2)),
+        currency: 'TND',
+        verified_at: '',
+      });
+      setVerifiedAt(null);
+
+      const message =
+        err?.message?.includes('not available') || err?.message?.includes('sold out')
+          ? 'One of the pieces in your bag is no longer available. Please review your bag.'
+          : null;
+
+      setError(message);
     }
-  };
+  }, []);
 
-  // Load saved user info on component mount
+  /* ------------------------------------------------------------------ *
+   * On open
+   * ------------------------------------------------------------------ */
+
   useEffect(() => {
-    const loadUserInfo = async () => {
+    let cancelled = false;
+
+    const start = async () => {
       try {
-        const response = await api.getUserInfo();
-        if (response.success && response.userInfo) {
-          // Convert backend field names to frontend format
-          const backendInfo = response.userInfo;
-          const frontendInfo: UserInfo = {
-            fullName: backendInfo.full_name || '',
-            email: backendInfo.email || '',
-            phone: backendInfo.phone || '',
-            optionalPhone: backendInfo.optional_phone || '',
-            address: backendInfo.address || '',
-            city: backendInfo.city || '',
-            state: backendInfo.state || '',
-            zipCode: backendInfo.zip_code || '',
-            country: backendInfo.country || 'Tunisia',
-            profile_picture: backendInfo.profile_picture || ''
-          };
-          setUserInfo(frontendInfo);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+        const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+
+        let items: CartLine[] = [];
+
+        if (token && userData) {
+          setIsSignedIn(true);
+
+          items = await loadSignedInBag();
+
+          // A customer who has already given their details does not
+          // have to give them again.
+          try {
+            const info = await api.getUserInfo();
+            const saved = info?.userInfo;
+            if (saved) {
+              setDelivery((current) => ({
+                ...current,
+                name: saved.full_name || current.name,
+                phone: saved.phone || current.phone,
+                city: saved.city || current.city,
+                address: saved.address || current.address,
+                governorate: GOVERNORATES.includes(saved.state as never)
+                  ? saved.state
+                  : current.governorate,
+              }));
+            }
+          } catch {
+            // No saved details yet — the customer fills the form in.
+          }
+        } else {
+          items = loadGuestBag();
         }
-      } catch (error: any) {
-        // 404 is expected if user hasn't saved info yet - not an error
-        if (error?.status !== 404) {
-          console.error('Failed to load user info:', error);
-        }
-        // Fallback to localStorage
-        const savedUserInfo = localStorage.getItem('user-info');
-        if (savedUserInfo) {
-          setUserInfo(JSON.parse(savedUserInfo));
-        }
+
+        if (cancelled) return;
+
+        await refreshQuote(items);
+      } catch {
+        if (!cancelled) setError('We could not open your bag. Please try again.');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
-    if (user) {
-      loadUserInfo();
-    }
-  }, [user]);
+    start();
 
-  const calculateTotal = () => {
-    // Use the backend's calculated total directly
-    const total = backendTotal > 0 ? backendTotal : 0;
-    
-    return {
-      subtotal: total,
-      shipping: 0,
-      tax: 0,
-      total: total
+    // The shop's name for the header.
+    api
+      .getCompanyProducts(parseInt(process.env.NEXT_PUBLIC_COMPANY_ID || '1', 10), { limit: 1 })
+      .then((response) => {
+        if (response?.company) setCompany(response.company);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
     };
+  }, [loadGuestBag, loadSignedInBag, refreshQuote]);
+
+  /* ------------------------------------------------------------------ *
+   * Placing the order
+   * ------------------------------------------------------------------ */
+
+  const missingFields = useMemo(
+    () =>
+      REQUIRED_FIELDS.filter((field) => !delivery[field.key].trim()).map((field) => field.label),
+    [delivery],
+  );
+
+  const updateDelivery = (key: keyof Delivery, value: string) => {
+    setDelivery((current) => ({ ...current, [key]: value }));
+    setMissing([]);
   };
 
-  const handlePlaceOrder = async () => {
-    if (!userInfo) {
-      alert('Veuillez ajouter vos informations de livraison d\'abord');
+  const placeOrder = async () => {
+    const empty = REQUIRED_FIELDS.filter((field) => !delivery[field.key].trim()).map(
+      (field) => field.label,
+    );
+
+    if (empty.length) {
+      setMissing(empty);
+      setError('Please complete the delivery details before placing your order.');
       return;
     }
 
-    if (cart.length === 0) {
-      alert('Votre panier est vide');
+    if (!cart.length) {
+      setError('Your bag is empty.');
       return;
     }
 
-    // Check product availability before showing confirmation
-    setIsProcessingOrder(true);
-    try {
-      // Verify each product is still available
-      for (const item of cart) {
-        const product = await api.getProduct(item.id.toString());
-        
-        if (!product.in_stock || product.in_stock === 0 || product.in_stock === false) {
-          alert(`Sorry! "${item.name}" is sold out and has been removed from your cart.`);
-          await api.removeProductFromCart(item.id);
-          await loadCart();
-          setIsProcessingOrder(false);
-          return;
-        }
-        
-        if (product.reservation_status === 'reserved') {
-          alert(`Sorry! "${item.name}" is currently reserved by another customer and has been removed from your cart.`);
-          await api.removeProductFromCart(item.id);
-          await loadCart();
-          setIsProcessingOrder(false);
-          return;
-        }
-        
-        if (product.reservation_status === 'sold') {
-          alert(`Sorry! "${item.name}" has been sold and has been removed from your cart.`);
-          await api.removeProductFromCart(item.id);
-          await loadCart();
-          setIsProcessingOrder(false);
-          return;
-        }
-      }
-      
-      // All products are available, show confirmation modal
-      setIsProcessingOrder(false);
-      setShowConfirmModal(true);
-    } catch (error) {
-      console.error('Error checking product availability:', error);
-      setIsProcessingOrder(false);
-      alert('Error checking product availability. Please try again.');
-    }
-  };
-
-  const confirmOrder = async () => {
-    setShowConfirmModal(false);
-    setIsProcessingOrder(true);
+    setIsPlacing(true);
+    setError(null);
 
     try {
-      const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: 1
-        })),
-        shipping_address: {
-          name: userInfo!.fullName,
-          street: userInfo!.address,
-          city: userInfo!.city,
-          state: userInfo!.state,
-          zip: userInfo!.zipCode,
-          country: userInfo!.country,
-          phone: userInfo!.phone,
-          optional_phone: userInfo!.optionalPhone
-        },
-        billing_address: {
-          name: userInfo!.fullName,
-          street: userInfo!.address,
-          city: userInfo!.city,
-          state: userInfo!.state,
-          zip: userInfo!.zipCode,
-          country: userInfo!.country,
-          phone: userInfo!.phone,
-          email: userInfo!.email
-        },
-        payment_method: "cash",
-        contact_info: {
-          email: userInfo!.email,
-          phone: userInfo!.phone,
-          optional_phone: userInfo!.optionalPhone
-        }
+      const shippingAddress = {
+        name: delivery.name.trim(),
+        phone: delivery.phone.trim(),
+        governorate: delivery.governorate,
+        city: delivery.city.trim(),
+        address: delivery.address.trim(),
+        note: delivery.note.trim(),
+        country: 'Tunisia',
       };
 
-      const response = await api.createOrder(orderData);
-      
-      // Backend returns { order: {...} } on success
-      if (response.order) {
-        // Clear cart after successful order
-        await api.clearCart();
-        
-        // Show success notification and redirect
-        router.push('/order-success?orderId=' + response.order.id);
-      } else {
-        throw new Error('Order creation failed');
+      const response = await api.createOrder({
+        items: cart.map((item) => ({ product_id: item.id, quantity: 1 })),
+        shipping_address: shippingAddress,
+        billing_address: shippingAddress,
+        payment_method: 'cash',
+      });
+
+      if (!response?.order) throw new Error('Order creation failed');
+
+      /**
+       * A copy of the order is kept in the browser for the confirmation
+       * page. A guest has no account, so the server will not hand the
+       * order back to them — but they still get to see what they ordered.
+       */
+      try {
+        sessionStorage.setItem(
+          'meryrose:last-order',
+          JSON.stringify({ order: response.order, totals: response.totals ?? null }),
+        );
+      } catch {
+        // A browser that blocks storage still gets the confirmation page.
       }
-      
-    } catch (error: any) {
-      console.error('Order creation failed:', error);
-      
-      // Check if it's a product availability error
-      const errorMessage = error?.message || 'Unknown error';
-      
-      if (errorMessage.includes('not available') || 
-          errorMessage.includes('sold out') || 
-          errorMessage.includes('reserved') || 
-          errorMessage.includes('already sold')) {
-        alert(`Sorry! ${errorMessage}\n\nYour cart has been updated. Please review and try again.`);
-        // Reload cart to show updated items
-        await loadCart();
+
+      // The bag is emptied: from the account when they have one, from
+      // the browser when they do not.
+      if (isSignedIn) {
+        await api.clearCart().catch(() => undefined);
       } else {
-        alert('Failed to place order: ' + errorMessage);
+        clearGuestCart();
       }
-      
-      setIsProcessingOrder(false);
+
+      router.push(`/order-success?orderId=${response.order.id}`);
+    } catch (err: any) {
+      const message = err?.message || 'Unknown error';
+
+      if (
+        message.includes('not available') ||
+        message.includes('sold out') ||
+        message.includes('reserved') ||
+        message.includes('already sold')
+      ) {
+        setError(`${message}. Your bag has been refreshed — please review it and try again.`);
+        if (isSignedIn) await loadSignedInBag();
+        else loadGuestBag();
+      } else {
+        setError(`We could not place your order: ${message}`);
+      }
+
+      setIsPlacing(false);
     }
   };
 
-  const cancelOrder = () => {
-    setShowConfirmModal(false);
-  };
-
-  const totals = calculateTotal();
+  /* ------------------------------------------------------------------ *
+   * The page
+   * ------------------------------------------------------------------ */
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="checkout-page flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: theme.primary }}></div>
-          <p className="text-gray-600">Loading checkout...</p>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+            style={{ borderColor: theme.primary }}
+          />
+          <p className="checkout-note">Getting your bag ready…</p>
         </div>
       </div>
     );
   }
 
-  if (cart.length === 0) {
+  if (!cart.length) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="checkout-page flex items-center justify-center px-4">
         <div className="text-center">
           <div className="text-6xl mb-4">🛍️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-          <p className="text-gray-600 mb-6">Add some items to your cart to proceed with checkout</p>
-          <button 
+          <h2 className="text-3xl font-light text-gray-900 mb-2">Your bag is empty</h2>
+          <p className="checkout-note mb-6">Add a few pieces and come back.</p>
+          <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: theme.primary }}
+            className="checkout-cta px-8 py-3.5 text-sm"
           >
-            Continue Shopping
+            Continue shopping
           </button>
         </div>
       </div>
@@ -367,290 +408,408 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="checkout-page">
+      {/* The soft shapes behind the page */}
+      <span className="checkout-orb checkout-orb--a" aria-hidden="true" />
+      <span className="checkout-orb checkout-orb--b" aria-hidden="true" />
+      {SPARKLES.map((sparkle, index) => (
+        <span
+          key={index}
+          aria-hidden="true"
+          className="checkout-spark"
+          style={{
+            top: sparkle.top,
+            left: sparkle.left,
+            right: sparkle.right,
+            fontSize: sparkle.size,
+            animationDelay: sparkle.delay,
+          }}
+        >
+          ✦
+        </span>
+      ))}
+
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-5">
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={() => router.push('/')}
-              className="text-2xl font-bold tracking-widest text-gray-900 hover:scale-105 transition-all duration-300 hover:tracking-[0.3em]"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-            >
-              {company?.name?.toUpperCase() || 'MERY ROSE'}
-            </button>
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 bg-green-50 px-4 py-2 rounded-full border border-green-200">
-              <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+      {/*
+       * The header sits above the content. Without this the delivery card
+       * slides over it as the page is scrolled and hides the shop's name.
+       */}
+      <header className="relative z-30 sticky top-0 border-b border-white/70 bg-white/70 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
+          <button
+            onClick={() => router.push('/')}
+            className="checkout-mark text-base sm:text-xl font-bold text-gray-900 hover:opacity-80 transition-opacity duration-300"
+          >
+            {company?.name?.toUpperCase() || 'MERY ROSE'}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <span className="checkout-mark__rule hidden sm:block" aria-hidden="true" />
+            <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold text-gray-700 bg-white/80 px-3 sm:px-4 py-2 rounded-full border border-[color-mix(in_srgb,var(--ck-blush)_70%,var(--ck-petal))]">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clipRule="evenodd"
+                />
               </svg>
-              Secure Checkout
-            </div>
+              Cash on delivery
+            </span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - User Information */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-3xl shadow-xl p-4 border border-gray-100 hover:shadow-2xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-base" style={{ backgroundColor: theme.primary }}>
-                  1
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Checkout</h2>
-              </div>
-              
-              {/* User Information Section */}
+      {/*
+       * On a wide screen the checkout fits on one screen: the card is
+       * bounded to the space that is left, so the page itself does not
+       * scroll and the two cards stay side by side.
+       */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
+          {/* ---------------- The delivery details ---------------- */}
+          {/*
+           * The card stays on the screen while the page is scrolled, so the
+           * details are always in front of the customer.
+           *
+           * It is taller than a short screen, so its body is bounded and
+           * scrolls on its own — otherwise the bottom of the card (the
+           * payment choice) would end up below the fold with no way to
+           * reach it.
+           */}
+          <div
+            className="checkout-card p-5 sm:p-8"
+            style={{ '--checkout-delay': '60ms' } as React.CSSProperties}
+          >
+            <div className="flex items-start gap-4 mb-7">
+              <span className="checkout-step" style={{ '--checkout-delay': '120ms' } as React.CSSProperties}>
+                1
+              </span>
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <svg className="w-5 h-5" style={{ color: theme.primary }} fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                  </svg>
-                  <h3 className="text-xl font-bold text-gray-900">Shipping Information</h3>
-                </div>
-                
-                {userInfo ? (
-                  <UserInfoDisplay
-                    userInfo={userInfo}
-                    onEdit={() => setIsUserInfoFormOpen(true)}
-                    title="Adresse de livraison"
-                    showEditButton={true}
-                  />
-                ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 hover:border-gray-400 transition-colors">
-                    <div className="text-center py-4">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                      <p className="mb-4 text-gray-700 font-medium text-base">Veuillez ajouter vos informations de livraison pour continuer</p>
-                      <button
-                        onClick={() => setIsUserInfoFormOpen(true)}
-                        className="px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-base"
-                        style={{ backgroundColor: theme.primary }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.primaryHover}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.primary}
-                      >
-                        ✨ Ajouter mes informations
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Payment Method */}
-              <div className="border-2 border-gray-200 rounded-2xl p-4 mt-4 bg-gradient-to-br from-white to-gray-50 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-4">
-                  <svg className="w-5 h-5" style={{ color: theme.primary }} fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                    <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                  </svg>
-                  <h3 className="text-xl font-bold text-gray-900">Payment Method</h3>
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center p-3 border-2 border-gray-300 rounded-xl cursor-pointer bg-white shadow-md" style={{ borderColor: theme.primary }}>
-                    <input type="radio" name="payment" value="cash" defaultChecked className="mr-4 w-5 h-5" style={{ accentColor: theme.primary }} />
-                    <div className="flex items-center gap-3 flex-1">
-                      <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                      <div>
-                        <span className="font-semibold text-gray-900 block">Cash on Delivery</span>
-                        <span className="text-xs text-gray-600">Pay when you receive your order</span>
-                      </div>
-                    </div>
-                  </label>
-                </div>
+                <h2 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight leading-tight">
+                  Delivery details
+                </h2>
+                <p className="checkout-note mt-1.5 text-sm">
+                  {isSignedIn
+                    ? 'We will call you on this number when your order is on its way.'
+                    : 'No account needed — we only ask for what we need to deliver.'}
+                </p>
               </div>
             </div>
+
+            <div className="space-y-5">
+              {/* Full name */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '180ms' } as React.CSSProperties}>
+                <span className="checkout-label">Full name</span>
+                <input
+                  type="text"
+                  value={delivery.name}
+                  onChange={(event) => updateDelivery('name', event.target.value)}
+                  placeholder="Amine Ben Ali"
+                  autoComplete="name"
+                  className={`checkout-field ${missing.includes('Full name') ? 'checkout-field--missing' : ''}`}
+                />
+              </label>
+
+              {/* Phone */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '225ms' } as React.CSSProperties}>
+                <span className="checkout-label">Phone number</span>
+                <input
+                  type="tel"
+                  value={delivery.phone}
+                  onChange={(event) => updateDelivery('phone', event.target.value)}
+                  placeholder="+216 20 123 456"
+                  autoComplete="tel"
+                  className={`checkout-field ${missing.includes('Phone number') ? 'checkout-field--missing' : ''}`}
+                />
+              </label>
+
+              {/* Governorate */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '270ms' } as React.CSSProperties}>
+                <span className="checkout-label">Governorate</span>
+                <select
+                  value={delivery.governorate}
+                  onChange={(event) => updateDelivery('governorate', event.target.value)}
+                  className={`checkout-field checkout-select ${missing.includes('Governorate') ? 'checkout-field--missing' : ''}`}
+                >
+                  <option value="">Choose…</option>
+                  {GOVERNORATES.map((governorate) => (
+                    <option key={governorate} value={governorate}>
+                      {governorate}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* City */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '315ms' } as React.CSSProperties}>
+                <span className="checkout-label">City / locality</span>
+                <input
+                  type="text"
+                  value={delivery.city}
+                  onChange={(event) => updateDelivery('city', event.target.value)}
+                  placeholder="Tunis"
+                  autoComplete="address-level2"
+                  className={`checkout-field ${missing.includes('City') ? 'checkout-field--missing' : ''}`}
+                />
+              </label>
+
+              {/* Address */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '360ms' } as React.CSSProperties}>
+                <span className="checkout-label">Delivery address</span>
+                <textarea
+                  value={delivery.address}
+                  onChange={(event) => updateDelivery('address', event.target.value)}
+                  placeholder="Street, building, floor, landmark"
+                  rows={3}
+                  autoComplete="street-address"
+                  className={`checkout-field resize-none ${missing.includes('Delivery address') ? 'checkout-field--missing' : ''}`}
+                />
+              </label>
+
+              {/* Note */}
+              <label className="checkout-field-group block" style={{ '--checkout-delay': '405ms' } as React.CSSProperties}>
+                <span className="checkout-label">Delivery note (optional)</span>
+                <textarea
+                  value={delivery.note}
+                  onChange={(event) => updateDelivery('note', event.target.value)}
+                  placeholder="Anything the courier should know"
+                  rows={2}
+                  className="checkout-field resize-none"
+                />
+              </label>
+            </div>
+
           </div>
 
-          {/* Right Column - Order Summary */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-3xl shadow-xl p-4 border border-gray-100 sticky top-24 hover:shadow-2xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-base" style={{ backgroundColor: theme.primary }}>
+          {/* ---------------- The summary ---------------- */}
+          {/* The summary holds on to the screen while the page is scrolled. */}
+          <div className="lg:sticky lg:top-20 h-fit">
+            <div
+              className="checkout-card checkout-card--summary p-5 sm:p-8"
+              style={{ '--checkout-delay': '160ms' } as React.CSSProperties}
+            >
+              <div className="flex items-start gap-4 mb-6">
+                <span className="checkout-step" style={{ '--checkout-delay': '220ms' } as React.CSSProperties}>
                   2
+                </span>
+                <div>
+                  <h3 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight leading-tight">
+                    Order summary
+                  </h3>
+                  <p className="checkout-note mt-1.5 text-sm">
+                    {cart.length} {cart.length === 1 ? 'piece' : 'pieces'}, on their way to you.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Order Summary</h3>
               </div>
-              
-              {/* Cart Items */}
-              <div className="space-y-3 mb-5 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-                {cart.map((item) => (
-                  <div key={item.id} className="group flex items-center space-x-3 p-3 border-2 border-gray-200 rounded-2xl hover:border-gray-300 transition-all bg-gradient-to-br from-white to-gray-50 hover:shadow-lg">
-                    <div className="relative">
-                      <img 
-                        src={item.images?.[0] || 'https://via.placeholder.com/80x80/f3f4f6/9ca3af?text=No+Image'} 
+
+              {/* The pieces */}
+              <div className="space-y-3 mb-6 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+                {cart.map((item, index) => (
+                  <div
+                    key={item.id}
+                    data-spotlight
+                    className="checkout-item flex items-center gap-3"
+                    style={{ '--checkout-delay': `${260 + index * 60}ms` } as React.CSSProperties}
+                  >
+                    <div className="checkout-item__picture shrink-0">
+                      <SafeImage
+                        images={item.images}
                         alt={item.name}
-                        className="w-20 h-20 object-cover rounded-xl border-2 border-gray-200 group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/80x80/f3f4f6/9ca3af?text=No+Image';
-                        }}
+                        className="w-20 h-20 object-contain rounded-xl p-1"
                       />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg" style={{ backgroundColor: theme.primary }}>
-                        1
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm sm:text-base mb-1 truncate">
+                        {item.name}
+                      </h4>
+                      {item.brand && (
+                        <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1.5">{item.brand}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-[10px] sm:text-xs flex-wrap">
+                        {item.size && (
+                          <span className="px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--ck-blush)_78%,white)] text-gray-600">
+                            {item.size}
+                          </span>
+                        )}
+                        {item.condition && (
+                          <span className="px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--ck-blush)_78%,white)] text-gray-600">
+                            {item.condition}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 text-base mb-1 group-hover:text-gray-700 transition-colors">{item.name}</h4>
-                      <p className="text-sm font-semibold text-gray-600 mb-1">{item.brand}</p>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="px-2 py-1 bg-gray-200 rounded-full font-medium text-gray-700">{item.size}</span>
-                        <span className="px-2 py-1 bg-gray-200 rounded-full font-medium text-gray-700">{item.condition}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 text-xl">
-                        {(() => {
-                          const price = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0;
-                          return price.toFixed(2);
-                        })()} DT
+
+                    <div className="text-right shrink-0">
+                      <p className="font-medium text-gray-900 text-sm sm:text-lg">
+                        <AnimatedAmount value={item.price} /> {currencySymbol}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Order Total */}
-              <div className="border-t-2 border-gray-200 pt-4 bg-gradient-to-br from-gray-50 to-white p-4 rounded-2xl mb-3">
-                <div className="flex justify-between text-2xl font-bold">
-                  <span className="text-gray-900">Total</span>
-                  <span style={{ color: theme.primary }}>{totals.total.toFixed(2)} DT</span>
+              {/* The totals — the server's numbers */}
+              <div className="checkout-totals">
+                <div className="flex justify-between text-sm sm:text-base text-gray-600 mb-2">
+                  <span>Subtotal</span>
+                  <span className="font-medium text-gray-900">
+                    <AnimatedAmount value={totals?.subtotal ?? 0} /> {currencySymbol}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-sm sm:text-base text-gray-600 mb-4">
+                  <span>Delivery</span>
+                  <span className="font-medium text-gray-900">
+                    <AnimatedAmount value={totals?.delivery ?? 0} /> {currencySymbol}
+                  </span>
+                </div>
+
+                <div className="checkout-hairline mb-4" aria-hidden="true" />
+
+                <div className="flex justify-between items-baseline">
+                  <span className="text-lg sm:text-xl font-light text-gray-900">Total</span>
+                  <span className="checkout-total text-2xl sm:text-3xl">
+                    <AnimatedAmount value={totals?.total ?? 0} /> {currencySymbol}
+                  </span>
+                </div>
+
+                <div className="flex justify-center mt-4">
+                  <span className="checkout-verify">
+                    <span className="checkout-verify__spark">✦</span>
+                    {verifiedAt
+                      ? `Total verified by the server${verifiedLabel(verifiedAt)}.`
+                      : 'The server checks this total again when the order is placed.'}
+                  </span>
                 </div>
               </div>
 
-              {/* Place Order Button */}
-              <button
-                onClick={handlePlaceOrder}
-                disabled={!userInfo || isProcessingOrder}
-                className="w-full mt-2 px-6 py-4 rounded-2xl font-bold text-lg text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-xl hover:shadow-2xl relative overflow-hidden group"
-                style={{ 
-                  backgroundColor: (!userInfo || isProcessingOrder) ? '#9ca3af' : theme.primary 
-                }}
-                onMouseEnter={(e) => {
-                  if (userInfo && !isProcessingOrder) {
-                    e.currentTarget.style.backgroundColor = theme.primaryHover;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (userInfo && !isProcessingOrder) {
-                    e.currentTarget.style.backgroundColor = theme.primary;
-                  }
-                }}
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {isProcessingOrder ? (
-                    <>
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      Processing Order...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Place Order
-                    </>
-                  )}
-                </span>
-                {!isProcessingOrder && userInfo && (
-                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                )}
-              </button>
+              {error && (
+                <div
+                  className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              )}
 
-              {!userInfo && (
-                <p className="text-sm text-gray-600 text-center mt-3 font-medium">
-                  ⚠️ Veuillez ajouter vos informations de livraison pour passer commande
+              {missing.length > 0 && (
+                <p className="mt-3 text-xs text-gray-500 text-center">
+                  Still needed: {missing.join(', ')}
                 </p>
               )}
 
-              {/* Trust Badges */}
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="flex flex-col items-center">
-                    <svg className="w-8 h-8 mb-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-xs font-semibold text-gray-700">Secure Payment</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <svg className="w-8 h-8 mb-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
-                    </svg>
-                    <span className="text-xs font-semibold text-gray-700">Fast Delivery</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <svg className="w-8 h-8 mb-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-xs font-semibold text-gray-700">Quality Guaranteed</span>
-                  </div>
-                </div>
-              </div>
+              {/* Place the order */}
+              <button
+                onClick={placeOrder}
+                disabled={isPlacing}
+                className="checkout-cta w-full mt-5 px-6 py-4 text-base sm:text-lg"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isPlacing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      Placing your order…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Place order
+                    </>
+                  )}
+                </span>
+              </button>
+
+              <p className="checkout-note text-center mt-4 text-sm">
+                You pay the courier when your order arrives.
+              </p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* User Info Form Modal */}
-      <UserInfoForm
-        isOpen={isUserInfoFormOpen}
-        onClose={() => setIsUserInfoFormOpen(false)}
-        onSubmit={handleUserInfoSubmit}
-        initialData={userInfo || {}}
-        title={userInfo ? "Modifier l'adresse de livraison" : "Ajouter l'adresse de livraison"}
-        isEditing={!!userInfo}
-      />
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={cancelOrder}></div>
-          
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 animate-scaleIn">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: `${theme.primary}20` }}>
-                <svg className="w-8 h-8" style={{ color: theme.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Your Order</h3>
-              <p className="text-gray-600">Are you sure you want to place this order?</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Items:</span>
-                <span className="font-semibold">{cart.length}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                <span>Total:</span>
-                <span style={{ color: theme.primary }}>{totals.total.toFixed(2)} DT</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={cancelOrder}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmOrder}
-                className="flex-1 px-6 py-3 text-white rounded-lg font-semibold transition-all duration-300 hover:scale-105"
-                style={{ backgroundColor: theme.primary }}
-              >
-                Confirm Order
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+}
+
+/**
+ * A number that counts up to where it belongs.
+ *
+ * The total arrives from the server in one go; counting to it makes the
+ * answer feel like it was worked out for the customer rather than
+ * dropped on them.
+ */
+function AnimatedAmount({ value }: { value: number }) {
+  const [shown, setShown] = useState(value);
+  const fromRef = useRef(value);
+  const frameRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      fromRef.current = value;
+      setShown(value);
+      return;
+    }
+
+    const from = fromRef.current;
+    const delta = value - from;
+
+    if (Math.abs(delta) < 0.005) {
+      setShown(value);
+      fromRef.current = value;
+      return;
+    }
+
+    const start = performance.now();
+    const duration = 700;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      setShown(from + delta * eased);
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = value;
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [value]);
+
+  return <>{shown.toFixed(2)}</>;
+}
+
+/**
+ * How long ago the server checked the total.
+ *
+ * "just now" while the check is fresh, and the time of the check once it
+ * is not — the customer can always tell when the number was set.
+ */
+function verifiedLabel(verifiedAt: string | null): string {
+  if (!verifiedAt) return ' just now';
+
+  const when = new Date(verifiedAt).getTime();
+  if (Number.isNaN(when)) return ' just now';
+
+  const seconds = Math.round((Date.now() - when) / 1000);
+
+  if (seconds < 60) return ' just now';
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return ` ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+
+  const time = new Date(verifiedAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return ` at ${time}`;
 }
