@@ -5691,7 +5691,10 @@ a {
     linear-gradient(168deg, #fdf8f9 0%, #f6edf1 100%);
 }
 
-/* The picture wipes down into its frame. */
+/* The picture wipes down into its frame.
+   It also swings in — the frame tilts back on its horizontal axis and
+   settles flat, so the piece arrives as an object in a space rather than as
+   a rectangle being uncovered. */
 @keyframes product-modal-wipe {
   from {
     clip-path: inset(0 0 100% 0);
@@ -5701,8 +5704,19 @@ a {
   }
 }
 
+@keyframes product-modal-tilt {
+  from {
+    transform: perspective(1100px) rotateX(7deg) translateY(-18px);
+  }
+  to {
+    transform: perspective(1100px) rotateX(0deg) translateY(0);
+  }
+}
+
 .product-modal__media {
-  animation: product-modal-wipe 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  animation:
+    product-modal-wipe 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both,
+    product-modal-tilt 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
 }
 
 /* The piece floats on the paper — never cropped. */
@@ -6066,20 +6080,45 @@ a {
    whole piece has to be on the card.
    ========================================================================== */
 
-/* The sheet the piece stands on. */
+/* The sheet the piece stands on.
+
+   The tile stands in a 3D space. Two things live on the frame and they are
+   deliberately kept apart:
+
+   - the LIFT is the `translate` property, changed by CSS on hover and eased
+     by a transition;
+   - the LEAN is `transform: rotateX/rotateY`, and the numbers come from the
+     delegated pointer handler as two custom properties.
+
+   They are different properties on purpose. A single transitioned `transform`
+   would make the lean trail half a second behind the pointer, and the frame's
+   `transform` belongs to the entrance animation — the piece wipes into its
+   frame, it does not slide in. */
+.product-tile {
+  perspective: 1000px;
+}
+
 .product-tile__frame {
   background:
     radial-gradient(120% 80% at 50% 6%, #fffdfd 0%, rgba(255, 253, 253, 0) 58%),
     linear-gradient(168deg, #fdf8f9 0%, #f6edf1 100%);
   border-radius: 14px;
+  /* The lift and the push towards the viewer are the `translate` property,
+     which is transitioned. The lean is `transform`, which is not — so the
+     picture tracks the pointer instead of trailing behind it. */
+  translate: 0px var(--tile-lift, 0px) var(--tile-pop, 0px);
+  transform:
+    rotateX(var(--tile-rx, 0deg))
+    rotateY(var(--tile-ry, 0deg));
   transition:
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.6s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.6s ease;
 }
 
 .product-tile:hover .product-tile__frame {
-  transform: translateY(-6px);
-  box-shadow: 0 28px 50px -34px rgba(115, 21, 40, 0.55);
+  --tile-lift: -8px;
+  --tile-pop: 22px;
+  box-shadow: 0 40px 72px -30px rgba(115, 21, 40, 0.66);
 }
 
 /* The photograph, and the second one that takes its place. */
@@ -6245,7 +6284,9 @@ a {
 
 /* The type under the picture. */
 .product-tile__meta {
-  padding-top: 0.7rem;
+  /* A little more room than before: the picture comes towards the viewer on
+     hover and grows by a couple of pixels as it does. */
+  padding-top: 0.95rem;
 }
 
 /* The row that holds the house of the piece and the price. Its height is
@@ -6321,6 +6362,12 @@ a {
   .product-tile:hover .product-tile__frame,
   .product-tile:hover .product-tile__heart,
   .product-tile:hover .product-tile__add {
+    transform: none !important;
+  }
+
+  /* No lean, no lift — the tile stays flat. */
+  .product-tile__frame {
+    translate: none !important;
     transform: none !important;
   }
 

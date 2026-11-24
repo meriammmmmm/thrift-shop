@@ -170,7 +170,9 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
         u.email as user_email,
         COUNT(oi.id) as item_count
       FROM orders o
-      JOIN users u ON o.user_id = u.id
+      -- A guest order has no account, so the customer is optional here:
+      -- an inner join would hide those orders from the shop entirely.
+      LEFT JOIN users u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       WHERE o.company_id = ?
       GROUP BY o.id, o.user_id, o.status, o.total, o.subtotal, o.tax, o.shipping, 
@@ -286,7 +288,9 @@ router.get('/orders', requireAdmin, async (req, res) => {
         u.email as user_email,
         COUNT(oi.id) as item_count
       FROM orders o
-      JOIN users u ON o.user_id = u.id
+      -- A guest order has no account, so the customer is optional here:
+      -- an inner join would hide those orders from the shop entirely.
+      LEFT JOIN users u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       ${whereClause}
       GROUP BY o.id, o.user_id, o.status, o.total, o.subtotal, o.tax, o.shipping,
@@ -313,13 +317,29 @@ router.get('/orders', requireAdmin, async (req, res) => {
           WHERE oi.order_id = ?
         `, [order.id]);
 
+        const shippingAddress = order.shipping_address ? JSON.parse(order.shipping_address) : null;
+
         ordersWithItems.push({
           ...order,
           user: {
             name: order.user_name,
             email: order.user_email
           },
-          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          /**
+           * Who to call and where to go. For a guest order this comes from
+           * the delivery details the customer gave at checkout.
+           */
+          customer: {
+            name: order.user_name || shippingAddress?.name || 'Guest customer',
+            email: order.user_email || shippingAddress?.email || '',
+            phone: shippingAddress?.phone || '',
+            governorate: shippingAddress?.governorate || '',
+            city: shippingAddress?.city || '',
+            address: shippingAddress?.address || '',
+            note: shippingAddress?.note || '',
+            guest: !order.user_id
+          },
+          shipping_address: shippingAddress,
           billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
           items: items.map(item => ({
             ...item,
@@ -330,13 +350,29 @@ router.get('/orders', requireAdmin, async (req, res) => {
       } catch (itemError) {
         console.error(`Error fetching items for order ${order.id}:`, itemError);
         // Add order without items if there's an error
+        const shippingAddress = order.shipping_address ? JSON.parse(order.shipping_address) : null;
+
         ordersWithItems.push({
           ...order,
           user: {
             name: order.user_name,
             email: order.user_email
           },
-          shipping_address: order.shipping_address ? JSON.parse(order.shipping_address) : null,
+          /**
+           * Who to call and where to go. For a guest order this comes from
+           * the delivery details the customer gave at checkout.
+           */
+          customer: {
+            name: order.user_name || shippingAddress?.name || 'Guest customer',
+            email: order.user_email || shippingAddress?.email || '',
+            phone: shippingAddress?.phone || '',
+            governorate: shippingAddress?.governorate || '',
+            city: shippingAddress?.city || '',
+            address: shippingAddress?.address || '',
+            note: shippingAddress?.note || '',
+            guest: !order.user_id
+          },
+          shipping_address: shippingAddress,
           billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
           items: []
         });

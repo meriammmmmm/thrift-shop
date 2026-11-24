@@ -140,7 +140,9 @@ class DatabaseWrapper {
       // Orders table
       `CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
+        -- Empty for a guest order: the customer has no account, and the
+        -- delivery details on the order are how the shop reaches them.
+        user_id INTEGER,
         status TEXT DEFAULT 'PENDING',
         total REAL NOT NULL,
         subtotal REAL NOT NULL,
@@ -150,6 +152,7 @@ class DatabaseWrapper {
         payment_id TEXT,
         shipping_address TEXT, -- JSON object
         billing_address TEXT, -- JSON object
+        company_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
@@ -508,6 +511,9 @@ class DatabaseWrapper {
       { name: 'user_id', ddl: 'ALTER TABLE testimonials ADD COLUMN user_id INTEGER' },
       { name: 'submitter_email', ddl: 'ALTER TABLE testimonials ADD COLUMN submitter_email TEXT' },
       { name: 'rating', ddl: 'ALTER TABLE testimonials ADD COLUMN rating INTEGER DEFAULT 5' },
+      // The photo a reviewer attached to their review. It is optional, so it
+      // stays empty for a review that was written without one.
+      { name: 'review_image', ddl: 'ALTER TABLE testimonials ADD COLUMN review_image TEXT' },
     ];
 
     for (const column of columns) {

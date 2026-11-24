@@ -727,13 +727,43 @@ function sceneCatalogueCards() {
 }
 
 /**
- * Cursor spotlight on product media. A rAF-throttled delegated listener
- * writes CSS custom properties; the visual lives entirely in CSS, so the
- * hover never competes with GSAP for the element's transform.
+ * How far a tile may lean towards the pointer.
+ *
+ * Deliberately smaller than the tilt on the "loved" cards: the collection is
+ * a wall of pieces, and a wall of cards all lunging at the pointer is noise.
+ * One tile leans at a time, and only while the pointer is on it.
+ */
+const TILE_TILT_X = 5;
+const TILE_TILT_Y = 7;
+
+/**
+ * Cursor spotlight on product media, and the lean of the collection tile.
+ *
+ * A rAF-throttled delegated listener writes CSS custom properties; the visual
+ * lives entirely in CSS, so the hover never competes with GSAP for the
+ * element's transform.
+ *
+ * The lean is the same idea taken one step further: the tile under the
+ * pointer tilts towards it. `translate` carries the lift (CSS, transitioned)
+ * and `transform` carries the lean (written here, instant) — so the picture
+ * tracks the pointer exactly instead of trailing half a second behind it.
  */
 function sceneSpotlight() {
   let frame = 0;
-  let pending: { x: number; y: number } | null = null;
+  let pending: {
+    cx: number;
+    cy: number;
+    spot: HTMLElement | null;
+    tile: HTMLElement | null;
+  } | null = null;
+  let leaning: HTMLElement | null = null;
+
+  /** Let the tile lie flat again. */
+  const settle = (node: HTMLElement | null) => {
+    if (!node) return;
+    node.style.setProperty('--tile-rx', '0deg');
+    node.style.setProperty('--tile-ry', '0deg');
+  };
 
   const apply = () => {
     frame = 0;
@@ -741,31 +771,66 @@ function sceneSpotlight() {
     pending = null;
     if (!point) return;
 
-    const target = document.querySelector<HTMLElement>('[data-spotlight-active="true"]');
-    if (!target) return;
+    /* The glow follows the pointer inside the picture. */
+    if (point.spot) {
+      const rect = point.spot.getBoundingClientRect();
+      point.spot.style.setProperty('--spot-x', `${point.cx - rect.left}px`);
+      point.spot.style.setProperty('--spot-y', `${point.cy - rect.top}px`);
+    }
 
-    target.style.setProperty('--spot-x', `${point.x}px`);
-    target.style.setProperty('--spot-y', `${point.y}px`);
+    /* The lean. It belongs to the whole tile, so the pointer may sit on the
+       picture or on the type underneath it. */
+    const tile = point.tile;
+    if (!tile) return;
+
+    const picture = tile.querySelector<HTMLElement>('.product-tile__frame');
+    if (!picture) return;
+
+    const rect = picture.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const dx = (point.cx - rect.left - rect.width / 2) / (rect.width / 2);
+    const dy = (point.cy - rect.top - rect.height / 2) / (rect.height / 2);
+
+    tile.style.setProperty('--tile-rx', `${(-dy * TILE_TILT_X).toFixed(2)}deg`);
+    tile.style.setProperty('--tile-ry', `${(dx * TILE_TILT_Y).toFixed(2)}deg`);
   };
 
   const onMove = (event: MouseEvent) => {
-    const node = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-spotlight]');
-    if (!node) return;
+    const origin = event.target as HTMLElement | null;
 
-    const rect = node.getBoundingClientRect();
-    pending = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    /* The tile under the pointer leans towards it. */
+    const tile = origin?.closest<HTMLElement>('[data-tilt="tile"]') ?? null;
+    if (tile !== leaning) {
+      settle(leaning);
+      leaning = tile;
+    }
+
+    const spot = origin?.closest<HTMLElement>('[data-spotlight]') ?? null;
 
     document.querySelectorAll<HTMLElement>('[data-spotlight-active="true"]').forEach((el) => {
-      if (el !== node) el.removeAttribute('data-spotlight-active');
+      if (el !== spot) el.removeAttribute('data-spotlight-active');
     });
-    node.setAttribute('data-spotlight-active', 'true');
+    if (spot) spot.setAttribute('data-spotlight-active', 'true');
 
+    pending = { cx: event.clientX, cy: event.clientY, spot, tile };
     if (!frame) frame = requestAnimationFrame(apply);
   };
 
+  /* The pointer can leave the window with a tile still leaning. */
+  const onLeave = () => {
+    settle(leaning);
+    leaning = null;
+    document.querySelectorAll<HTMLElement>('[data-spotlight-active="true"]').forEach((el) => {
+      el.removeAttribute('data-spotlight-active');
+    });
+  };
+
   document.addEventListener('mousemove', onMove, { passive: true });
+  document.addEventListener('mouseleave', onLeave);
   return () => {
     document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseleave', onLeave);
     if (frame) cancelAnimationFrame(frame);
   };
 }
@@ -865,9 +930,19 @@ export function useHeroCinematic(slideIndex: number) {
       if (title) {
         const words = splitWords(title);
         if (words.length) {
+          /* The words hinge up into place rather than sliding up flat — the
+             mask is anchored at the baseline, so the rotation reads as the
+             headline turning towards the reader. */
           timeline.from(
             words,
-            { yPercent: 115, duration: 0.5, stagger: 0.025, ease: EASE.expo },
+            {
+              yPercent: 115,
+              rotateX: -24,
+              transformPerspective: 900,
+              duration: 0.55,
+              stagger: 0.028,
+              ease: EASE.expo,
+            },
             0.1,
           );
         }

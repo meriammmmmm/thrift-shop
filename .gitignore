@@ -44,3 +44,10 @@ tmp/
 temp/
 .vercel
 .env*
+
+# local scratch (scripts + screenshots)
+.mavis/
+
+# SQLite sidecar files — they belong to the running database, not to the repo
+*.db-shm
+*.db-wal

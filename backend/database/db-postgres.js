@@ -98,7 +98,9 @@ class PostgresDatabase {
       await client.query(`
         CREATE TABLE IF NOT EXISTS orders (
           id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL,
+          -- Empty for a guest order: the customer has no account, and the
+          -- delivery details on the order are how the shop reaches them.
+          user_id INTEGER,
           status TEXT DEFAULT 'PENDING',
           total DECIMAL(10,2) NOT NULL,
           subtotal DECIMAL(10,2) NOT NULL,
@@ -448,6 +450,9 @@ class PostgresDatabase {
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS user_id INTEGER`);
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS submitter_email TEXT`);
         await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 5`);
+        // The photo a reviewer attached to their review. It is optional, so it
+        // stays empty for a review that was written without one.
+        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS review_image TEXT`);
         console.log('✅ Added review workflow columns to testimonials table');
 
         // Legacy rows: live reviews are approved, the rest still need a

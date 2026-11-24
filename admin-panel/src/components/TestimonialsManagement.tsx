@@ -19,6 +19,12 @@ interface Testimonial {
   rating: number;
   /** How many visitors found this review helpful. */
   likes: number;
+  /**
+   * The photo the customer attached to the review itself.
+   *
+   * It is optional, so it is empty for a review that was written without one.
+   */
+  reviewImage: string;
 }
 
 interface TestimonialsManagementProps {
@@ -271,6 +277,8 @@ const transform = (raw: any): Testimonial => {
     createdAt: raw.created_at || null,
     rating: Number.isFinite(rating) && rating > 0 ? Math.min(5, Math.round(rating)) : 5,
     likes: Number.isFinite(likes) ? likes : 0,
+    // The photo the customer attached, when there is one.
+    reviewImage: raw.review_image || '',
   };
 };
 
@@ -417,6 +425,7 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
       createdAt: null,
       rating: 5,
       likes: 0,
+      reviewImage: '',
     };
     setEditingTestimonial(newTestimonial);
     setIsAddingNew(true);
@@ -865,6 +874,24 @@ const TestimonialsManagement: React.FC<TestimonialsManagementProps> = ({ authTok
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm">{testimonial.description}</p>
+
+                      {/* The photo the customer attached to the review (optional). */}
+                      {testimonial.reviewImage && (
+                        <a
+                          href={testimonial.reviewImage}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-block"
+                          title="Open the attached photo"
+                        >
+                          <img
+                            src={testimonial.reviewImage}
+                            alt={`Photo attached to the review by ${testimonial.name}`}
+                            loading="lazy"
+                            className="h-32 w-48 rounded-lg border border-gray-200 object-cover transition-opacity hover:opacity-90"
+                          />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

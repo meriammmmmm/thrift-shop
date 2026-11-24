@@ -19,6 +19,22 @@ interface OrderItem {
 interface Order {
   id: number;
   user: { name: string; email: string };
+  /**
+   * Who to call and where to go.
+   *
+   * An order placed without an account has no user, so the customer is
+   * the one who gave their details at checkout.
+   */
+  customer?: {
+    name: string;
+    email: string;
+    phone: string;
+    governorate: string;
+    city: string;
+    address: string;
+    note: string;
+    guest: boolean;
+  };
   item_count: number;
   total: number;
   status: string;
@@ -241,7 +257,20 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.user ? (order.user.name || order.user.email) : 'Unknown Customer'}
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {order.customer?.name ||
+                            (order.user ? order.user.name || order.user.email : 'Unknown Customer')}
+                        </span>
+                        {order.customer?.guest && (
+                          <span className="px-2 py-0.5 text-[10px] uppercase tracking-wide rounded-full bg-amber-100 text-amber-800">
+                            Guest
+                          </span>
+                        )}
+                      </div>
+                      {order.customer?.phone && (
+                        <p className="text-xs text-gray-500">{order.customer.phone}</p>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{order.item_count || 0} items</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{getCurrentCurrencySymbol()}{(parseFloat(order.total as any) || 0).toFixed(2)}</td>
@@ -272,6 +301,29 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ authToken }) => {
                     <tr>
                       <td colSpan={7} className="px-6 py-4 bg-gray-50">
                         <div className="space-y-3">
+                          {(order.customer?.phone || order.customer?.address) && (
+                            <div className="bg-white p-3 rounded-lg border border-gray-200">
+                              <h4 className="font-semibold text-gray-700 mb-2">Deliver to:</h4>
+                              <p className="text-sm text-gray-900 font-medium">
+                                {order.customer?.name || 'Unknown Customer'}
+                              </p>
+                              {order.customer?.phone && (
+                                <p className="text-sm text-gray-700">Phone: {order.customer.phone}</p>
+                              )}
+                              {order.customer?.address && (
+                                <p className="text-sm text-gray-700">{order.customer.address}</p>
+                              )}
+                              {order.customer?.city && (
+                                <p className="text-sm text-gray-700">
+                                  {order.customer.city}
+                                  {order.customer?.governorate ? `, ${order.customer.governorate}` : ''}
+                                </p>
+                              )}
+                              {order.customer?.note && (
+                                <p className="text-sm text-gray-600 italic">Note: {order.customer.note}</p>
+                              )}
+                            </div>
+                          )}
                           <h4 className="font-semibold text-gray-700 mb-3">Order Items:</h4>
                           <div className="grid gap-3">
                             {order.items.map((item, idx) => (

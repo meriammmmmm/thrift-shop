@@ -52,6 +52,7 @@ export default function ProductCard({
     <article
       data-cinematic="catalogue-card"
       data-product-id={product.id}
+      data-tilt="tile"
       className="product-tile group relative flex flex-col"
     >
       {/* The picture */}

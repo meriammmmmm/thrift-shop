@@ -1,18 +1,56 @@
 const express = require('express');
 const db = require('../database/db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const {
+  missingDeliveryFields,
+  quoteItems,
+} = require('../lib/delivery');
 
 const router = express.Router();
+
+/**
+ * The price of a bag, checked by the server.
+ *
+ * The storefront asks for this before the customer places the order, so
+ * the total it shows is the total the shop will charge — the browser
+ * never adds the prices up on its own.
+ *
+ * Anyone may ask: a bag that belongs to a guest is priced the same way
+ * as one that belongs to a customer.
+ */
+router.post('/quote', optionalAuth, async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'No items in the bag' });
+    }
+
+    const quote = await quoteItems(items);
+
+    if (quote.unavailable.length > 0) {
+      return res.status(400).json({
+        error: 'Some items are not available',
+        unavailableItems: quote.unavailable,
+      });
+    }
+
+    res.json({ totals: quote });
+  } catch (error) {
+    console.error('Quote error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Get user orders
 router.get('/', authenticateToken, async (req, res) => {
   try {
     console.log('📦 Fetching orders for user:', req.user.id);
     
-    // Get orders - use $1 for PostgreSQL compatibility
+    // Get orders - use ? for PostgreSQL compatibility
     const orders = await db.all(`
       SELECT * FROM orders 
-      WHERE user_id = $1
+      WHERE user_id = ?
       ORDER BY created_at DESC
     `, [req.user.id]);
 
@@ -31,7 +69,7 @@ router.get('/', authenticateToken, async (req, res) => {
                  COALESCE(p.reservation_status, 'unknown') as product_reservation_status
           FROM order_items oi
           LEFT JOIN products p ON oi.product_id = p.id
-          WHERE oi.order_id = $1
+          WHERE oi.order_id = ?
         `, [order.id]);
 
         ordersWithItems.push({
@@ -74,7 +112,18 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Create order
-router.post('/', authenticateToken, async (req, res) => {
+/**
+ * Place an order.
+ *
+ * A customer does not have to have an account: a guest gives their name,
+ * phone number, governorate, city and address, and the order belongs to
+ * the shop rather than to an account. When a token is there, the order is
+ * also attached to the customer it came from.
+ *
+ * The prices are the ones the server holds, and the delivery fee is the
+ * one the server holds — the number the browser sends is never used.
+ */
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const { items, shipping_address, billing_address, payment_method } = req.body;
 
@@ -82,87 +131,46 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'No items in order' });
     }
 
-    // Calculate totals and group by company
-    let subtotal = 0;
-    const orderItems = [];
-    const companiesInOrder = new Set();
-    const unavailableItems = [];
-
-    for (const item of items) {
-      const product = await db.get('SELECT * FROM products WHERE id = $1', [item.product_id]);
-      
-      if (!product) {
-        unavailableItems.push({ id: item.product_id, reason: 'Product not found' });
-        continue;
-      }
-      
-      // Check if product is already sold
-      if (product.in_stock === false || product.in_stock === 0) {
-        unavailableItems.push({ 
-          id: item.product_id, 
-          name: product.name,
-          reason: 'sold out' 
-        });
-        continue;
-      }
-      
-      // Check if product is reserved or sold
-      if (product.reservation_status === 'reserved') {
-        unavailableItems.push({ 
-          id: item.product_id, 
-          name: product.name,
-          reason: 'reserved by another customer' 
-        });
-        continue;
-      }
-      
-      if (product.reservation_status === 'sold') {
-        unavailableItems.push({ 
-          id: item.product_id, 
-          name: product.name,
-          reason: 'already sold' 
-        });
-        continue;
-      }
-
-      const itemTotal = product.price * item.quantity;
-      subtotal += itemTotal;
-
-      orderItems.push({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: product.price,
-        company_id: product.company_id
+    /**
+     * Where the order goes. Without it there is no way to deliver the
+     * pieces or to call the customer.
+     */
+    const missing = missingDeliveryFields(shipping_address);
+    if (missing.length > 0) {
+      return res.status(400).json({
+        error: `Please complete the delivery details: ${missing.join(', ')}`,
+        missingFields: missing,
       });
-
-      if (product.company_id) {
-        companiesInOrder.add(product.company_id);
-      }
     }
 
-    // If any items are unavailable, return error with details
-    if (unavailableItems.length > 0) {
-      const errorMessage = unavailableItems.map(item => 
-        `"${item.name || 'Product #' + item.id}" is ${item.reason}`
-      ).join(', ');
-      
-      return res.status(400).json({ 
+    /**
+     * Price the bag with the prices the server holds, and refuse the
+     * order if a piece is no longer available.
+     */
+    const quote = await quoteItems(items);
+
+    if (quote.unavailable.length > 0) {
+      const errorMessage = quote.unavailable
+        .map((item) => `"${item.name || 'Product #' + item.id}" is ${item.reason}`)
+        .join(', ');
+
+      return res.status(400).json({
         error: `Some items are not available: ${errorMessage}`,
-        unavailableItems: unavailableItems
+        unavailableItems: quote.unavailable,
       });
     }
 
-    // If no items are available after checking
-    if (orderItems.length === 0) {
+    if (quote.lines.length === 0) {
       return res.status(400).json({ error: 'No available items to order' });
     }
 
-    const tax = subtotal * 0.08; // 8% tax
-    const shipping = subtotal > 50 ? 0 : 9.99; // Free shipping over $50
-    const total = subtotal + tax + shipping;
+    const { subtotal, delivery, tax, total, currency, verified_at } = quote;
 
     // For multi-company orders, we'll create separate orders per company
     // For now, we'll use the first company or null if mixed
+    const companiesInOrder = new Set(
+      quote.lines.map((item) => item.company_id).filter(Boolean),
+    );
     const primaryCompanyId = companiesInOrder.size === 1 ? Array.from(companiesInOrder)[0] : null;
 
     // Create order with PROCESSING status (items reserved)
@@ -170,26 +178,27 @@ router.post('/', authenticateToken, async (req, res) => {
       INSERT INTO orders (
         user_id, subtotal, tax, shipping, total, payment_method,
         shipping_address, billing_address, status, company_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PROCESSING', $9)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PROCESSING', ?)
     `, [
-      req.user.id, subtotal, tax, shipping, total, payment_method,
-      JSON.stringify(shipping_address), JSON.stringify(billing_address), primaryCompanyId
+      req.user ? req.user.id : null,
+      subtotal, tax, delivery, total, payment_method || 'cash',
+      JSON.stringify(shipping_address), JSON.stringify(billing_address || shipping_address), primaryCompanyId
     ]);
 
     // Create order items and mark products as RESERVED
-    for (const item of orderItems) {
+    for (const item of quote.lines) {
       await db.run(`
         INSERT INTO order_items (order_id, product_id, quantity, price)
-        VALUES ($1, $2, $3, $4)
+        VALUES (?, ?, ?, ?)
       `, [orderResult.id, item.product_id, item.quantity, item.price]);
-      
+
       // Mark product as RESERVED (processing order)
       await db.run(`
         UPDATE products 
-        SET reservation_status = $1, 
-            reserved_by_order_id = $2,
-            in_stock = $3
-        WHERE id = $4
+        SET reservation_status = ?, 
+            reserved_by_order_id = ?,
+            in_stock = ?
+        WHERE id = ?
       `, ['reserved', orderResult.id, true, item.product_id]);
     }
 
@@ -198,24 +207,35 @@ router.post('/', authenticateToken, async (req, res) => {
     // This allows orders to be cancelled without affecting inventory
 
     // Get complete order
-    const order = await db.get('SELECT * FROM orders WHERE id = $1', [orderResult.id]);
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderResult.id]);
     const orderItemsData = await db.all(`
       SELECT oi.*, p.name as product_name, p.images as product_images
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
-      WHERE oi.order_id = $1
+      WHERE oi.order_id = ?
     `, [orderResult.id]);
 
     res.status(201).json({
       order: {
         ...order,
         shipping_address: JSON.parse(order.shipping_address),
-        billing_address: JSON.parse(order.billing_address),
+        billing_address: order.billing_address ? JSON.parse(order.billing_address) : null,
         items: orderItemsData.map(item => ({
           ...item,
           product_images: item.product_images ? JSON.parse(item.product_images) : []
         }))
-      }
+      },
+      /** What the shop will charge — the storefront shows this to the customer. */
+      totals: {
+        subtotal,
+        delivery,
+        tax,
+        total,
+        currency,
+        verified_at,
+      },
+      /** True when the order was placed without an account. */
+      guest: !req.user,
     });
   } catch (error) {
     console.error('Order creation error:', error);

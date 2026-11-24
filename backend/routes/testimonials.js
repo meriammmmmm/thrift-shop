@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const {
+  isDataUri,
+  decodeDataUri,
+  publicBaseUrl,
+  imageEtag,
+} = require('../services/imageUrl');
 
 /**
  * Placeholder photos that used to be hardcoded as the "default" avatar.
@@ -54,6 +60,76 @@ const SOURCE = {
 };
 
 /**
+ * The picture types a reviewer may attach to a review.
+ *
+ * A photo is optional, and when there is one it is a picture of the piece the
+ * reviewer bought — not an avatar. The avatar stays a separate thing.
+ */
+const REVIEW_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
+/**
+ * The largest photo a reviewer may attach (decoded bytes).
+ *
+ * The storefront shrinks the picture before it is sent, so this limit is only
+ * reached by a hand-crafted request.
+ */
+const MAX_REVIEW_IMAGE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * The photo attached to a review, if there is a usable one.
+ *
+ * The storefront sends the picture as a data URI, but a plain link is accepted
+ * too, so a review can point at a picture that is already online. Anything
+ * else — an unsupported type, a file that is too big, a broken payload — is
+ * refused here instead of being stored.
+ */
+function readReviewImage(value) {
+  if (!value || typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.slice(0, 2000);
+  }
+
+  if (!isDataUri(trimmed)) return null;
+
+  const decoded = decodeDataUri(trimmed);
+  if (!decoded) return null;
+
+  const mime = String(decoded.mime || '').toLowerCase();
+  if (!REVIEW_IMAGE_TYPES.includes(mime)) return null;
+  if (decoded.buffer.length > MAX_REVIEW_IMAGE_BYTES) return null;
+
+  return trimmed;
+}
+
+/**
+ * The photo of a review, as a link the browser can download.
+ *
+ * The bytes stay in the database, so the storefront only ever receives a URL
+ * — the same trick the product photos use. A review written without a photo
+ * simply has none.
+ */
+function reviewImageUrl(row, baseUrl) {
+  if (!row) return null;
+
+  const stored = row.review_image;
+  if (!stored || typeof stored !== 'string') return null;
+
+  const trimmed = stored.trim();
+  if (!trimmed) return null;
+
+  // A photo that already lives somewhere else is used as it is.
+  if (!isDataUri(trimmed)) return trimmed;
+
+  if (!baseUrl) return null;
+
+  return `${baseUrl}/testimonials/image/${row.id}`;
+}
+
+/**
  * SQLite hands back 0/1, Postgres hands back true/false, and a request body
  * can carry the string "1". Every caller should read the same value, so the
  * flag is normalised in one place instead of at each call site.
@@ -85,7 +161,7 @@ function nextStatus(currentStatus, isActive) {
  * `likes` and `likedByMe` come from the vote join, so they are passed in
  * rather than read off the row.
  */
-function present(row, { likes = 0, likedByMe = false } = {}) {
+function present(row, { likes = 0, likedByMe = false, baseUrl = '' } = {}) {
   if (!row) return null;
 
   const isActive = toBool(row.is_active, false);
@@ -103,6 +179,8 @@ function present(row, { likes = 0, likedByMe = false } = {}) {
     // The old placeholder photos are dropped so the client can draw an
     // initials avatar for a review that has no real photo.
     image: isLegacyPlaceholder(row.image) ? null : row.image,
+    // The photo the reviewer attached to the review itself (optional).
+    review_image: reviewImageUrl(row, baseUrl),
     rating: normalizeRating(row.rating),
     likes: Number(likes) || 0,
     liked_by_me: Boolean(likedByMe),
@@ -131,7 +209,7 @@ function visitorKey(req) {
  * query so the same code works on SQLite and Postgres without the two
  * dialects disagreeing about `?` placeholder ordering.
  */
-async function attachVotes(rows, visitor) {
+async function attachVotes(rows, visitor, baseUrl = '') {
   if (!rows || rows.length === 0) return [];
 
   const ids = rows.map((row) => row.id);
@@ -163,14 +241,15 @@ async function attachVotes(rows, visitor) {
     present(row, {
       likes: countById.get(Number(row.id)) || 0,
       likedByMe: likedIds.has(Number(row.id)),
+      baseUrl,
     })
   );
 }
 
 /** The same as `attachVotes`, but for a single row. */
-async function attachVotesToOne(row, visitor) {
+async function attachVotesToOne(row, visitor, baseUrl = '') {
   if (!row) return null;
-  const [presented] = await attachVotes([row], visitor);
+  const [presented] = await attachVotes([row], visitor, baseUrl);
   return presented;
 }
 
@@ -209,7 +288,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      testimonials: await attachVotes(testimonials, visitorKey(req)),
+      testimonials: await attachVotes(testimonials, visitorKey(req), publicBaseUrl(req)),
     });
   } catch (error) {
     console.error('Get testimonials error:', error);
@@ -234,7 +313,7 @@ router.get('/active', async (req, res) => {
 
     res.json({
       success: true,
-      testimonials: await attachVotes(testimonials, visitorKey(req)),
+      testimonials: await attachVotes(testimonials, visitorKey(req), publicBaseUrl(req)),
     });
   } catch (error) {
     console.error('Get active testimonials error:', error);
@@ -310,7 +389,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      testimonial: await attachVotesToOne(newTestimonial, visitorKey(req)),
+      testimonial: await attachVotesToOne(newTestimonial, visitorKey(req), publicBaseUrl(req)),
       message: 'Testimonial created successfully'
     });
   } catch (error) {
@@ -390,7 +469,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req)),
+      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req), publicBaseUrl(req)),
       message: 'Testimonial updated successfully'
     });
   } catch (error) {
@@ -431,7 +510,7 @@ router.patch('/:id/approve', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req)),
+      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req), publicBaseUrl(req)),
       message: 'Review approved and published on the storefront'
     });
   } catch (error) {
@@ -472,7 +551,7 @@ router.patch('/:id/reject', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req)),
+      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req), publicBaseUrl(req)),
       message: 'Review rejected'
     });
   } catch (error) {
@@ -558,7 +637,7 @@ router.patch('/:id/toggle', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req)),
+      testimonial: await attachVotesToOne(updatedTestimonial, visitorKey(req), publicBaseUrl(req)),
       message: `Testimonial ${currentlyActive ? 'unpublished' : 'published'} successfully`
     });
   } catch (error) {
@@ -575,7 +654,7 @@ router.patch('/:id/toggle', authenticateToken, async (req, res) => {
 // before it shows up on the storefront.
 router.post('/customer-submit', optionalAuth, async (req, res) => {
   try {
-    const { name, email, title, message, companyId, rating } = req.body;
+    const { name, email, title, message, companyId, rating, image } = req.body;
 
     if (!name || !message) {
       return res.status(400).json({
@@ -591,6 +670,11 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
       });
     }
 
+    // The photo is optional. When one was sent but cannot be used, the review
+    // is still accepted — the customer should not lose their words over a
+    // picture the browser could not read.
+    const reviewImage = readReviewImage(image);
+
     // A signed-in customer gets their review linked to their account, so the
     // admin knows who wrote it and the customer can be traced back to it.
     const submitter = req.user;
@@ -599,15 +683,16 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
     const result = await db.run(`
       INSERT INTO testimonials (
         company_id, title, name, description, image, is_active, status, source,
-        user_id, submitter_email, display_order, rating, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        user_id, submitter_email, display_order, rating, review_image,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [
       Number(companyId) || 1,
       title || 'Customer Review',
       String(name).trim(),
       String(message).trim(),
-      // No photo is stored: the storefront draws an initials avatar from the
-      // reviewer's name.
+      // No avatar photo is stored: the storefront draws an initials avatar
+      // from the reviewer's name.
       null,
       false, // Not live until an admin approves it
       STATUS.PENDING,
@@ -615,14 +700,17 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
       submitter?.id ?? null,
       submitterEmail || null,
       999, // Put at the end of the list
-      normalizeRating(rating)
+      normalizeRating(rating),
+      // The picture of the piece, when the reviewer attached one.
+      reviewImage
     ]);
 
     res.status(201).json({
       success: true,
       message: 'Thank you for your review! It will appear once our team approves it.',
       id: result.id,
-      status: STATUS.PENDING
+      status: STATUS.PENDING,
+      hasImage: Boolean(reviewImage),
     });
   } catch (error) {
     console.error('Customer testimonial submission error:', error);
@@ -630,6 +718,56 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
       success: false,
       error: 'Failed to submit testimonial'
     });
+  }
+});
+
+/**
+ * The photo a reviewer attached to a review.
+ *
+ * The bytes live in the database, so they are served from here instead of
+ * being pushed into every storefront response — the JSON only carries a link
+ * and the browser fetches the picture on its own.
+ */
+router.get('/image/:id', async (req, res) => {
+  try {
+    const row = await db.get(
+      'SELECT review_image FROM testimonials WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (!row || !row.review_image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const stored = String(row.review_image).trim();
+
+    // A picture that already lives somewhere else is simply pointed at.
+    if (!isDataUri(stored)) {
+      return res.redirect(302, stored);
+    }
+
+    const decoded = decodeDataUri(stored);
+    if (!decoded) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const { mime, buffer } = decoded;
+    const etag = imageEtag(buffer);
+
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('ETag', etag);
+
+    // A repeat visit costs a 304 instead of the whole picture.
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    return res.end(buffer);
+  } catch (error) {
+    console.error('Review image fetch error:', error);
+    return res.status(500).json({ error: 'Failed to fetch image' });
   }
 });
 
