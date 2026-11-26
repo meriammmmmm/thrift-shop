@@ -30,6 +30,22 @@ function isLegacyPlaceholder(image) {
 }
 
 /**
+ * True when the database refused a statement because a column is not there.
+ *
+ * Postgres says `column "review_image" of relation "testimonials" does not
+ * exist` (42703); SQLite says `table testimonials has no column named
+ * review_image`.
+ */
+function isMissingColumn(error, column) {
+  if (!error) return false;
+  const message = String(error.message || '');
+  if (error.code === '42703') {
+    return !message || message.includes(column);
+  }
+  return message.includes('no column named') && message.includes(column);
+}
+
+/**
  * The rating, clamped to the 1-5 scale.
  *
  * A review always has a rating: the stars in the form default to 5 and the
@@ -680,13 +696,18 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
     const submitter = req.user;
     const submitterEmail = submitter?.email || (email ? String(email).trim() : null);
 
-    const result = await db.run(`
-      INSERT INTO testimonials (
-        company_id, title, name, description, image, is_active, status, source,
-        user_id, submitter_email, display_order, rating, review_image,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `, [
+    // The photo is optional, so it only joins the review when there is one.
+    //
+    // The column used to be named in every insert, even for a review that
+    // carried no picture at all. A database that never got the optional
+    // column — an older Postgres that skipped the migration — therefore
+    // answered every submission with a 500, and a customer with no photo to
+    // upload paid for it.
+    const reviewColumns = [
+      'company_id', 'title', 'name', 'description', 'image', 'is_active', 'status', 'source',
+      'user_id', 'submitter_email', 'display_order', 'rating',
+    ];
+    const reviewValues = [
       Number(companyId) || 1,
       title || 'Customer Review',
       String(name).trim(),
@@ -701,16 +722,46 @@ router.post('/customer-submit', optionalAuth, async (req, res) => {
       submitterEmail || null,
       999, // Put at the end of the list
       normalizeRating(rating),
-      // The picture of the piece, when the reviewer attached one.
-      reviewImage
-    ]);
+    ];
+
+    if (reviewImage) {
+      reviewColumns.push('review_image');
+      reviewValues.push(reviewImage);
+    }
+
+    const insertReview = () => db.run(`
+      INSERT INTO testimonials (
+        ${reviewColumns.join(', ')}, created_at, updated_at
+      ) VALUES (${reviewColumns.map(() => '?').join(', ')}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, reviewValues);
+
+    let result;
+    let storedImage = reviewImage;
+
+    try {
+      result = await insertReview();
+    } catch (error) {
+      // A picture is a nice-to-have. A database that cannot store it must not
+      // cost the customer their review: the words are what matter, so the
+      // review is saved without the picture instead of being turned away.
+      if (!reviewImage || !isMissingColumn(error, 'review_image')) throw error;
+
+      console.warn(
+        '⚠️ The database has no room for the review photo — saving the review without it:',
+        error.message
+      );
+      reviewColumns.pop();
+      reviewValues.pop();
+      result = await insertReview();
+      storedImage = null;
+    }
 
     res.status(201).json({
       success: true,
       message: 'Thank you for your review! It will appear once our team approves it.',
       id: result.id,
       status: STATUS.PENDING,
-      hasImage: Boolean(reviewImage),
+      hasImage: Boolean(storedImage),
     });
   } catch (error) {
     console.error('Customer testimonial submission error:', error);
@@ -766,6 +817,11 @@ router.get('/image/:id', async (req, res) => {
 
     return res.end(buffer);
   } catch (error) {
+    // A database without the optional column simply holds no pictures. That
+    // is not a failure of the request — there is nothing to serve.
+    if (isMissingColumn(error, 'review_image')) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
     console.error('Review image fetch error:', error);
     return res.status(500).json({ error: 'Failed to fetch image' });
   }

@@ -46,8 +46,28 @@ class PostgresDatabase {
       return;
     }
 
+    /**
+     * Runs one statement on its own and keeps going when it fails.
+     *
+     * The migrations below each add a column, and they used to share one
+     * `try` block: a single statement that Postgres refused — a table the app
+     * does not own, a column that is already there in another shape — took
+     * every statement after it down with it. The columns that follow never
+     * reached the database, and the route that writes to one of them kept
+     * answering with a 500 until someone looked at the schema.
+     *
+     * One statement, one guard: a failure is logged and the boot continues.
+     */
+    const runStep = async (label, statement) => {
+      try {
+        await client.query(statement);
+      } catch (err) {
+        console.log(`⚠️ ${label}:`, err.message);
+      }
+    };
+
     try {
-      await client.query(`
+      await runStep('create table users', `
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
@@ -62,7 +82,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table products', `
         CREATE TABLE IF NOT EXISTS products (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -95,7 +115,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table orders', `
         CREATE TABLE IF NOT EXISTS orders (
           id SERIAL PRIMARY KEY,
           -- Empty for a guest order: the customer has no account, and the
@@ -117,7 +137,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table order_items', `
         CREATE TABLE IF NOT EXISTS order_items (
           id SERIAL PRIMARY KEY,
           order_id INTEGER NOT NULL,
@@ -129,7 +149,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table wishlist', `
         CREATE TABLE IF NOT EXISTS wishlist (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL,
@@ -144,7 +164,7 @@ class PostgresDatabase {
       // A "love" on a piece of clothing. The visitor key identifies the browser
       // that pressed the heart, so the same person cannot inflate the counter
       // by reloading the page.
-      await client.query(`
+      await runStep('create table product_likes', `
         CREATE TABLE IF NOT EXISTS product_likes (
           id SERIAL PRIMARY KEY,
           product_id INTEGER NOT NULL,
@@ -155,7 +175,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table reviews', `
         CREATE TABLE IF NOT EXISTS reviews (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL,
@@ -168,7 +188,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table cart', `
         CREATE TABLE IF NOT EXISTS cart (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL,
@@ -182,7 +202,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table companies', `
         CREATE TABLE IF NOT EXISTS companies (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -203,7 +223,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table settings', `
         CREATE TABLE IF NOT EXISTS settings (
           id SERIAL PRIMARY KEY,
           key TEXT UNIQUE NOT NULL,
@@ -213,7 +233,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table transactions', `
         CREATE TABLE IF NOT EXISTS transactions (
           id SERIAL PRIMARY KEY,
           user_id INTEGER,
@@ -236,7 +256,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table user_info', `
         CREATE TABLE IF NOT EXISTS user_info (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL,
@@ -257,7 +277,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table testimonials', `
         CREATE TABLE IF NOT EXISTS testimonials (
           id SERIAL PRIMARY KEY,
           company_id INTEGER NOT NULL,
@@ -272,6 +292,9 @@ class PostgresDatabase {
           submitter_email TEXT,
           display_order INTEGER DEFAULT 0,
           rating INTEGER DEFAULT 5,
+          -- The photo a reviewer attached to their review. It is optional, so
+          -- it stays empty for a review that was written without one.
+          review_image TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (company_id) REFERENCES companies (id)
@@ -281,7 +304,7 @@ class PostgresDatabase {
       // A "this review helped" vote. The visitor key identifies the browser
       // that cast the vote so one person cannot inflate the counter by
       // reloading the page.
-      await client.query(`
+      await runStep('create table testimonial_likes', `
         CREATE TABLE IF NOT EXISTS testimonial_likes (
           id SERIAL PRIMARY KEY,
           testimonial_id INTEGER NOT NULL,
@@ -292,7 +315,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table articles', `
         CREATE TABLE IF NOT EXISTS articles (
           id SERIAL PRIMARY KEY,
           company_id INTEGER NOT NULL,
@@ -309,7 +332,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table verification_codes', `
         CREATE TABLE IF NOT EXISTS verification_codes (
           id SERIAL PRIMARY KEY,
           email TEXT NOT NULL,
@@ -321,7 +344,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table categories', `
         CREATE TABLE IF NOT EXISTS categories (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -336,7 +359,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table category_products', `
         CREATE TABLE IF NOT EXISTS category_products (
           id SERIAL PRIMARY KEY,
           category_id INTEGER NOT NULL,
@@ -348,7 +371,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table looks', `
         CREATE TABLE IF NOT EXISTS looks (
           id SERIAL PRIMARY KEY,
           company_id INTEGER NOT NULL,
@@ -364,7 +387,7 @@ class PostgresDatabase {
         )
       `);
 
-      await client.query(`
+      await runStep('create table look_items', `
         CREATE TABLE IF NOT EXISTS look_items (
           id SERIAL PRIMARY KEY,
           look_id INTEGER NOT NULL,
@@ -379,7 +402,7 @@ class PostgresDatabase {
 
       // The worn-outfit photo itself, kept out of `looks.worn_image` so the
       // list endpoints never have to carry megabytes of base64.
-      await client.query(`
+      await runStep('create table look_images', `
         CREATE TABLE IF NOT EXISTS look_images (
           look_id INTEGER PRIMARY KEY,
           image TEXT NOT NULL,
@@ -393,7 +416,7 @@ class PostgresDatabase {
       // shop can play it straight from the API, and the list endpoint never
       // has to carry megabytes around. A clip does not have to belong to a
       // product — it can stand on its own in the video section.
-      await client.query(`
+      await runStep('create table product_videos', `
         CREATE TABLE IF NOT EXISTS product_videos (
           id SERIAL PRIMARY KEY,
           company_id INTEGER NOT NULL,
@@ -414,7 +437,13 @@ class PostgresDatabase {
 
       // The table was created with a product that had to be there. A clip on
       // its own is allowed now.
-      await client.query(
+      //
+      // This statement used to sit outside any guard. When it failed, the
+      // whole rest of the boot — every migration below it — was skipped with
+      // it, and the columns the storefront writes to never reached the
+      // database.
+      await runStep(
+        'product_videos.product_id is optional',
         'ALTER TABLE product_videos ALTER COLUMN product_id DROP NOT NULL'
       );
 
@@ -444,39 +473,40 @@ class PostgresDatabase {
       // Reviews submitted from the storefront wait for an admin decision.
       // The columns are added without a default so the backfill below can tell
       // legacy rows apart from reviews that went through the new workflow.
-      try {
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS status TEXT`);
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS source TEXT`);
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS user_id INTEGER`);
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS submitter_email TEXT`);
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 5`);
-        // The photo a reviewer attached to their review. It is optional, so it
-        // stays empty for a review that was written without one.
-        await client.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS review_image TEXT`);
-        console.log('✅ Added review workflow columns to testimonials table');
+      //
+      // Each column gets its own guard: one that Postgres refuses must not
+      // take the columns after it down as well. A missing `review_image`
+      // meant every customer submission failed with a 500 while the rest of
+      // the review flow looked healthy.
+      await runStep('testimonials.status', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS status TEXT');
+      await runStep('testimonials.source', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS source TEXT');
+      await runStep('testimonials.user_id', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS user_id INTEGER');
+      await runStep('testimonials.submitter_email', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS submitter_email TEXT');
+      await runStep('testimonials.rating', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 5');
+      // The photo a reviewer attached to their review. It is optional, so it
+      // stays empty for a review that was written without one.
+      await runStep('testimonials.review_image', 'ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS review_image TEXT');
+      console.log('✅ Added review workflow columns to testimonials table');
 
-        // Legacy rows: live reviews are approved, the rest still need a
-        // decision from the admin.
-        await client.query(`
-          UPDATE testimonials
-          SET status = CASE WHEN is_active THEN 'approved' ELSE 'pending' END
-          WHERE status IS NULL OR status = ''
-        `);
-        await client.query(`
-          UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
-        `);
-        // Reviews written before the star rating existed get a neutral score
-        // rather than a silent zero.
-        await client.query(`
-          UPDATE testimonials SET rating = 5 WHERE rating IS NULL
-        `);
-      } catch (err) {
-        console.log('⚠️ testimonial workflow migration:', err.message);
-      }
+      // Legacy rows: live reviews are approved, the rest still need a
+      // decision from the admin.
+      await runStep('testimonials status backfill', `
+        UPDATE testimonials
+        SET status = CASE WHEN is_active THEN 'approved' ELSE 'pending' END
+        WHERE status IS NULL OR status = ''
+      `);
+      await runStep('testimonials source backfill', `
+        UPDATE testimonials SET source = 'admin' WHERE source IS NULL OR source = ''
+      `);
+      // Reviews written before the star rating existed get a neutral score
+      // rather than a silent zero.
+      await runStep('testimonials rating backfill', `
+        UPDATE testimonials SET rating = 5 WHERE rating IS NULL
+      `);
 
       // Votes on a review.
       try {
-        await client.query(`
+        await runStep('create table testimonial_likes', `
           CREATE TABLE IF NOT EXISTS testimonial_likes (
             id SERIAL PRIMARY KEY,
             testimonial_id INTEGER NOT NULL,
@@ -494,7 +524,7 @@ class PostgresDatabase {
       // Loves on a product. The table is created here as well so a database
       // that was created before the feature still gets it on the next boot.
       try {
-        await client.query(`
+        await runStep('create table product_likes', `
           CREATE TABLE IF NOT EXISTS product_likes (
             id SERIAL PRIMARY KEY,
             product_id INTEGER NOT NULL,

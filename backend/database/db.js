@@ -303,6 +303,9 @@ class DatabaseWrapper {
         submitter_email TEXT,
         display_order INTEGER DEFAULT 0,
         rating INTEGER DEFAULT 5,
+        -- The photo a reviewer attached to their review. It is optional, so it
+        -- stays empty for a review that was written without one.
+        review_image TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (company_id) REFERENCES companies (id)
